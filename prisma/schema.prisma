@@ -16,11 +16,6 @@ model User {
   profile Profile?
 }
 
-enum Role {
-  STUDENT
-  COMPANY
-}
-
 model Profile {
   id     String  @id @default(cuid())
   userId String  @unique
@@ -45,6 +40,11 @@ model Application {
   studentId    String
   status       ApplicationStatus @default(PENDING)
   internship   Internship        @relation(fields: [internshipId], references: [id])
+}
+
+enum Role {
+  STUDENT
+  COMPANY
 }
 
 enum ApplicationStatus {

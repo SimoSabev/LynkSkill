@@ -1,25 +1,36 @@
-// app/components/RegisterUser.tsx
-'use client';
-import { useUser } from '@clerk/nextjs';
-import { useEffect } from 'react';
+"use client";
+
+import { useEffect, useState } from "react";
+import { useUser } from "@clerk/nextjs";
 
 export default function RegisterUser() {
-    const { user, isSignedIn } = useUser();
+    const { isLoaded, user } = useUser();
+    const [sent, setSent] = useState(false); // prevent multiple API calls
 
     useEffect(() => {
-        if (isSignedIn && user) {
-            // send POST to your API route
-            fetch('/api/users', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    userId: user.id,
-                    email: user.emailAddresses[0].emailAddress,
-                    role: 'STUDENT', // default role
-                }),
-            });
-        }
-    }, [isSignedIn, user]);
+        if (!isLoaded || !user || sent) return;
 
-    return null; // hidden component, runs in background
+        const email = user.primaryEmailAddress?.emailAddress;
+        if (!email) return;
+
+        console.log("📤 Sending user to API");
+        fetch("/api/users", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                userId: user.id,
+                email,
+                role: "STUDENT",
+            }),
+        })
+            .then(res => res.json())
+            .then(data => {
+                console.log("✅ API response:", data);
+                setSent(true);
+            })
+            .catch(err => console.error("❌ API error:", err));
+    }, [isLoaded, user, sent]);
+
+
+    return null;
 }
