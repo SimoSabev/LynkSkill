@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Image from "next/image"
 import { motion, AnimatePresence } from "framer-motion"
 import {
     Award,
@@ -58,6 +59,8 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
+import {ModeToggle} from "@/components/theme-toggle";
+import {SignedIn, UserButton} from "@clerk/nextjs";
 
 // Sample data for apps
 const apps = [
@@ -468,7 +471,7 @@ export function DesignaliCreative() {
 
             {/* Mobile menu overlay */}
             {mobileMenuOpen && (
-                <div className="fixed inset-0 z-40 bg-black/50 md:hidden" onClick={() => setMobileMenuOpen(false)} />
+                <div className="fixed inset-0 z-4 bg-black/50 md:hidden" onClick={() => setMobileMenuOpen(false)} />
             )}
 
             {/* Sidebar - Mobile */}
@@ -478,7 +481,7 @@ export function DesignaliCreative() {
                     mobileMenuOpen ? "translate-x-0" : "-translate-x-full",
                 )}
             >
-                <div className="flex h-full flex-col border-r">
+                <div className="flex h-full flex-col border-r text-foreground">
                     <div className="flex items-center justify-between p-4">
                         <div className="flex items-center gap-3">
                             <div className="flex aspect-square size-10 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-600 to-blue-600 text-white">
@@ -486,17 +489,17 @@ export function DesignaliCreative() {
                             </div>
                             <div>
                                 <h2 className="font-semibold">Designali</h2>
-                                <p className="text-xs text-muted-foreground">Creative Suite</p>
+                                <p className="text-xs text-foreground">Creative Suite</p>
                             </div>
                         </div>
                         <Button variant="ghost" size="icon" onClick={() => setMobileMenuOpen(false)}>
-                            <X className="h-5 w-5" />
+                            <X className="h-5 w-5 text-foreground" />
                         </Button>
                     </div>
 
                     <div className="px-3 py-2">
                         <div className="relative">
-                            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                            <Search className="absolute left-3 top-3 h-4 w-4 text-foreground" />
                             <Input type="search" placeholder="Search..." className="w-full rounded-2xl bg-muted pl-9 pr-4 py-2" />
                         </div>
                     </div>
@@ -560,18 +563,25 @@ export function DesignaliCreative() {
                                 <Settings className="h-5 w-5" />
                                 <span>Settings</span>
                             </button>
-                            <button className="flex w-full items-center justify-between rounded-2xl px-3 py-2 text-sm font-medium hover:bg-muted">
-                                <div className="flex items-center gap-3">
-                                    <Avatar className="h-6 w-6">
-                                        <AvatarImage src="/placeholder.svg?height=32&width=32" alt="User" />
-                                        <AvatarFallback>JD</AvatarFallback>
-                                    </Avatar>
-                                    <span>John Doe</span>
+                            <SignedIn>
+                                <div className="flex items-center justify-start gap-3 sm:gap-4 ml-2">
+                                    <UserButton
+                                        appearance={{
+                                            elements: {
+                                                // userButtonAvatarBox:
+                                                //     "w-8 h-8 sm:w-8 sm:h-8 ring-2 ring-purple-500/50 ring-offset-2 ring-offset-black transition-all duration-300 hover:ring-purple-400",
+                                                userButtonPopoverCard:
+                                                    "bg-gray-900/95 backdrop-blur-sm border border-gray-700 text-white shadow-2xl",
+                                                userButtonPopoverActionButton:
+                                                    "text-foreground hover:text-white hover:bg-gray-800 transition-colors",
+                                                userButtonPopoverActionButtonText: "text-foreground",
+                                                userButtonPopoverFooter: "hidden",
+                                            },
+                                        }}
+                                    />
+                                    <div className="text-foreground text-sm font-semibold">User</div>
                                 </div>
-                                <Badge variant="outline" className="ml-auto">
-                                    Pro
-                                </Badge>
-                            </button>
+                            </SignedIn>
                         </div>
                     </div>
                 </div>
@@ -591,15 +601,15 @@ export function DesignaliCreative() {
                                 <Wand2 className="size-5" />
                             </div>
                             <div>
-                                <h2 className="font-semibold">Designali</h2>
-                                <p className="text-xs text-muted-foreground">Creative Suite</p>
+                                <h2 className="font-semibold text-foreground">Designali</h2>
+                                <p className="text-xs text-foreground">Creative Suite</p>
                             </div>
                         </div>
                     </div>
 
                     <div className="px-3 py-2">
                         <div className="relative">
-                            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                            <Search className="absolute left-3 top-3 h-4 w-4 text-foreground" />
                             <Input type="search" placeholder="Search..." className="w-full rounded-2xl bg-muted pl-9 pr-4 py-2" />
                         </div>
                     </div>
@@ -610,12 +620,12 @@ export function DesignaliCreative() {
                                 <div key={item.title} className="mb-1">
                                     <button
                                         className={cn(
-                                            "flex w-full items-center justify-between rounded-2xl px-3 py-2 text-sm font-medium",
+                                            "flex w-full items-center justify-between text-foreground rounded-2xl px-3 py-2 text-sm font-medium",
                                             item.isActive ? "bg-primary/10 text-primary" : "hover:bg-muted",
                                         )}
                                         onClick={() => item.items && toggleExpanded(item.title)}
                                     >
-                                        <div className="flex items-center gap-3">
+                                        <div className="flex items-center text-foreground gap-3">
                                             {item.icon}
                                             <span>{item.title}</span>
                                         </div>
@@ -640,7 +650,7 @@ export function DesignaliCreative() {
                                                 <a
                                                     key={subItem.title}
                                                     href={subItem.url}
-                                                    className="flex items-center justify-between rounded-2xl px-3 py-2 text-sm hover:bg-muted"
+                                                    className="flex items-center justify-between text-foreground rounded-2xl px-3 py-2 text-sm hover:bg-muted"
                                                 >
                                                     {subItem.title}
                                                     {subItem.badge && (
@@ -658,23 +668,30 @@ export function DesignaliCreative() {
                     </ScrollArea>
 
                     <div className="border-t p-3">
-                        <div className="space-y-1">
-                            <button className="flex w-full items-center gap-3 rounded-2xl px-3 py-2 text-sm font-medium hover:bg-muted">
+                        <div className="space-y-1 text-foreground">
+                            <button className="flex w-full text-foreground items-center gap-3 rounded-2xl px-3 py-2 text-sm font-medium hover:bg-muted">
                                 <Settings className="h-5 w-5" />
                                 <span>Settings</span>
                             </button>
-                            <button className="flex w-full items-center justify-between rounded-2xl px-3 py-2 text-sm font-medium hover:bg-muted">
-                                <div className="flex items-center gap-3">
-                                    <Avatar className="h-6 w-6">
-                                        <AvatarImage src="/placeholder.svg?height=32&width=32" alt="User" />
-                                        <AvatarFallback>JD</AvatarFallback>
-                                    </Avatar>
-                                    <span>John Doe</span>
+                            <SignedIn>
+                                <div className="flex items-center justify-center lg:justify-start gap-3 sm:gap-4 ml-2">
+                                    <UserButton
+                                        appearance={{
+                                            elements: {
+                                                // userButtonAvatarBox:
+                                                //     "w-8 h-8 sm:w-8 sm:h-8 ring-2 ring-purple-500/50 ring-offset-2 ring-offset-black transition-all duration-300 hover:ring-purple-400",
+                                                userButtonPopoverCard:
+                                                    "bg-gray-900/95 backdrop-blur-sm border border-gray-700 text-white shadow-2xl",
+                                                userButtonPopoverActionButton:
+                                                    "text-foreground hover:text-white hover:bg-gray-800 transition-colors",
+                                                userButtonPopoverActionButtonText: "text-foreground",
+                                                userButtonPopoverFooter: "hidden",
+                                            },
+                                        }}
+                                    />
+                                    <div className="text-foreground text-sm font-medium">User</div>
                                 </div>
-                                <Badge variant="outline" className="ml-auto">
-                                    Pro
-                                </Badge>
-                            </button>
+                            </SignedIn>
                         </div>
                     </div>
                 </div>
@@ -684,14 +701,14 @@ export function DesignaliCreative() {
             <div className={cn("min-h-screen transition-all duration-300 ease-in-out", sidebarOpen ? "md:pl-64" : "md:pl-0")}>
                 <header className="sticky top-0 z-10 flex h-16 items-center gap-3 border-b bg-background/95 px-4 backdrop-blur">
                     <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setMobileMenuOpen(true)}>
-                        <Menu className="h-5 w-5" />
+                        <Menu className="h-5 w-5 text-foreground" />
                     </Button>
                     <Button variant="ghost" size="icon" className="hidden md:flex" onClick={() => setSidebarOpen(!sidebarOpen)}>
-                        <PanelLeft className="h-5 w-5" />
+                        <PanelLeft className="h-5 w-5 text-foreground" />
                     </Button>
                     <div className="flex flex-1 items-center justify-between">
-                        <h1 className="text-xl font-semibold">Designali Creative</h1>
-                        <div className="flex items-center gap-3">
+                        <h1 className="text-xl font-semibold text-foreground">Designali Creative</h1>
+                        <div className="flex items-center text-foreground gap-3">
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger asChild>
@@ -721,8 +738,8 @@ export function DesignaliCreative() {
                                             <Bell className="h-5 w-5" />
                                             {notifications > 0 && (
                                                 <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white">
-                          {notifications}
-                        </span>
+                                                  {notifications}
+                                                </span>
                                             )}
                                         </Button>
                                     </TooltipTrigger>
@@ -730,15 +747,40 @@ export function DesignaliCreative() {
                                 </Tooltip>
                             </TooltipProvider>
 
-                            <Avatar className="h-9 w-9 border-2 border-primary">
-                                <AvatarImage src="/placeholder.svg?height=40&width=40" alt="User" />
-                                <AvatarFallback>JD</AvatarFallback>
-                            </Avatar>
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="rounded-2xl">
+                                            <ModeToggle/>
+                                        </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Toggle theme</TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+
+                            <SignedIn>
+                                <div className="flex items-center justify-center lg:justify-start gap-3 sm:gap-4">
+                                    <UserButton
+                                        appearance={{
+                                            elements: {
+                                                // userButtonAvatarBox:
+                                                //     "w-10 h-10 sm:w-12 sm:h-12 ring-2 ring-purple-500/50 ring-offset-2 ring-offset-black transition-all duration-300 hover:ring-purple-400",
+                                                userButtonPopoverCard:
+                                                    "bg-gray-900/95 backdrop-blur-sm border border-gray-700 text-white shadow-2xl",
+                                                userButtonPopoverActionButton:
+                                                    "text-foreground hover:text-white hover:bg-gray-800 transition-colors",
+                                                userButtonPopoverActionButtonText: "text-foreground",
+                                                userButtonPopoverFooter: "hidden",
+                                            },
+                                        }}
+                                    />
+                                </div>
+                            </SignedIn>
                         </div>
                     </div>
                 </header>
 
-                <main className="flex-1 p-4 md:p-6">
+                <main className="flex-1 p-4 md:p-6 text-foreground">
                     <Tabs defaultValue="home" value={activeTab} onValueChange={setActiveTab} className="w-full">
                         <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                             <TabsList className="grid w-full max-w-[600px] grid-cols-5 rounded-2xl p-1">
@@ -883,7 +925,7 @@ export function DesignaliCreative() {
                                                                 </div>
                                                                 <div>
                                                                     <p className="font-medium">{file.name}</p>
-                                                                    <p className="text-sm text-muted-foreground">
+                                                                    <p className="text-sm text-foreground">
                                                                         {file.app} • {file.modified}
                                                                     </p>
                                                                 </div>
@@ -926,7 +968,7 @@ export function DesignaliCreative() {
                                                                     Due {project.dueDate}
                                                                 </Badge>
                                                             </div>
-                                                            <p className="text-sm text-muted-foreground mb-3">{project.description}</p>
+                                                            <p className="text-sm text-foreground mb-3">{project.description}</p>
                                                             <div className="space-y-2">
                                                                 <div className="flex items-center justify-between text-sm">
                                                                     <span>Progress</span>
@@ -934,7 +976,7 @@ export function DesignaliCreative() {
                                                                 </div>
                                                                 <Progress value={project.progress} className="h-2 rounded-xl" />
                                                             </div>
-                                                            <div className="flex items-center justify-between mt-3 text-sm text-muted-foreground">
+                                                            <div className="flex items-center justify-between mt-3 text-sm text-foreground">
                                                                 <div className="flex items-center">
                                                                     <Users className="mr-1 h-4 w-4" />
                                                                     {project.members} members
@@ -963,15 +1005,16 @@ export function DesignaliCreative() {
                                                 <motion.div key={post.title} whileHover={{ scale: 1.02, y: -5 }} whileTap={{ scale: 0.98 }}>
                                                     <Card className="overflow-hidden rounded-3xl">
                                                         <div className="aspect-[4/3] overflow-hidden bg-muted">
-                                                            <img
+                                                            <Image
                                                                 src={post.image || "/placeholder.svg"}
                                                                 alt={post.title}
-                                                                className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
+                                                                fill
+                                                                className="object-cover transition-transform duration-300 hover:scale-105"
                                                             />
                                                         </div>
                                                         <CardContent className="p-4">
                                                             <h3 className="font-semibold">{post.title}</h3>
-                                                            <p className="text-sm text-muted-foreground">by {post.author}</p>
+                                                            <p className="text-sm text-foreground">by {post.author}</p>
                                                             <div className="mt-2 flex items-center justify-between text-sm">
                                                                 <div className="flex items-center gap-2">
                                                                     <Heart className="h-4 w-4 text-red-500" />
@@ -979,7 +1022,7 @@ export function DesignaliCreative() {
                                                                     <MessageSquare className="ml-2 h-4 w-4 text-blue-500" />
                                                                     {post.comments}
                                                                 </div>
-                                                                <span className="text-muted-foreground">{post.time}</span>
+                                                                <span className="text-foreground">{post.time}</span>
                                                             </div>
                                                         </CardContent>
                                                     </Card>
@@ -1030,7 +1073,7 @@ export function DesignaliCreative() {
                                         </Button>
                                         <div className="flex-1"></div>
                                         <div className="relative w-full md:w-auto mt-3 md:mt-0">
-                                            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                            <Search className="absolute left-3 top-3 h-4 w-4 text-foreground" />
                                             <Input
                                                 type="search"
                                                 placeholder="Search apps..."
@@ -1164,7 +1207,7 @@ export function DesignaliCreative() {
                                         </Button>
                                         <div className="flex-1"></div>
                                         <div className="relative w-full md:w-auto mt-3 md:mt-0">
-                                            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                            <Search className="absolute left-3 top-3 h-4 w-4 text-foreground" />
                                             <Input
                                                 type="search"
                                                 placeholder="Search files..."
@@ -1209,7 +1252,7 @@ export function DesignaliCreative() {
                                                             <div>
                                                                 <p className="font-medium">{file.name}</p>
                                                                 {file.shared && (
-                                                                    <div className="flex items-center text-xs text-muted-foreground">
+                                                                    <div className="flex items-center text-xs text-foreground">
                                                                         <Users className="mr-1 h-3 w-3" />
                                                                         Shared with {file.collaborators} people
                                                                     </div>
@@ -1278,7 +1321,7 @@ export function DesignaliCreative() {
                                         </Button>
                                         <div className="flex-1"></div>
                                         <div className="relative w-full md:w-auto mt-3 md:mt-0">
-                                            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                            <Search className="absolute left-3 top-3 h-4 w-4 text-foreground" />
                                             <Input
                                                 type="search"
                                                 placeholder="Search projects..."
@@ -1310,7 +1353,7 @@ export function DesignaliCreative() {
                                                                 </div>
                                                                 <Progress value={project.progress} className="h-2 rounded-xl" />
                                                             </div>
-                                                            <div className="flex items-center justify-between text-sm text-muted-foreground">
+                                                            <div className="flex items-center justify-between text-sm text-foreground">
                                                                 <div className="flex items-center">
                                                                     <Users className="mr-1 h-4 w-4" />
                                                                     {project.members} members
@@ -1338,7 +1381,7 @@ export function DesignaliCreative() {
                                                         <Plus className="h-6 w-6" />
                                                     </div>
                                                     <h3 className="text-lg font-medium">Create New Project</h3>
-                                                    <p className="mb-4 text-center text-sm text-muted-foreground">
+                                                    <p className="mb-4 text-center text-sm text-foreground">
                                                         Start a new creative project from scratch or use a template
                                                     </p>
                                                     <Button className="rounded-2xl">New Project</Button>
@@ -1456,7 +1499,7 @@ export function DesignaliCreative() {
                                         </Button>
                                         <div className="flex-1"></div>
                                         <div className="relative w-full md:w-auto mt-3 md:mt-0">
-                                            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                            <Search className="absolute left-3 top-3 h-4 w-4 text-foreground" />
                                             <Input
                                                 type="search"
                                                 placeholder="Search tutorials..."
@@ -1485,7 +1528,7 @@ export function DesignaliCreative() {
                                                             </div>
                                                         </div>
                                                         <CardContent className="p-4">
-                                                            <p className="text-sm text-muted-foreground">{tutorial.description}</p>
+                                                            <p className="text-sm text-foreground">{tutorial.description}</p>
                                                             <div className="mt-4 flex items-center justify-between">
                                                                 <div className="flex items-center gap-2">
                                                                     <Avatar className="h-6 w-6">
@@ -1493,7 +1536,7 @@ export function DesignaliCreative() {
                                                                     </Avatar>
                                                                     <span className="text-sm">{tutorial.instructor}</span>
                                                                 </div>
-                                                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                                                <div className="flex items-center gap-2 text-sm text-foreground">
                                                                     <Clock className="h-4 w-4" />
                                                                     {tutorial.duration}
                                                                 </div>
@@ -1503,7 +1546,7 @@ export function DesignaliCreative() {
                                                             <Badge variant="outline" className="rounded-xl">
                                                                 {tutorial.level}
                                                             </Badge>
-                                                            <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                                                            <div className="flex items-center gap-1 text-sm text-foreground">
                                                                 <Eye className="h-4 w-4" />
                                                                 {tutorial.views} views
                                                             </div>
@@ -1539,16 +1582,16 @@ export function DesignaliCreative() {
                                                         </div>
                                                         <div className="flex-1">
                                                             <h3 className="font-medium">{tutorial.title}</h3>
-                                                            <p className="text-sm text-muted-foreground">{tutorial.description}</p>
+                                                            <p className="text-sm text-foreground">{tutorial.description}</p>
                                                             <div className="mt-2 flex flex-wrap items-center gap-3">
                                                                 <Badge variant="outline" className="rounded-xl">
                                                                     {tutorial.level}
                                                                 </Badge>
-                                                                <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                                                                <div className="flex items-center gap-1 text-sm text-foreground">
                                                                     <Clock className="h-3 w-3" />
                                                                     {tutorial.duration}
                                                                 </div>
-                                                                <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                                                                <div className="flex items-center gap-1 text-sm text-foreground">
                                                                     <Eye className="h-3 w-3" />
                                                                     {tutorial.views} views
                                                                 </div>
@@ -1584,7 +1627,7 @@ export function DesignaliCreative() {
                                                             <span>4.8 ★</span>
                                                         </div>
                                                         <Progress value={30} className="h-2 rounded-xl" />
-                                                        <p className="text-xs text-muted-foreground">30% completed</p>
+                                                        <p className="text-xs text-foreground">30% completed</p>
                                                     </div>
                                                 </CardContent>
                                                 <CardFooter>
@@ -1610,7 +1653,7 @@ export function DesignaliCreative() {
                                                             <span>4.9 ★</span>
                                                         </div>
                                                         <Progress value={0} className="h-2 rounded-xl" />
-                                                        <p className="text-xs text-muted-foreground">Not started</p>
+                                                        <p className="text-xs text-foreground">Not started</p>
                                                     </div>
                                                 </CardContent>
                                                 <CardFooter>
@@ -1636,7 +1679,7 @@ export function DesignaliCreative() {
                                                             <span>4.7 ★</span>
                                                         </div>
                                                         <Progress value={0} className="h-2 rounded-xl" />
-                                                        <p className="text-xs text-muted-foreground">Not started</p>
+                                                        <p className="text-xs text-foreground">Not started</p>
                                                     </div>
                                                 </CardContent>
                                                 <CardFooter>
