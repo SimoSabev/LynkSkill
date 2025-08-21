@@ -2,7 +2,6 @@ import PulsingBorderShader from "@/components/pulsing-border-shader"
 import { ArrowRight, Sparkles } from "lucide-react"
 import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs"
 import { Button } from "./ui/button"
-import Link from "next/link"
 
 export default function Component() {
     return (

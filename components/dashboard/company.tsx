@@ -867,7 +867,7 @@ export default function CompanyDashboardPagee() {
 
                                     <section className="space-y-4">
                                         <div className="flex items-center justify-between">
-                                            <h2 className="text-2xl font-semibold">Recent Apps</h2>
+                                            <h2 className="text-2xl font-semibold"> My Recent Internship  </h2>
                                             <Button variant="ghost" className="rounded-2xl">
                                                 View All
                                             </Button>
@@ -906,7 +906,7 @@ export default function CompanyDashboardPagee() {
                                     <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
                                         <section className="space-y-4">
                                             <div className="flex items-center justify-between">
-                                                <h2 className="text-2xl font-semibold">Recent Files</h2>
+                                                <h2 className="text-2xl font-semibold">All My Internships</h2>
                                                 <Button variant="ghost" className="rounded-2xl">
                                                     View All
                                                 </Button>

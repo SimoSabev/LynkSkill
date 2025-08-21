@@ -1083,7 +1083,7 @@ export default function StudentDashboardPage() {
                                     </div>
 
                                     <section className="space-y-4">
-                                        <h2 className="text-2xl font-semibold">New Releases</h2>
+                                        <h2 className="text-2xl font-semibold">New Internships</h2>
                                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                                             {apps
                                                 .filter((app) => app.new)
@@ -1121,7 +1121,7 @@ export default function StudentDashboardPage() {
                                     </section>
 
                                     <section className="space-y-4">
-                                        <h2 className="text-2xl font-semibold">All Apps</h2>
+                                        <h2 className="text-2xl font-semibold">All Internships</h2>
                                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                                             {apps.map((app) => (
                                                 <motion.div key={app.name} whileHover={{ scale: 1.02, y: -5 }} whileTap={{ scale: 0.98 }}>
