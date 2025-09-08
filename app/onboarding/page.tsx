@@ -7,7 +7,10 @@ import { completeOnboarding } from "./_actions"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { GraduationCap, Building2, ArrowRight } from "lucide-react"
+import { GraduationCap, Building2, ArrowRight, CheckCircle } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
 
 export default function OnboardingPage() {
     const [error, setError] = React.useState("")
@@ -16,24 +19,6 @@ export default function OnboardingPage() {
     const { user } = useUser()
     const router = useRouter()
 
-    const handleSubmit = async (formData: FormData) => {
-        setIsLoading(true)
-        setError("")
-
-        try {
-            const res = await completeOnboarding(formData)
-            if (res?.message) {
-                await user?.reload()
-                router.push("/")
-            }
-            if (res?.error) setError(res.error)
-        } catch (err) {
-            setError("An unexpected error occurred. Please try again.")
-        } finally {
-            setIsLoading(false)
-        }
-    }
-
     const roles = [
         {
             value: "student",
@@ -41,8 +26,10 @@ export default function OnboardingPage() {
             description: "Access learning resources, track progress, and connect with peers",
             icon: GraduationCap,
             features: ["Course Materials", "Progress Tracking", "Peer Network", "Study Tools"],
-            color: "bg-blue-50 border-blue-200 hover:border-blue-300",
+            gradient: "from-blue-500/10 to-cyan-500/10",
+            iconBg: "bg-blue-500/10",
             iconColor: "text-blue-600",
+            borderColor: "border-blue-200/50",
         },
         {
             value: "company",
@@ -50,166 +37,209 @@ export default function OnboardingPage() {
             description: "Manage teams, access enterprise features, and drive business growth",
             icon: Building2,
             features: ["Team Management", "Analytics Dashboard", "Enterprise Tools", "Priority Support"],
-            color: "bg-purple-50 border-purple-200 hover:border-purple-300",
+            gradient: "from-purple-500/10 to-pink-500/10",
+            iconBg: "bg-purple-500/10",
             iconColor: "text-purple-600",
+            borderColor: "border-purple-200/50",
         },
     ]
 
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault()
+        setIsLoading(true)
+        setError("")
+
+        const formData = new FormData(e.currentTarget)
+
+        try {
+            const res = await completeOnboarding(formData)
+            if (res?.message) {
+                await user?.reload()
+                // ✅ Redirect correctly based on role
+                router.push(selectedRole === "company" ? "/dashboard/company" : "/dashboard/student")
+            }
+            if (res?.error) setError(res.error)
+        } catch {
+            setError("An unexpected error occurred. Please try again.")
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
-            {/* Header Section */}
-            <div className="relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-600/5 to-purple-600/5" />
-                <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-12">
-                    <div className="text-center space-y-6">
-                        <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm rounded-full border border-slate-200 shadow-sm">
-                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                            <span className="text-sm font-medium text-slate-600">Welcome to LynkSkill</span>
-                        </div>
-
-                        <h1
-                            className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-slate-900"
-                            style={{ fontFamily: "var(--font-space-grotesk)" }}
-                        >
-                            Choose Your
-                            <span className="block bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                                Journey
-                            </span>
-                        </h1>
-
-                        <p
-                            className="max-w-2xl mx-auto text-lg sm:text-xl text-slate-600 leading-relaxed"
-                            style={{ fontFamily: "var(--font-dm-sans)" }}
-                        >
-                            Select your role to unlock personalized features and get started with the right tools for your needs.
-                        </p>
-                    </div>
-                </div>
+        <div className="min-h-screen bg-background p-6">
+            <div className="max-w-4xl mx-auto mb-12 text-center">
+                <h1 className="text-4xl font-bold text-foreground mb-4 text-balance">Welcome! Let's get you started</h1>
+                <p className="text-lg text-muted-foreground text-pretty max-w-2xl mx-auto">
+                    Choose your role to customize your experience and unlock the features that matter most to you.
+                </p>
             </div>
 
-            {/* Main Content */}
-            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-                <form action={handleSubmit} className="space-y-8">
-                    {/* Role Selection Cards */}
-                    <div className="grid md:grid-cols-2 gap-6">
-                        {roles.map((role) => {
-                            const Icon = role.icon
-                            const isSelected = selectedRole === role.value
-
-                            return (
-                                <Card
-                                    key={role.value}
-                                    className={`relative cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1 ${
-                                        isSelected ? "ring-2 ring-primary shadow-lg border-primary" : `${role.color} hover:shadow-md`
-                                    }`}
-                                    onClick={() => setSelectedRole(role.value)}
-                                >
-                                    <CardHeader className="space-y-4">
-                                        <div className="flex items-center justify-between">
-                                            <div
-                                                className={`p-3 rounded-xl ${isSelected ? "bg-primary text-primary-foreground" : `bg-white ${role.iconColor}`}`}
-                                            >
-                                                <Icon className="w-6 h-6" />
+            <form onSubmit={handleSubmit} className="max-w-4xl mx-auto space-y-8">
+                <div className="grid md:grid-cols-2 gap-8">
+                    {roles.map((role) => {
+                        const Icon = role.icon
+                        const isSelected = selectedRole === role.value
+                        return (
+                            <Card
+                                key={role.value}
+                                className={`cursor-pointer transition-all duration-300 hover:shadow-lg group relative overflow-hidden ${
+                                    isSelected
+                                        ? "ring-2 ring-primary shadow-xl border-primary bg-gradient-to-br from-primary/5 to-primary/10"
+                                        : `border hover:border-muted-foreground/20 bg-gradient-to-br ${role.gradient}`
+                                }`}
+                                onClick={() => setSelectedRole(role.value)}
+                            >
+                                <CardHeader className="space-y-4 pb-4">
+                                    <div className="flex justify-between items-start">
+                                        <div
+                                            className={`p-4 rounded-2xl transition-all duration-300 ${
+                                                isSelected
+                                                    ? "bg-primary text-primary-foreground shadow-lg"
+                                                    : `${role.iconBg} ${role.iconColor} group-hover:scale-110`
+                                            }`}
+                                        >
+                                            <Icon className="w-7 h-7" />
+                                        </div>
+                                        {isSelected && (
+                                            <Badge variant="default" className="flex items-center gap-1.5">
+                                                <CheckCircle className="w-3 h-3" />
+                                                Selected
+                                            </Badge>
+                                        )}
+                                    </div>
+                                    <div className="space-y-2">
+                                        <CardTitle className="text-2xl font-bold text-foreground">{role.title}</CardTitle>
+                                        <CardDescription className="text-muted-foreground text-base leading-relaxed">
+                                            {role.description}
+                                        </CardDescription>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="space-y-3 pt-0">
+                                    <div className="space-y-3">
+                                        {role.features.map((feature, i) => (
+                                            <div key={i} className="flex items-center gap-3 text-sm text-foreground/80">
+                                                <div
+                                                    className={`w-2 h-2 rounded-full transition-colors ${
+                                                        isSelected ? "bg-primary" : "bg-muted-foreground/40"
+                                                    }`}
+                                                />
+                                                <span className="font-medium">{feature}</span>
                                             </div>
-                                            {isSelected && (
-                                                <Badge variant="default" className="bg-primary">
-                                                    Selected
-                                                </Badge>
-                                            )}
-                                        </div>
+                                        ))}
+                                    </div>
+                                </CardContent>
+                                <input
+                                    type="radio"
+                                    name="role"
+                                    value={role.value}
+                                    checked={isSelected}
+                                    onChange={() => setSelectedRole(role.value)}
+                                    className="sr-only"
+                                    required
+                                />
+                            </Card>
+                        )
+                    })}
+                </div>
 
-                                        <div className="space-y-2">
-                                            <CardTitle className="text-xl text-slate-700 font-bold" style={{ fontFamily: "var(--font-space-grotesk)" }}>
-                                                {role.title}
-                                            </CardTitle>
-                                            <CardDescription className="text-base" style={{ fontFamily: "var(--font-dm-sans)" }}>
-                                                {role.description}
-                                            </CardDescription>
-                                        </div>
-                                    </CardHeader>
-
-                                    <CardContent className="space-y-4">
-                                        <div className="grid grid-cols-2 gap-2">
-                                            {role.features.map((feature, index) => (
-                                                <div key={index} className="flex items-center gap-2 text-sm text-slate-600">
-                                                    <div className="w-1.5 h-1.5 bg-slate-400 rounded-full" />
-                                                    <span style={{ fontFamily: "var(--font-dm-sans)" }}>{feature}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </CardContent>
-
-                                    {/* Hidden radio input */}
-                                    <input
-                                        type="radio"
-                                        name="role"
-                                        value={role.value}
-                                        checked={isSelected}
-                                        onChange={() => setSelectedRole(role.value)}
-                                        className="sr-only"
+                {selectedRole === "company" && (
+                    <Card className="bg-background border shadow-sm">
+                        <CardHeader className="pb-6">
+                            <CardTitle className="text-xl font-semibold text-foreground flex items-center gap-2">
+                                <Building2 className="w-5 h-5 text-primary" />
+                                Company Information
+                            </CardTitle>
+                            <CardDescription className="text-muted-foreground">
+                                Tell us about your company to personalize your experience
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            <div className="grid md:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <Label htmlFor="companyName" className="text-sm font-medium text-foreground">
+                                        Company Name *
+                                    </Label>
+                                    <Input
+                                        id="companyName"
+                                        type="text"
+                                        name="companyName"
+                                        placeholder="Enter your company name"
+                                        className="bg-background border-input"
                                         required
                                     />
-                                </Card>
-                            )
-                        })}
-                    </div>
-
-                    {/* Error Message */}
-                    {error && (
-                        <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
-                            <p className="text-destructive font-medium" style={{ fontFamily: "var(--font-dm-sans)" }}>
-                                {error}
-                            </p>
-                        </div>
-                    )}
-
-                    {/* Continue Button */}
-                    <div className="flex justify-center pt-6">
-                        <Button
-                            type="submit"
-                            size="lg"
-                            disabled={!selectedRole || isLoading}
-                            className="min-w-48 h-12 text-base font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
-                            style={{ fontFamily: "var(--font-space-grotesk)" }}
-                        >
-                            {isLoading ? (
-                                <div className="flex items-center gap-2">
-                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                    Processing...
                                 </div>
-                            ) : (
-                                <div className="flex items-center gap-2">
-                                    Continue
-                                    <ArrowRight className="w-4 h-4" />
+                                <div className="space-y-2">
+                                    <Label htmlFor="companyLocation" className="text-sm font-medium text-foreground">
+                                        Location *
+                                    </Label>
+                                    <Input
+                                        id="companyLocation"
+                                        type="text"
+                                        name="companyLocation"
+                                        placeholder="City, Country"
+                                        className="bg-background border-input"
+                                        required
+                                    />
                                 </div>
-                            )}
-                        </Button>
-                    </div>
-                </form>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="companyDescription" className="text-sm font-medium text-foreground">
+                                    Description *
+                                </Label>
+                                <Textarea
+                                    id="companyDescription"
+                                    name="companyDescription"
+                                    placeholder="Describe what your company does..."
+                                    className="bg-background border-input min-h-[100px] resize-none"
+                                    required
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="companyWebsite" className="text-sm font-medium text-foreground">
+                                    Website <span className="text-muted-foreground">(Optional)</span>
+                                </Label>
+                                <Input
+                                    id="companyWebsite"
+                                    type="url"
+                                    name="companyWebsite"
+                                    placeholder="https://example.com"
+                                    className="bg-background border-input"
+                                />
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
 
-                {/* Footer */}
-                <div className="mt-16 pt-8 border-t border-slate-200">
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-500">
-                        <div className="flex items-center gap-6" style={{ fontFamily: "var(--font-dm-sans)" }}>
-                            <a href="#" className="hover:text-slate-700 transition-colors">
-                                Privacy Policy
-                            </a>
-                            <a href="#" className="hover:text-slate-700 transition-colors">
-                                Terms of Service
-                            </a>
-                            <a href="#" className="hover:text-slate-700 transition-colors">
-                                Support
-                            </a>
-                        </div>
-                        <div className="flex items-center gap-2" style={{ fontFamily: "var(--font-dm-sans)" }}>
-                            <span>Need help?</span>
-                            <a href="#" className="text-primary hover:underline">
-                                Contact us
-                            </a>
-                        </div>
-                    </div>
+                {error && (
+                    <Card className="border-destructive/50 bg-destructive/5">
+                        <CardContent className="pt-6">
+                            <p className="text-destructive text-sm font-medium">{error}</p>
+                        </CardContent>
+                    </Card>
+                )}
+
+                <div className="flex justify-center pt-4">
+                    <Button
+                        type="submit"
+                        disabled={!selectedRole || isLoading}
+                        size="lg"
+                        className="min-w-[200px] h-12 text-base font-semibold"
+                    >
+                        {isLoading ? (
+                            <div className="flex items-center gap-2">
+                                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                Processing...
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-2">
+                                Continue
+                                <ArrowRight className="w-4 h-4" />
+                            </div>
+                        )}
+                    </Button>
                 </div>
-            </div>
+            </form>
         </div>
     )
 }

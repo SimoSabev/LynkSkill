@@ -9,11 +9,25 @@ datasource db {
 }
 
 model User {
-  id      String   @id @default(cuid())
-  clerkId String   @unique
-  role    Role
-  email   String
-  profile Profile?
+  id        String    @id @default(cuid())
+  clerkId   String    @unique
+  email     String
+  role      Role // <-- use enum instead of String
+  profile   Profile?
+  companies Company[]
+}
+
+model Company {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  location    String
+  website     String? // optional
+  logo        String? // optional (url to image)
+  ownerId     String
+  owner       User     @relation(fields: [ownerId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Profile {
