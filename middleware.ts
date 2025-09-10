@@ -13,27 +13,35 @@ export default clerkMiddleware(async (auth, req) => {
     const { userId, sessionClaims } = await auth()
     const url = req.nextUrl
 
-    // 1) Not logged in → always redirect to landing (/) for non-public routes
     if (!userId && !isPublicRoute(req)) {
         return NextResponse.redirect(new URL('/', req.url))
     }
 
-    // 🔹 Normalize Clerk metadata values
     const onboardingRaw = sessionClaims?.metadata?.onboardingComplete as boolean | string | undefined
     const onboardingComplete = onboardingRaw === true || onboardingRaw === 'true'
+    const role = (sessionClaims?.metadata?.role || '').toString().toUpperCase()
 
-    // 2) Logged in but not onboarded → redirect to onboarding (unless already there or to redirect page)
     if (userId && !onboardingComplete && !isOnboardingRoute(req)) {
         return NextResponse.redirect(new URL('/onboarding', req.url))
     }
 
-    // 3) Logged in + onboarded, but on landing "/" → route to proper dashboard
+    // 🚨 Role-based route protection
+    if (url.pathname.startsWith('/dashboard/student') && role !== 'STUDENT') {
+        // send back to company dashboard
+        return NextResponse.redirect(new URL('/dashboard/company', req.url))
+    }
+
+    if (url.pathname.startsWith('/dashboard/company') && role !== 'COMPANY') {
+        // send back to student dashboard
+        return NextResponse.redirect(new URL('/dashboard/student', req.url))
+    }
+
+    // Redirect root "/" to proper dashboard
     if (userId && onboardingComplete && url.pathname === '/') {
-        const roleClaim = (sessionClaims?.metadata?.role || '').toString().toUpperCase()
-        if (roleClaim === 'STUDENT') {
+        if (role === 'STUDENT') {
             return NextResponse.redirect(new URL('/dashboard/student', req.url))
         }
-        if (roleClaim === 'COMPANY') {
+        if (role === 'COMPANY') {
             return NextResponse.redirect(new URL('/dashboard/company', req.url))
         }
     }
