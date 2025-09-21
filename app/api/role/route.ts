@@ -5,12 +5,38 @@ import { currentUser } from "@clerk/nextjs/server"
 import { clerkClient } from "@clerk/clerk-sdk-node"
 
 // ------------------- GET role -------------------
-export async function GET() {
-    const user = await currentUser()
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+import { auth } from "@clerk/nextjs";
+import { prisma } from "@/lib/prisma";
+import { NextResponse } from "next/server";
 
-    const dbUser = await prisma.user.findUnique({ where: { clerkId: user.id } })
-    return NextResponse.json({ role: dbUser?.role ?? null })
+export async function GET() {
+    try {
+        const { userId } = await auth();
+
+        if (!userId) {
+            return NextResponse.json(
+                { error: "Unauthorized" },
+                { status: 401 }
+            );
+        }
+
+        const user = await prisma.user.findUnique({
+            where: { clerkId: userId },
+            select: {
+                id: true,
+                role: true,
+                // Add other fields you need
+            }
+        });
+
+        return NextResponse.json(user);
+    } catch (error) {
+        console.error('Error fetching user:', error);
+        return NextResponse.json(
+            { error: "Internal server error" },
+            { status: 500 }
+        );
+    }
 }
 
 // ------------------- SET role -------------------

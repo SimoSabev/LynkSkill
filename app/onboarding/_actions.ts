@@ -36,6 +36,29 @@ export async function completeOnboarding(formData: FormData) {
             },
         })
 
+        if (role === "STUDENT") {
+            const dob = formData.get("dob") as string
+            const age = dob ? calculateAge(new Date(dob)) : null
+
+            const needsApproval = age !== null && age < 18
+
+            await prisma.portfolio.create({
+                data: {
+                    studentId: user.id,
+                    age,
+                    approvalStatus: needsApproval ? "PENDING" : "APPROVED",
+                    needsApproval,
+                    bio: "",
+                    skills: [],
+                    interests: [],
+                    experience: "",
+                    education: [],
+                    projects: [],
+                    certifications: [],
+                },
+            })
+        }
+
         // If company: create company record (once)
         if (role === 'COMPANY') {
             const companyName = (formData.get('companyName') as string) || ''
@@ -69,4 +92,10 @@ export async function completeOnboarding(formData: FormData) {
         console.error('completeOnboarding error', err)
         return { error: 'Error completing onboarding' }
     }
+}
+
+function calculateAge(dob: Date): number {
+    const diff = Date.now() - dob.getTime()
+    const ageDt = new Date(diff)
+    return Math.abs(ageDt.getUTCFullYear() - 1970)
 }

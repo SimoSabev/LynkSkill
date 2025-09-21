@@ -7,7 +7,7 @@ import { completeOnboarding } from "./_actions"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { GraduationCap, Building2, ArrowRight, CheckCircle } from "lucide-react"
+import { GraduationCap, Building2, ArrowRight } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
@@ -37,7 +37,6 @@ export default function OnboardingPage() {
                     router.replace(dest)
                 }
             } catch (err) {
-                // ignore — allow user to onboard
                 console.error(err)
             }
         })()
@@ -52,7 +51,6 @@ export default function OnboardingPage() {
         startTransition(async () => {
             const res = await completeOnboarding(formData)
             if (res?.dashboard) {
-                // refresh Clerk user session on the client
                 await user?.reload()
                 router.push(res.dashboard)
             } else if (res?.error) {
@@ -64,14 +62,26 @@ export default function OnboardingPage() {
     }
 
     const roles = [
-        { value: "student", title: "Student", description: "Access learning resources, track progress, and connect with peers", icon: GraduationCap },
-        { value: "company", title: "Company", description: "Manage teams and post internships", icon: Building2 },
+        {
+            value: "student",
+            title: "Student",
+            description: "Access learning resources, track progress, and connect with peers",
+            icon: GraduationCap,
+        },
+        {
+            value: "company",
+            title: "Company",
+            description: "Manage teams and post internships",
+            icon: Building2,
+        },
     ]
 
     return (
         <div className="min-h-screen bg-background p-6">
             <div className="max-w-4xl mx-auto mb-12 text-center">
-                <h1 className="text-4xl font-bold text-foreground mb-4">Welcome — choose a role</h1>
+                <h1 className="text-4xl font-bold text-foreground mb-4">
+                    Welcome — choose a role
+                </h1>
             </div>
 
             <form onSubmit={handleSubmit} className="max-w-4xl mx-auto space-y-8">
@@ -80,28 +90,71 @@ export default function OnboardingPage() {
                         const Icon = r.icon
                         const isSelected = selectedRole === r.value
                         return (
-                            <Card key={r.value} onClick={() => setSelectedRole(r.value)} className={`cursor-pointer p-4 ${isSelected ? "ring-2 ring-primary" : ""}`}>
+                            <Card
+                                key={r.value}
+                                onClick={() => setSelectedRole(r.value)}
+                                className={`cursor-pointer p-4 ${
+                                    isSelected ? "ring-2 ring-primary" : ""
+                                }`}
+                            >
                                 <CardHeader>
                                     <div className="flex justify-between items-center">
-                                        <div className={`p-3 rounded-xl ${isSelected ? "bg-primary text-primary-foreground" : "bg-muted"}`}><Icon className="w-6 h-6" /></div>
+                                        <div
+                                            className={`p-3 rounded-xl ${
+                                                isSelected
+                                                    ? "bg-primary text-primary-foreground"
+                                                    : "bg-muted"
+                                            }`}
+                                        >
+                                            <Icon className="w-6 h-6" />
+                                        </div>
                                         {isSelected && <Badge>Selected</Badge>}
                                     </div>
                                     <CardTitle>{r.title}</CardTitle>
                                     <CardDescription>{r.description}</CardDescription>
                                 </CardHeader>
                                 <CardContent>
-                                    <input type="radio" name="role" value={r.value} checked={isSelected} onChange={() => setSelectedRole(r.value)} className="sr-only" required />
+                                    <input
+                                        type="radio"
+                                        name="role"
+                                        value={r.value}
+                                        checked={isSelected}
+                                        onChange={() => setSelectedRole(r.value)}
+                                        className="sr-only"
+                                        required
+                                    />
                                 </CardContent>
                             </Card>
                         )
                     })}
                 </div>
 
+                {/* Student extra fields */}
+                {selectedRole === "student" && (
+                    <Card className="p-4">
+                        <CardHeader>
+                            <CardTitle>Student information</CardTitle>
+                            <CardDescription>
+                                We need your date of birth to verify your eligibility
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div>
+                                <Label>Date of Birth</Label>
+                                <Input name="dob" type="date" required />
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+
+                {/* Company extra fields */}
                 {selectedRole === "company" && (
                     <Card className="p-4">
                         <CardHeader>
                             <CardTitle>Company information</CardTitle>
-                            <CardDescription>We need these to create your company</CardDescription>
+                            <CardDescription>
+                                We need these to create your company
+                            </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div>
