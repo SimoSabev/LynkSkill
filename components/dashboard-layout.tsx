@@ -244,10 +244,10 @@ export function DashboardLayout({userType, children}: DashboardLayoutProps) {
                                         Home
                                     </TabsTrigger>
                                     <TabsTrigger value="apps" className="rounded-xl data-[state=active]:rounded-xl">
-                                        Apps
+                                        Portfolio
                                     </TabsTrigger>
                                     <TabsTrigger value="files" className="rounded-xl data-[state=active]:rounded-xl">
-                                        Files
+                                        Applied
                                     </TabsTrigger>
                                     <TabsTrigger value="projects" className="rounded-xl data-[state=active]:rounded-xl">
                                         Projects
