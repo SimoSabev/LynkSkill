@@ -1,11 +1,9 @@
 // app/api/role/route.ts
-import { NextResponse } from "next/server"
-import { prisma } from "@/lib/prisma"
 import { currentUser } from "@clerk/nextjs/server"
 import { clerkClient } from "@clerk/clerk-sdk-node"
 
 // ------------------- GET role -------------------
-import { auth } from "@clerk/nextjs";
+import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 

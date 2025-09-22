@@ -1,8 +1,9 @@
 import { PulsingBorder } from "@paper-design/shaders-react"
-import {ScriptProps} from "next/script";
+import type { PulsingBorderProps } from "@paper-design/shaders-react";
 
 
-export default function PulsingBorderShader(props:ScriptProps) {
+
+export default function PulsingBorderShader(props:PulsingBorderProps) {
     return (
         <PulsingBorder
             colors={["#5800FF", "#BEECFF", "#E77EDC", "#FF4C3E"]}
@@ -12,7 +13,6 @@ export default function PulsingBorderShader(props:ScriptProps) {
             thickness={0.05}
             softness={0.1}
             intensity={1}
-            spotsPerColor={5}
             spotSize={0.1}
             pulse={0.2}
             smoke={0.5}

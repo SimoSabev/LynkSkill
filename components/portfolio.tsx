@@ -319,7 +319,7 @@ export function Portfolio({ userType }: { userType: "Student" | "Company" }) {
 
             <motion.section variants={itemVariants}>
               <div className="bg-card/80 backdrop-blur-sm rounded-3xl shadow-xl border border-border overflow-hidden">
-                <div className="bg-gradient-to-r from-[var(--portfolio-about-from)] to-[var(--portfolio-about-to)] p-6">
+                <div className="bg-gradient-to-r from-violet-600 via-indigo-600 to-blue-600 p-6">
                   <h2 className="text-2xl font-bold text-white flex items-center gap-3">
                     <div className="h-10 w-10 rounded-xl bg-white/20 flex items-center justify-center">
                       <User className="h-5 w-5" />
