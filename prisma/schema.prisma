@@ -21,6 +21,7 @@ model User {
   companies          Company[]     // companies owned by user
   applications       Application[] @relation("StudentApplications") // applications made by student
   portfolio          Portfolio?    // ✅ relation back to Portfolio
+  projects           Project[]     @relation("StudentProjects")     // ✅ student’s projects
 }
 
 // ---------------------
@@ -36,6 +37,7 @@ model Company {
   ownerId     String
   owner       User         @relation(fields: [ownerId], references: [id])
   internships Internship[] // ✅ internships owned by this company
+  projects    Project[]    // ✅ projects owned by this company
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 }
@@ -68,6 +70,7 @@ model Internship {
 
   company        Company       @relation(fields: [companyId], references: [id]) // ✅ mirror on Company.internships
   applications   Application[]
+  projects       Project[]     // ✅ projects based on this internship
 }
 
 // ---------------------
@@ -83,6 +86,7 @@ model Application {
 
   internship   Internship @relation(fields: [internshipId], references: [id])
   student      User       @relation("StudentApplications", fields: [studentId], references: [id])
+  project      Project?   // ✅ when approved, linked project is created
 
   @@unique([internshipId, studentId]) // prevent duplicate applications
 }
@@ -90,7 +94,6 @@ model Application {
 // ---------------------
 // Portfolio
 // ---------------------
-
 model Portfolio {
   id        String   @id @default(cuid())
   student   User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
@@ -120,6 +123,29 @@ model Portfolio {
   updatedAt DateTime @updatedAt
 }
 
+// ---------------------
+// PROJECTS
+// ---------------------
+model Project {
+  id            String      @id @default(cuid())
+  title         String
+  description   String
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  // Relations
+  internshipId  String
+  internship    Internship  @relation(fields: [internshipId], references: [id])
+
+  applicationId String       @unique
+  application   Application  @relation(fields: [applicationId], references: [id])
+
+  studentId     String
+  student       User         @relation("StudentProjects", fields: [studentId], references: [id])
+
+  companyId     String
+  company       Company      @relation(fields: [companyId], references: [id])
+}
 
 // ---------------------
 // ENUMS
@@ -134,7 +160,6 @@ enum ApplicationStatus {
   APPROVED
   REJECTED
 }
-
 
 enum ApprovalStatus {
   PENDING
