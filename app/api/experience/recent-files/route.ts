@@ -45,7 +45,7 @@ export async function GET() {
                 }))
             )
             .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-            .slice(0, 5)
+            .slice(0, 4)
 
         console.log("recent-files returning", files.length)
         return NextResponse.json(files)

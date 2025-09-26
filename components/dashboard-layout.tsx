@@ -15,7 +15,7 @@ import {DashboardHero} from "./dashboard-hero"
 import {RecentInternshipsSection} from "./recent-internships-section"
 import {RecentApplicationsSection} from "./recent-applications-section"
 import {ActiveProjectsSection} from "./active-projects-section"
-import {RecentFilesSection} from "./community-highlights-section"
+import {CommunityHighlights} from "./community-highlights-section"
 import {Portfolio} from "./portfolio"
 import {ApplicationsTabContent} from "./apply-tab-content"
 import {ProjectsTabContent} from "./projects-tab-content"
@@ -289,7 +289,7 @@ export function DashboardLayout({userType, children}: DashboardLayoutProps) {
                                             <RecentApplicationsSection userType={userType} setActiveTab={setActiveTab}/>
                                             <ActiveProjectsSection setActiveTab={setActiveTab}/>
                                         </div>
-                                        <RecentFilesSection/>
+                                        <CommunityHighlights/>
                                     </TabsContent>
 
                                     <TabsContent value="apps" className="space-y-8 mt-0">

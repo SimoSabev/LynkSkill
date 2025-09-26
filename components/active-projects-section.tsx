@@ -2,11 +2,13 @@
 
 import { motion } from "framer-motion"
 import { useEffect, useState } from "react"
-import { FileText, Users } from "lucide-react"
+import { Clock, Building2, ArrowRight, Calendar, User, Target, CheckCircle2, AlertCircle } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
+import { Card, CardContent } from "@/components/ui/card"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 
 type ApiProject = {
     id: string
@@ -45,86 +47,186 @@ export function ActiveProjectsSection({ setActiveTab }: ActiveProjectsSectionPro
         load()
     }, [])
 
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case "ONGOING":
+                return "bg-[var(--application-pending)] text-[var(--application-pending-foreground)]"
+            case "COMPLETED":
+                return "bg-[var(--application-approved)] text-[var(--application-approved-foreground)]"
+            default:
+                return "bg-muted text-muted-foreground"
+        }
+    }
+
+    const getProjectDetails = (proj: ApiProject) => {
+        const startDate = new Date(proj.createdAt)
+        const daysSinceStart = Math.floor((Date.now() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+        const progress = proj.status === "COMPLETED" ? 100 : Math.min(Math.max(daysSinceStart * 2, 15), 85)
+        const estimatedDuration = proj.status === "COMPLETED" ? daysSinceStart : Math.max(90, daysSinceStart + 30)
+        const remainingDays = proj.status === "COMPLETED" ? 0 : Math.max(0, estimatedDuration - daysSinceStart)
+
+        return {
+            progress,
+            daysSinceStart,
+            remainingDays,
+            estimatedDuration,
+            formattedStartDate: startDate.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+        }
+    }
+
     return (
         <section className="space-y-4">
+            {/* Banner stays unchanged */}
             <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-semibold">Active Projects</h2>
-                <Button
-                    variant="ghost"
-                    className="rounded-2xl"
-                    onClick={() => setActiveTab("projects")} // 👈 go to projects tab
-                >
+                <div>
+                    <h2 className="text-xl font-semibold text-foreground">Active Projects</h2>
+                    <p className="text-sm text-muted-foreground">
+                        {projects.length} projects • {projects.filter((p) => p.status === "ONGOING").length} active
+                    </p>
+                </div>
+                <Button variant="ghost" size="sm" className="hover:bg-muted group" onClick={() => setActiveTab("projects")}>
                     View All
+                    <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
                 </Button>
             </div>
-            <div className="rounded-3xl border">
-                <div className="grid grid-cols-1 divide-y">
-                    {isLoading
-                        ? Array.from({ length: 3 }).map((_, i) => (
-                            <div key={i} className="p-4 space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <div className="h-5 w-32 bg-muted rounded animate-pulse" />
-                                    <div className="h-6 w-20 bg-muted rounded-xl animate-pulse" />
-                                </div>
-                                <div className="h-4 w-full bg-muted rounded animate-pulse" />
-                                <div className="space-y-2">
-                                    <div className="flex items-center justify-between">
-                                        <div className="h-4 w-16 bg-muted rounded animate-pulse" />
-                                        <div className="h-4 w-8 bg-muted rounded animate-pulse" />
+
+            {isLoading ? (
+                <div className="space-y-4">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                        <Card key={i} className="p-5">
+                            <div className="space-y-4">
+                                <div className="flex items-start gap-4">
+                                    <div className="h-12 w-12 bg-muted rounded-xl animate-pulse" />
+                                    <div className="flex-1 space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <div className="h-5 w-48 bg-muted rounded animate-pulse" />
+                                            <div className="h-6 w-20 bg-muted rounded-full animate-pulse" />
+                                        </div>
+                                        <div className="h-4 w-32 bg-muted rounded animate-pulse" />
+                                        <div className="space-y-2">
+                                            <div className="h-3 w-full bg-muted rounded animate-pulse" />
+                                            <div className="flex gap-4">
+                                                <div className="h-3 w-16 bg-muted rounded animate-pulse" />
+                                                <div className="h-3 w-20 bg-muted rounded animate-pulse" />
+                                                <div className="h-3 w-24 bg-muted rounded animate-pulse" />
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="h-2 w-full bg-muted rounded-xl animate-pulse" />
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <div className="h-4 w-20 bg-muted rounded animate-pulse" />
-                                    <div className="h-4 w-16 bg-muted rounded animate-pulse" />
                                 </div>
                             </div>
-                        ))
-                        : projects
-                            .slice(0, 3) // 👈 only latest 3
-                            .map((proj, index) => (
-                                <motion.div
-                                    key={proj.id}
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: index * 0.1 }}
-                                    whileHover={{ backgroundColor: "rgba(0,0,0,0.02)" }}
-                                    onClick={() => setActiveTab("projects")} // 👈 go to projects tab
-                                    className="p-4 cursor-pointer"
-                                >
-                                    <div className="flex items-center justify-between mb-2">
-                                        <h3 className="font-medium">{proj.internship.title}</h3>
-                                        <Badge variant="outline" className="rounded-xl">
-                                            {proj.status}
-                                        </Badge>
-                                    </div>
-                                    <p className="text-sm text-foreground mb-3">
-                                        Company: {proj.internship.company?.name ?? "Unknown"}
-                                    </p>
-                                    <p className="text-sm mb-3">
-                                        Student: {proj.student?.name ?? proj.student?.email ?? "Unknown"}
-                                    </p>
-                                    <div className="space-y-2">
-                                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                            <span>Started</span>
-                                            <span>{new Date(proj.createdAt).toLocaleDateString()}</span>
-                                        </div>
-                                        <Progress value={proj.status === "COMPLETED" ? 100 : 50} className="h-2 rounded-xl" />
-                                    </div>
-                                    <div className="flex items-center justify-between mt-3 text-sm text-foreground">
-                                        <div className="flex items-center">
-                                            <Users className="mr-1 h-4 w-4" />
-                                            1 member
-                                        </div>
-                                        <div className="flex items-center">
-                                            <FileText className="mr-1 h-4 w-4" />
-                                            linked application
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            ))}
+                        </Card>
+                    ))}
                 </div>
-            </div>
+            ) : projects.length === 0 ? (
+                <Card className="border-2 border-dashed border-muted p-8 text-center">
+                    <div className="space-y-2">
+                        <Building2 className="h-8 w-8 text-muted-foreground mx-auto" />
+                        <div>
+                            <h4 className="font-medium">No active projects</h4>
+                            <p className="text-sm text-muted-foreground">Projects will appear here when applications are approved</p>
+                        </div>
+                    </div>
+                </Card>
+            ) : (
+                <div className="space-y-4">
+                    {projects.slice(0, 5).map((proj, index) => {
+                        const details = getProjectDetails(proj)
+
+                        return (
+                            <motion.div
+                                key={proj.id}
+                                initial={{ opacity: 0, x: -20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ duration: 0.3, delay: index * 0.05 }}
+                                onClick={() => setActiveTab("projects")}
+                                className="cursor-pointer"
+                            >
+                                <Card className="hover:shadow-lg hover:shadow-[var(--application-shadow-light)] transition-all duration-300 group border-l-4 border-l-[var(--experience-accent)]">
+                                    <CardContent className="p-4">
+                                        <div className="space-y-4">
+                                            {/* Header Section */}
+                                            <div className="flex items-start gap-4">
+                                                <Avatar className="h-12 w-12 ring-2 ring-[var(--experience-accent)]/20">
+                                                    <AvatarFallback className="bg-gradient-to-br from-[var(--experience-accent)] to-[var(--experience-accent)]/80 text-white font-semibold">
+                                                        {proj.internship.company?.name?.charAt(0) || "?"}
+                                                    </AvatarFallback>
+                                                </Avatar>
+
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-start justify-between mb-2">
+                                                        <div>
+                                                            <h4 className="font-semibold text-base group-hover:text-[var(--experience-accent)] transition-colors leading-tight">
+                                                                {proj.internship.title}
+                                                            </h4>
+                                                            <p className="text-sm text-muted-foreground font-medium">
+                                                                {proj.internship.company?.name || "Unknown Company"}
+                                                            </p>
+                                                        </div>
+                                                        <Badge className={`text-xs font-medium ${getStatusColor(proj.status)} shadow-sm`}>
+                                                            {proj.status === "ONGOING" ? (
+                                                                <AlertCircle className="h-3 w-3 mr-1" />
+                                                            ) : (
+                                                                <CheckCircle2 className="h-3 w-3 mr-1" />
+                                                            )}
+                                                            {proj.status}
+                                                        </Badge>
+                                                    </div>
+
+                                                    {/* Student Info */}
+                                                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+                                                        <User className="h-4 w-4" />
+                                                        <span>{proj.student?.name || "Unknown Student"}</span>
+                                                        <span className="text-muted-foreground/60">•</span>
+                                                        <Calendar className="h-4 w-4" />
+                                                        <span>Started {details.formattedStartDate}</span>
+                                                    </div>
+
+                                                    {/* Progress Section */}
+                                                    <div className="space-y-3">
+                                                        <div className="flex items-center justify-between">
+                                                            <div className="flex items-center gap-2">
+                                                                <Target className="h-4 w-4 text-[var(--experience-accent)]" />
+                                                                <span className="text-sm font-medium">Progress</span>
+                                                            </div>
+                                                            <span className="text-sm font-semibold text-[var(--experience-accent)]">
+                                                                {details.progress}%
+                                                              </span>
+                                                        </div>
+
+                                                        <div className="space-y-2">
+                                                            <Progress value={details.progress} className="h-2 bg-muted/50" />
+
+                                                            {/* Detailed Stats */}
+                                                            <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                                                                                <div className="flex items-center gap-4">
+                                                                  <span className="flex items-center gap-1">
+                                                                    <Clock className="h-3 w-3" />
+                                                                      {details.daysSinceStart} days active
+                                                                  </span>
+                                                                    {proj.status === "ONGOING" && (
+                                                                        <span className="flex items-center gap-1">
+                                                                          <Calendar className="h-3 w-3" />~{details.remainingDays} days remaining
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                                {proj.status === "COMPLETED" && (
+                                                                    <span className="text-[var(--application-approved)] font-medium">
+                                                                        Completed in {details.daysSinceStart} days
+                                                                      </span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            </motion.div>
+                        )
+                    })}
+                </div>
+            )}
         </section>
     )
 }
