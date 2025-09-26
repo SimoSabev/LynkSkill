@@ -287,7 +287,7 @@ export function DashboardLayout({userType, children}: DashboardLayoutProps) {
                                         <RecentInternshipsSection userType={userType} internships={internships}/>
                                         <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
                                             <RecentApplicationsSection userType={userType} setActiveTab={setActiveTab}/>
-                                            <ActiveProjectsSection/>
+                                            <ActiveProjectsSection setActiveTab={setActiveTab}/>
                                         </div>
                                         <CommunityHighlightsSection/>
                                     </TabsContent>
