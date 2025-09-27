@@ -123,7 +123,7 @@ export function RecentInternshipsSection({ userType, internships = [] }: RecentA
                                                                 console.error(err)
                                                             }
                                                         }}
-                                                        className="p-2 rounded-xl bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 transition-colors duration-200"
+                                                        className="p-2 rounded-xl cursor-pointer bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 transition-colors duration-200"
                                                     >
                                                         <Trash2 className="w-5 h-5 text-red-500" />
                                                     </motion.button>

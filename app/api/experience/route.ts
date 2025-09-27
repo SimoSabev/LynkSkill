@@ -8,6 +8,10 @@ const supabase = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
+type StudentExperience = Awaited<
+    ReturnType<typeof prisma.experience.findMany>
+>
+
 export async function POST(req: Request) {
     try {
         const { userId } = await auth()
@@ -89,7 +93,7 @@ export async function GET() {
         })
         if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 })
 
-        let experiences: any[] = []
+        let experiences: StudentExperience = []
 
         if (user.role === "STUDENT") {
             experiences = await prisma.experience.findMany({

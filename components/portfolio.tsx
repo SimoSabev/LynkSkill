@@ -71,6 +71,13 @@ interface Certification {
   attachments?: FileAttachment[]
 }
 
+type PortfolioSections = {
+  education: Education
+  projects: Project
+  certifications: Certification
+}
+
+
 interface PortfolioData {
   fullName?: string
   headline?: string
@@ -170,9 +177,11 @@ export function Portfolio({ userType }: { userType: "Student" | "Company" }) {
 
   const { user } = useUser()
 
-  const handleFileUpload = async (
+  const handleFileUpload = async <
+      T extends keyof PortfolioSections
+  >(
       files: File[],
-      section: "education" | "projects" | "certifications",
+      section: T,
       index: number,
   ) => {
     const uploadedFiles: FileAttachment[] = []
@@ -203,17 +212,20 @@ export function Portfolio({ userType }: { userType: "Student" | "Company" }) {
       }
     }
 
-    // Update portfolio with new attachments
+    // ✅ No more any[]
     setPortfolio((prev) => {
       if (!prev) return prev
 
       const updated = { ...prev }
-      const sectionData = updated[section] as any[]
+      const sectionData = updated[section] as PortfolioSections[T][]
 
       if (sectionData[index]) {
         sectionData[index] = {
           ...sectionData[index],
-          attachments: [...(sectionData[index].attachments || []), ...uploadedFiles],
+          attachments: [
+            ...(sectionData[index].attachments || []),
+            ...uploadedFiles,
+          ],
         }
       }
 
@@ -221,14 +233,21 @@ export function Portfolio({ userType }: { userType: "Student" | "Company" }) {
     })
   }
 
-  const handleFileRemove = (section: "education" | "projects" | "certifications", index: number, fileId: string) => {
+
+  const handleFileRemove = <
+      T extends keyof PortfolioSections
+  >(
+      section: T,
+      index: number,
+      fileId: string,
+  ) => {
     setPortfolio((prev) => {
       if (!prev) return prev
 
       const updated = { ...prev }
-      const sectionData = updated[section] as any[]
+      const sectionData = updated[section] as PortfolioSections[T][]
 
-      if (sectionData[index] && sectionData[index].attachments) {
+      if (sectionData[index]?.attachments) {
         sectionData[index].attachments = sectionData[index].attachments.filter(
             (file: FileAttachment) => file.id !== fileId,
         )
@@ -237,6 +256,7 @@ export function Portfolio({ userType }: { userType: "Student" | "Company" }) {
       return updated
     })
   }
+
 
   useEffect(() => {
     async function fetchPortfolio() {
