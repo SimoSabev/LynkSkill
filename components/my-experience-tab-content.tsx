@@ -1,9 +1,8 @@
 "use client"
 
 import type React from "react"
-
-import { motion } from "framer-motion"
 import { useEffect, useState } from "react"
+import { motion } from "framer-motion"
 import { useUser } from "@clerk/nextjs"
 import {
   Upload,
@@ -26,6 +25,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
+import { StudentSummary } from "@/components/student-summary"
 
 type Experience = {
   id: string
@@ -34,21 +34,17 @@ type Experience = {
   grade: number | null
   createdAt: string
   updatedAt: string
-  student?: {
-    id: string
-    email: string
-  }
-  company?: {
-    id: string
-    name: string
-    logo: string | null
-  }
+  student?: { id: string; email: string }
+  company?: { id: string; name: string; logo: string | null }
 }
 
-type Company = {
-  id: string
-  name: string
-  logo: string | null
+type Company = { id: string; name: string; logo: string | null }
+
+type Summary = {
+  totalPoints: number
+  avgGrade: number
+  uniqueCompanies: number
+  allRound: number
 }
 
 export default function ExperienceTabContent() {
@@ -56,6 +52,7 @@ export default function ExperienceTabContent() {
   const role = user?.publicMetadata?.role as "STUDENT" | "COMPANY" | undefined
 
   const [experiences, setExperiences] = useState<Experience[]>([])
+  const [summary, setSummary] = useState<Summary | null>(null)
   const [companies, setCompanies] = useState<Company[]>([])
   const [loading, setLoading] = useState(false)
   const [files, setFiles] = useState<FileList | null>(null)
@@ -63,7 +60,7 @@ export default function ExperienceTabContent() {
   const [dragActive, setDragActive] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
 
-  // Fetch experiences
+  // ✅ Fetch experiences + summary
   useEffect(() => {
     if (!role) return
     const fetchExperiences = async () => {
@@ -71,15 +68,24 @@ export default function ExperienceTabContent() {
         const res = await fetch("/api/experience")
         if (!res.ok) throw new Error("Failed to load experiences")
         const data = await res.json()
-        setExperiences(data)
+
+        if (Array.isArray(data)) {
+          setExperiences(data)
+          setSummary(null)
+        } else {
+          setExperiences(Array.isArray(data.experiences) ? data.experiences : [])
+          setSummary(data.summary || null)
+        }
       } catch (err) {
         console.error(err)
+        setExperiences([])
+        setSummary(null)
       }
     }
     fetchExperiences()
   }, [role])
 
-  // Fetch companies (only for students)
+  // ✅ Fetch companies (only for students)
   useEffect(() => {
     if (role !== "STUDENT") return
     const fetchCompanies = async () => {
@@ -95,6 +101,7 @@ export default function ExperienceTabContent() {
     fetchCompanies()
   }, [role])
 
+  // drag + file upload helpers …
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
@@ -109,8 +116,7 @@ export default function ExperienceTabContent() {
     e.preventDefault()
     e.stopPropagation()
     setDragActive(false)
-
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+    if (e.dataTransfer.files?.[0]) {
       setFiles(e.dataTransfer.files)
     }
   }
@@ -131,12 +137,11 @@ export default function ExperienceTabContent() {
     }
   }
 
-  // Student upload handler
+  // ✅ Upload (student)
   const handleUpload = async () => {
     if (!files || !companyId) return alert("Please select company and files")
     setLoading(true)
     setUploadProgress(0)
-
     try {
       const formData = new FormData()
       formData.append("companyId", companyId)
@@ -146,10 +151,7 @@ export default function ExperienceTabContent() {
         setUploadProgress((prev) => Math.min(prev + 10, 90))
       }, 200)
 
-      const res = await fetch("/api/experience", {
-        method: "POST",
-        body: formData,
-      })
+      const res = await fetch("/api/experience", { method: "POST", body: formData })
 
       clearInterval(progressInterval)
       setUploadProgress(100)
@@ -169,7 +171,7 @@ export default function ExperienceTabContent() {
     }
   }
 
-  // Company approval handler
+  // ✅ Approve/reject (company)
   const handleAction = async (id: string, action: "approve" | "reject") => {
     try {
       const res = await fetch(`/api/experience/${id}`, {
@@ -202,14 +204,11 @@ export default function ExperienceTabContent() {
     }
   }
 
-  const getFileIcon = (url: string) => {
-    if (url.includes(".mp4") || url.includes(".mov") || url.includes(".avi")) {
-      return <FileVideo className="h-4 w-4" />
-    }
-    return <FileImage className="h-4 w-4" />
-  }
+  const getFileIcon = (url: string) =>
+      url.match(/\.(mp4|mov|avi)$/i) ? <FileVideo className="h-4 w-4" /> : <FileImage className="h-4 w-4" />
 
-  if (!role)
+  // ✅ Loading state
+  if (!role) {
     return (
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="flex items-center gap-2">
@@ -218,6 +217,7 @@ export default function ExperienceTabContent() {
           </div>
         </div>
     )
+  }
 
   return (
       <div className="space-y-8">
@@ -232,14 +232,18 @@ export default function ExperienceTabContent() {
             <div className="absolute inset-0 bg-black/10 backdrop-blur-sm" />
             <div className="relative z-10 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div className="space-y-2">
-                <h2 className="text-3xl font-bold text-balance">
+                <h2 className="text-3xl font-bold">
                   {role === "STUDENT" ? "Share Your Experience" : "Review Student Experiences"}
                 </h2>
-                <p className="max-w-[600px] text-white/90 text-pretty">
+                <p className="max-w-[600px] text-white/90">
                   {role === "STUDENT"
                       ? "Upload and showcase your professional experiences, projects, and achievements with companies."
                       : "Review and evaluate student submissions, providing valuable feedback on their professional experiences."}
                 </p>
+                {/* Student summary only visible if role === "STUDENT" and summary exists */}
+                {summary && role === "STUDENT" && (
+                    <StudentSummary summary={summary} />
+                )}
               </div>
               <div className="flex items-center gap-4 text-white/80">
                 <div className="flex items-center gap-2">
