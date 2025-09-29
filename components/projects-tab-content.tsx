@@ -1,12 +1,14 @@
-/// components/projects-tab-content.tsx
 "use client"
+
+import type React from "react"
 
 import { useEffect, useState, useCallback } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { RefreshCw } from "lucide-react"
+import { RefreshCw, Plus, Search, Users, FileText, Clock, Layers,  } from "lucide-react"
+import { Input } from "@/components/ui/input"
 
 type ApiProject = {
   id: string
@@ -22,6 +24,8 @@ export function ProjectsTabContent() {
   const [error, setError] = useState<string | null>(null)
   const [selected, setSelected] = useState<ApiProject | null>(null)
   const [refreshing, setRefreshing] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [filter, setFilter] = useState<"all" | "recent">("all")
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -39,7 +43,6 @@ export function ProjectsTabContent() {
           setProjects(parsed)
         }
       } catch (parseErr) {
-        // text wasn't JSON array — show for debugging
         console.error("Failed to parse /api/projects response as JSON array:", parseErr, "raw:", text)
         setError("Invalid API response")
         setProjects([])
@@ -63,340 +66,263 @@ export function ProjectsTabContent() {
     setRefreshing(false)
   }
 
-  return (
-      <div className="p-6">
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Projects</h1>
-            <p className="text-sm text-muted-foreground">Projects created from approved applications.</p>
-          </div>
+  const filteredProjects = projects.filter(
+      (project) =>
+          project.internship.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          project.internship.company?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          project.student?.name?.toLowerCase().includes(searchQuery.toLowerCase()),
+  )
 
-          <div className="flex items-center gap-2">
-            <Button size="sm" variant="ghost" onClick={handleRefresh} disabled={refreshing || loading}>
-              <RefreshCw className="mr-2 h-4 w-4" />
-              {refreshing ? "Refreshing..." : "Refresh"}
-            </Button>
+  const now = Date.now()
+  const finalProjects =
+      filter === "recent"
+          ? filteredProjects.filter((p) => {
+            const createdAt = new Date(p.createdAt).getTime()
+            const diffDays = (now - createdAt) / (1000 * 60 * 60 * 24)
+            return diffDays <= 5
+          })
+          : filteredProjects
+
+
+  return (
+      <div className="space-y-8">
+        {/*<section>*/}
+        {/*  <div className="overflow-hidden rounded-3xl p-8 text-white relative">*/}
+        {/*    <div*/}
+        {/*        className="absolute inset-0 opacity-90"*/}
+        {/*        style={{*/}
+        {/*          background: `linear-gradient(135deg, var(--projects-hero-from), var(--projects-hero-to))`,*/}
+        {/*        }}*/}
+        {/*    />*/}
+        {/*    <div className="relative z-10 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">*/}
+        {/*      <div className="space-y-2">*/}
+        {/*        <h1 className="text-3xl font-bold text-balance">Project Management</h1>*/}
+        {/*        <p className="max-w-[600px] text-white/90 text-pretty">*/}
+        {/*          Organize and track your internship projects. Monitor progress and collaborate with your team.*/}
+        {/*        </p>*/}
+        {/*      </div>*/}
+        {/*      <Button className="w-fit rounded-2xl bg-white/10 backdrop-blur-sm text-white border border-white/20 hover:bg-white/20 transition-all duration-300">*/}
+        {/*        <Plus className="mr-2 h-4 w-4" />*/}
+        {/*        New Project*/}
+        {/*      </Button>*/}
+        {/*    </div>*/}
+        {/*  </div>*/}
+        {/*</section>*/}
+
+        <div className="flex flex-wrap gap-3 mb-6">
+          <Button
+              variant={filter === "all" ? "default" : "outline"}
+              className="rounded-2xl"
+              onClick={() => setFilter("all")}
+          >
+            <Layers className="mr-2 h-4 w-4" />
+            All Projects
+          </Button>
+
+          <Button
+              variant={filter === "recent" ? "default" : "outline"}
+              className="rounded-2xl"
+              onClick={() => setFilter("recent")}
+          >
+            <Clock className="mr-2 h-4 w-4" />
+            Recent
+          </Button>
+          {/*<Button*/}
+          {/*    variant="outline"*/}
+          {/*    className="rounded-2xl bg-transparent border-2 hover:border-[var(--projects-accent)] hover:text-[var(--projects-accent)] transition-colors"*/}
+          {/*>*/}
+          {/*  <Users className="mr-2 h-4 w-4" />*/}
+          {/*  Shared*/}
+          {/*</Button>*/}
+          {/*<Button*/}
+          {/*    variant="outline"*/}
+          {/*    className="rounded-2xl bg-transparent border-2 hover:border-[var(--projects-accent)] hover:text-[var(--projects-accent)] transition-colors"*/}
+          {/*>*/}
+          {/*  <Archive className="mr-2 h-4 w-4" />*/}
+          {/*  Archived*/}
+          {/*</Button>*/}
+          <div className="flex-1"></div>
+          <div className="relative w-full md:w-auto mt-3 md:mt-0">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <Input
+                type="search"
+                placeholder="Search projects..."
+                className="w-full rounded-2xl pl-9 md:w-[250px] border-2 focus:border-[var(--projects-accent)] transition-colors"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
+          <Button
+              size="sm"
+              variant="ghost"
+              onClick={handleRefresh}
+              disabled={refreshing || loading}
+              className="rounded-2xl"
+          >
+            <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+            {refreshing ? "Refreshing..." : "Refresh"}
+          </Button>
         </div>
 
         {loading ? (
-            <div className="text-muted-foreground">Loading projects…</div>
-        ) : error ? (
-            <div className="text-destructive">Error: {error}</div>
-        ) : projects.length === 0 ? (
-            <div className="text-muted-foreground">No projects yet.</div>
-        ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {projects.map((proj) => (
-                  <Card
-                      key={proj.id}
-                      className="rounded-2xl shadow-md cursor-pointer hover:shadow-lg transition"
-                      onClick={() => setSelected(proj)}
-                  >
+              {Array.from({ length: 6 }).map((_, i) => (
+                  <Card key={i} className="rounded-3xl animate-pulse">
                     <CardHeader>
-                      <CardTitle className="line-clamp-2">{proj.internship.title}</CardTitle>
+                      <div className="h-6 bg-muted rounded w-3/4"></div>
                     </CardHeader>
-
-                    <CardContent className="space-y-2">
-                      <p className="text-sm text-muted-foreground">Company: {proj.internship.company?.name ?? "Unknown"}</p>
-                      <p className="text-sm">Student: {proj.student?.name ?? proj.student?.email ?? "Unknown"}</p>
-                      <div className="pt-2">
-                        <Badge variant={proj.status === "ONGOING" ? "secondary" : "default"}>{proj.status}</Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-2">Started {new Date(proj.createdAt).toLocaleDateString()}</p>
+                    <CardContent className="space-y-3">
+                      <div className="h-4 bg-muted rounded w-1/2"></div>
+                      <div className="h-4 bg-muted rounded w-2/3"></div>
+                      <div className="h-6 bg-muted rounded w-20"></div>
+                      <div className="h-3 bg-muted rounded w-1/3"></div>
                     </CardContent>
                   </Card>
               ))}
             </div>
+        ) : error ? (
+            <div className="text-center py-12">
+              <div className="text-destructive text-lg font-medium">Error: {error}</div>
+              <Button onClick={handleRefresh} className="mt-4 rounded-2xl">
+                Try Again
+              </Button>
+            </div>
+        ) : filteredProjects.length === 0 ? (
+            <div className="text-center py-12">
+              {searchQuery ? (
+                  <div>
+                    <div className="text-muted-foreground text-lg">No projects match your search.</div>
+                    <Button onClick={() => setSearchQuery("")} variant="outline" className="mt-4 rounded-2xl">
+                      Clear Search
+                    </Button>
+                  </div>
+              ) : (
+                  <div>
+                    <div className="text-muted-foreground text-lg">No projects yet.</div>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Projects will appear here once applications are approved.
+                    </p>
+                  </div>
+              )}
+            </div>
+        ) : (
+            <section className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-semibold">
+                  {searchQuery
+                      ? `Search Results (${filteredProjects.length})`
+                      : `Active Projects (${filteredProjects.length})`}
+                </h2>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {finalProjects.map((proj) => (
+                    <Card
+                        key={proj.id}
+                        className="group rounded-3xl shadow-sm cursor-pointer border-2 hover:shadow-xl transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 overflow-hidden relative"
+                        onClick={() => setSelected(proj)}
+                        style={
+                          {
+                            "--hover-gradient-from": "var(--projects-card-hover-from)",
+                            "--hover-gradient-to": "var(--projects-card-hover-to)",
+                          } as React.CSSProperties
+                        }
+                    >
+                      <div className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-300 bg-gradient-to-br from-[var(--projects-card-hover-from)] to-[var(--projects-card-hover-to)]" />
+
+                      <CardHeader className="relative z-10">
+                        <div className="flex items-start justify-between gap-2">
+                          <CardTitle className="line-clamp-2 text-lg group-hover:text-[var(--projects-accent)] transition-colors">
+                            {proj.internship.title}
+                          </CardTitle>
+                          <Badge
+                              variant={proj.status === "ONGOING" ? "secondary" : "default"}
+                              className="rounded-xl shrink-0 group-hover:scale-105 transition-transform"
+                          >
+                            {proj.status}
+                          </Badge>
+                        </div>
+                      </CardHeader>
+
+                      <CardContent className="space-y-3 relative z-10">
+                        <div className="space-y-2">
+                          <div className="flex items-center text-sm text-muted-foreground">
+                            <div className="w-2 h-2 rounded-full bg-[var(--projects-accent)] mr-2 opacity-60"></div>
+                            <span className="font-medium">Company:</span>
+                            <span className="ml-1">{proj.internship.company?.name ?? "Unknown"}</span>
+                          </div>
+                          <div className="flex items-center text-sm">
+                            <Users className="w-4 h-4 mr-2 text-muted-foreground" />
+                            <span className="font-medium text-muted-foreground">Student:</span>
+                            <span className="ml-1 truncate">{proj.student?.name ?? proj.student?.email ?? "Unknown"}</span>
+                          </div>
+                        </div>
+
+                        <div className="pt-2 border-t border-border/50">
+                          <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <div className="flex items-center">
+                              <Clock className="w-3 h-3 mr-1" />
+                              Started {new Date(proj.createdAt).toLocaleDateString()}
+                            </div>
+                            <div className="flex items-center">
+                              <FileText className="w-3 h-3 mr-1" />
+                              View Details
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                ))}
+              </div>
+            </section>
         )}
 
-        {/* Details modal */}
         <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
-          <DialogContent>
+          <DialogContent className="rounded-3xl max-w-md">
             <DialogHeader>
-              <DialogTitle>Project Details</DialogTitle>
+              <DialogTitle className="text-xl font-bold text-[var(--projects-accent)]">Project Details</DialogTitle>
             </DialogHeader>
 
             {selected && (
-                <div className="space-y-3">
-                  <div>
-                    <div className="text-sm font-medium text-muted-foreground">Internship</div>
-                    <div className="text-lg font-semibold">{selected.internship.title}</div>
+                <div className="space-y-4">
+                  <div className="p-4 rounded-2xl bg-gradient-to-br from-[var(--projects-card-hover-from)]/10 to-[var(--projects-card-hover-to)]/10 border border-[var(--projects-accent)]/20">
+                    <div className="text-sm font-medium text-muted-foreground mb-1">Internship</div>
+                    <div className="text-lg font-semibold text-balance">{selected.internship.title}</div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <div className="text-sm font-medium text-muted-foreground mb-1">Company</div>
+                      <div className="font-medium">{selected.internship.company?.name ?? "Unknown"}</div>
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-muted-foreground mb-1">Status</div>
+                      <Badge variant={selected.status === "ONGOING" ? "secondary" : "default"} className="rounded-xl">
+                        {selected.status}
+                      </Badge>
+                    </div>
                   </div>
 
                   <div>
-                    <div className="text-sm font-medium text-muted-foreground">Company</div>
-                    <div>{selected.internship.company?.name ?? "Unknown"}</div>
+                    <div className="text-sm font-medium text-muted-foreground mb-1">Student</div>
+                    <div className="font-medium">{selected.student?.name ?? selected.student?.email ?? "Unknown"}</div>
+                    <div className="text-sm text-muted-foreground">{selected.student.email}</div>
                   </div>
 
                   <div>
-                    <div className="text-sm font-medium text-muted-foreground">Student</div>
-                    <div>{selected.student?.name ?? selected.student?.email ?? "Unknown"}</div>
-                    <div className="text-xs text-muted-foreground">{selected.student.email}</div>
-                  </div>
-
-                  <div>
-                    <div className="text-sm font-medium text-muted-foreground">Status</div>
-                    <Badge>{selected.status}</Badge>
-                  </div>
-
-                  <div>
-                    <div className="text-sm font-medium text-muted-foreground">Started</div>
-                    <div>{new Date(selected.createdAt).toLocaleString()}</div>
+                    <div className="text-sm font-medium text-muted-foreground mb-1">Started</div>
+                    <div className="font-medium">{new Date(selected.createdAt).toLocaleString()}</div>
                   </div>
                 </div>
             )}
 
             <DialogFooter>
-              <Button onClick={() => setSelected(null)}>Close</Button>
+              <Button onClick={() => setSelected(null)} className="rounded-2xl">
+                Close
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
   )
 }
-
-
-
-
-
-
-
-
-
-
-// "use client"
-//
-// import { motion } from "framer-motion"
-// import { useEffect, useState } from "react"
-// import { Archive, Clock, FileText, Layers, Plus, Search, Share2, Users } from "lucide-react"
-//
-// import { Badge } from "@/components/ui/badge"
-// import { Button } from "@/components/ui/button"
-// import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-// import { Input } from "@/components/ui/input"
-// import { Progress } from "@/components/ui/progress"
-// import { projects } from "@/lib/dashboard-data"
-// import { ProjectCardSkeleton } from "@/components/card-skeleton"
-// import { HeroSkeleton } from "@/components/hero-skeleton"
-//
-// export function ProjectsTabContent() {
-//   const [isLoading, setIsLoading] = useState(true)
-//
-//   useEffect(() => {
-//     const timer = setTimeout(() => {
-//       setIsLoading(false)
-//     }, 2200)
-//
-//     return () => clearTimeout(timer)
-//   }, [])
-//
-//   if (isLoading) {
-//     return (
-//       <div className="space-y-8">
-//         <HeroSkeleton />
-//         <div className="flex flex-wrap gap-3 mb-6">
-//           {Array.from({ length: 4 }).map((_, i) => (
-//             <div key={i} className="h-10 w-24 bg-muted rounded-2xl animate-pulse" />
-//           ))}
-//           <div className="flex-1" />
-//           <div className="h-10 w-48 bg-muted rounded-2xl animate-pulse" />
-//         </div>
-//         <section className="space-y-4">
-//           <div className="h-8 w-48 bg-muted rounded animate-pulse" />
-//           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-//             {Array.from({ length: 4 }).map((_, i) => (
-//               <ProjectCardSkeleton key={i} />
-//             ))}
-//           </div>
-//         </section>
-//         <section className="space-y-4">
-//           <div className="h-8 w-48 bg-muted rounded animate-pulse" />
-//           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-//             {Array.from({ length: 4 }).map((_, i) => (
-//               <div key={i} className="overflow-hidden rounded-3xl">
-//                 <div className="aspect-video bg-muted animate-pulse" />
-//                 <div className="p-4 space-y-2">
-//                   <div className="h-6 w-20 bg-muted rounded-xl animate-pulse" />
-//                   <div className="h-8 w-24 bg-muted rounded-xl animate-pulse" />
-//                 </div>
-//               </div>
-//             ))}
-//           </div>
-//         </section>
-//       </div>
-//     )
-//   }
-//
-//   return (
-//     <div className="space-y-8">
-//       <section>
-//         <motion.div
-//           initial={{ opacity: 0, y: 20 }}
-//           animate={{ opacity: 1, y: 0 }}
-//           transition={{ duration: 0.5 }}
-//           className="overflow-hidden rounded-3xl bg-gradient-to-r from-purple-600 via-violet-600 to-indigo-600 p-8 text-white"
-//         >
-//           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-//             <div className="space-y-2">
-//               <h2 className="text-3xl font-bold">Project Management</h2>
-//               <p className="max-w-[600px] text-white/80">
-//                 Organize your creative work into projects and collaborate with your team.
-//               </p>
-//             </div>
-//             <Button className="w-fit rounded-2xl bg-white text-indigo-700 hover:bg-white/90">
-//               <Plus className="mr-2 h-4 w-4" />
-//               New Project
-//             </Button>
-//           </div>
-//         </motion.div>
-//       </section>
-//
-//       <div className="flex flex-wrap gap-3 mb-6">
-//         <Button variant="outline" className="rounded-2xl bg-transparent">
-//           <Layers className="mr-2 h-4 w-4" />
-//           All Projects
-//         </Button>
-//         <Button variant="outline" className="rounded-2xl bg-transparent">
-//           <Clock className="mr-2 h-4 w-4" />
-//           Recent
-//         </Button>
-//         <Button variant="outline" className="rounded-2xl bg-transparent">
-//           <Users className="mr-2 h-4 w-4" />
-//           Shared
-//         </Button>
-//         <Button variant="outline" className="rounded-2xl bg-transparent">
-//           <Archive className="mr-2 h-4 w-4" />
-//           Archived
-//         </Button>
-//         <div className="flex-1"></div>
-//         <div className="relative w-full md:w-auto mt-3 md:mt-0">
-//           <Search className="absolute left-3 top-3 h-4 w-4 text-foreground" />
-//           <Input type="search" placeholder="Search projects..." className="w-full rounded-2xl pl-9 md:w-[200px]" />
-//         </div>
-//       </div>
-//
-//       <section className="space-y-4">
-//         <h2 className="text-2xl font-semibold">Active Projects</h2>
-//         <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-//           {projects.map((project) => (
-//             <motion.div key={project.name} whileHover={{ scale: 1.02, y: -5 }} whileTap={{ scale: 0.98 }}>
-//               <Card className="overflow-hidden rounded-3xl border hover:border-primary/50 transition-all duration-300">
-//                 <CardHeader>
-//                   <div className="flex items-center justify-between">
-//                     <CardTitle>{project.name}</CardTitle>
-//                     <Badge variant="outline" className="rounded-xl">
-//                       Due {project.dueDate}
-//                     </Badge>
-//                   </div>
-//                   <CardDescription>{project.description}</CardDescription>
-//                 </CardHeader>
-//                 <CardContent className="space-y-4">
-//                   <div className="space-y-2">
-//                     <div className="flex items-center justify-between text-sm">
-//                       <span>Progress</span>
-//                       <span>{project.progress}%</span>
-//                     </div>
-//                     <Progress value={project.progress} className="h-2 rounded-xl" />
-//                   </div>
-//                   <div className="flex items-center justify-between text-sm text-foreground">
-//                     <div className="flex items-center">
-//                       <Users className="mr-1 h-4 w-4" />
-//                       {project.members} members
-//                     </div>
-//                     <div className="flex items-center">
-//                       <FileText className="mr-1 h-4 w-4" />
-//                       {project.files} files
-//                     </div>
-//                   </div>
-//                 </CardContent>
-//                 <CardFooter className="flex gap-2">
-//                   <Button variant="secondary" className="flex-1 rounded-2xl">
-//                     Open Project
-//                   </Button>
-//                   <Button variant="outline" size="icon" className="rounded-2xl bg-transparent">
-//                     <Share2 className="h-4 w-4" />
-//                   </Button>
-//                 </CardFooter>
-//               </Card>
-//             </motion.div>
-//           ))}
-//           <motion.div whileHover={{ scale: 1.02, y: -5 }} whileTap={{ scale: 0.98 }}>
-//             <Card className="flex h-full flex-col items-center justify-center rounded-3xl border border-dashed p-8 hover:border-primary/50 transition-all duration-300">
-//               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-//                 <Plus className="h-6 w-6" />
-//               </div>
-//               <h3 className="text-lg font-medium">Create New Project</h3>
-//               <p className="mb-4 text-center text-sm text-foreground">
-//                 Start a new creative project from scratch or use a template
-//               </p>
-//               <Button className="rounded-2xl">New Project</Button>
-//             </Card>
-//           </motion.div>
-//         </div>
-//       </section>
-//
-//       <section className="space-y-4">
-//         <h2 className="text-2xl font-semibold">Project Templates</h2>
-//         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-//           <Card className="overflow-hidden rounded-3xl">
-//             <div className="aspect-video bg-gradient-to-br from-blue-500 to-purple-600 p-6 text-white">
-//               <h3 className="text-lg font-medium">Brand Identity</h3>
-//               <p className="text-sm text-white/80">Complete brand design package</p>
-//             </div>
-//             <CardFooter className="flex justify-between p-4">
-//               <Badge variant="outline" className="rounded-xl">
-//                 Popular
-//               </Badge>
-//               <Button variant="ghost" size="sm" className="rounded-xl">
-//                 Use Template
-//               </Button>
-//             </CardFooter>
-//           </Card>
-//           <Card className="overflow-hidden rounded-3xl">
-//             <div className="aspect-video bg-gradient-to-br from-amber-500 to-red-600 p-6 text-white">
-//               <h3 className="text-lg font-medium">Marketing Campaign</h3>
-//               <p className="text-sm text-white/80">Multi-channel marketing assets</p>
-//             </div>
-//             <CardFooter className="flex justify-between p-4">
-//               <Badge variant="outline" className="rounded-xl">
-//                 New
-//               </Badge>
-//               <Button variant="ghost" size="sm" className="rounded-xl">
-//                 Use Template
-//               </Button>
-//             </CardFooter>
-//           </Card>
-//           <Card className="overflow-hidden rounded-3xl">
-//             <div className="aspect-video bg-gradient-to-br from-green-500 to-teal-600 p-6 text-white">
-//               <h3 className="text-lg font-medium">Website Redesign</h3>
-//               <p className="text-sm text-white/80">Complete website design workflow</p>
-//             </div>
-//             <CardFooter className="flex justify-between p-4">
-//               <Badge variant="outline" className="rounded-xl">
-//                 Featured
-//               </Badge>
-//               <Button variant="ghost" size="sm" className="rounded-xl">
-//                 Use Template
-//               </Button>
-//             </CardFooter>
-//           </Card>
-//           <Card className="overflow-hidden rounded-3xl">
-//             <div className="aspect-video bg-gradient-to-br from-pink-500 to-rose-600 p-6 text-white">
-//               <h3 className="text-lg font-medium">Product Launch</h3>
-//               <p className="text-sm text-white/80">Product launch campaign assets</p>
-//             </div>
-//             <CardFooter className="flex justify-between p-4">
-//               <Badge variant="outline" className="rounded-xl">
-//                 Popular
-//               </Badge>
-//               <Button variant="ghost" size="sm" className="rounded-xl">
-//                 Use Template
-//               </Button>
-//             </CardFooter>
-//           </Card>
-//         </div>
-//       </section>
-//     </div>
-//   )
-// }
