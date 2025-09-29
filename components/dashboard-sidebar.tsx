@@ -57,7 +57,7 @@ export function DashboardSidebar({
                             {userType === "Company" ? companyName ?? "Loading..." : "Student"}
                         </h2>
                         <p className="text-xs text-foreground">
-                            {userType === "Company" ? "Company Dashboard" : "Creative Suite"}
+                            {userType === "Company" ? "Company Dashboard" : "Student Dashboard"}
                         </p>
                     </div>
                 </div>
@@ -82,7 +82,7 @@ export function DashboardSidebar({
                         <button
                             key={item.title}
                             onClick={() => setActiveTab(item.value)} // 👈 switch active tab
-                            className="flex w-full items-center justify-between rounded-2xl px-3 py-2 text-sm hover:bg-muted"
+                            className="flex w-full cursor-pointer items-center justify-between rounded-2xl px-3 py-2 text-sm hover:bg-muted"
                         >
                             <div className="flex items-center gap-2">
                                 {item.icon}

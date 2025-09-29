@@ -189,7 +189,11 @@ export function CommunityHighlights({setActiveTab}: CommunityHighlightsProps) {
                                                 size="sm"
                                                 variant="ghost"
                                                 className="h-8 w-8 p-0 text-white hover:bg-white/20"
-                                                onClick={() => handleDownloadClick(file)}
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    handleDownloadClick(file);
+                                                }}
                                             >
                                                 <Download className="h-4 w-4"/>
                                             </Button>
