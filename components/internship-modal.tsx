@@ -176,10 +176,9 @@ export function InternshipModal({ open, onClose, onCreate }: InternshipModalProp
         <Dialog open={open} onOpenChange={onClose}>
             {/* keep content mounted so dialog open/close doesn't unmount */}
             <DialogContent forceMount className="max-w-2xl rounded-2xl border-0 bg-gradient-to-br from-[color:var(--internship-modal-gradient-from)] to-[color:var(--internship-modal-gradient-to)] p-0 shadow-2xl">
-                <div className="relative overflow-hidden rounded-t-2xl bg-gradient-to-r from-[color:var(--internship-modal-gradient-from)] to-[color:var(--internship-modal-gradient-to)] px-8 py-6">
-                    <div className="absolute inset-0 bg-black/10 backdrop-blur-sm" />
+                <div className="relative overflow-hidden rounded-t-2xl h-full bg-gradient-to-r from-[color:var(--internship-modal-gradient-from)] to-[color:var(--internship-modal-gradient-to)] px-8 py-6">
                     <DialogHeader className="relative">
-                        <DialogTitle className="flex items-center gap-3 text-2xl font-bold text-white">
+                        <DialogTitle className="flex items-center gap-2 text-2xl font-bold text-white">
                             <div className="rounded-full bg-white/20 p-2 backdrop-blur-sm">
                                 <Briefcase className="h-6 w-6" />
                             </div>
