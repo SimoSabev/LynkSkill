@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { RefreshCw, Plus, Search, Users, FileText, Clock, Layers,  } from "lucide-react"
+import { RefreshCw, Search, Users, FileText, Clock, Layers } from "lucide-react"
 import { Input } from "@/components/ui/input"
 
 type ApiProject = {
@@ -82,7 +82,6 @@ export function ProjectsTabContent() {
             return diffDays <= 5
           })
           : filteredProjects
-
 
   return (
       <div className="space-y-8">
@@ -219,25 +218,33 @@ export function ProjectsTabContent() {
                 {finalProjects.map((proj) => (
                     <Card
                         key={proj.id}
-                        className="group rounded-3xl shadow-sm cursor-pointer border-2 hover:shadow-xl transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 overflow-hidden relative"
+                        className="group rounded-3xl cursor-pointer border-2 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 overflow-hidden relative"
                         onClick={() => setSelected(proj)}
                         style={
                           {
-                            "--hover-gradient-from": "var(--projects-card-hover-from)",
-                            "--hover-gradient-to": "var(--projects-card-hover-to)",
+                            background: `linear-gradient(135deg, var(--internship-card-gradient-from), var(--internship-card-gradient-to))`,
+                            borderColor: `var(--internship-card-border)`,
+                            boxShadow: `0 4px 12px var(--internship-card-shadow)`,
                           } as React.CSSProperties
                         }
                     >
-                      <div className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-300 bg-gradient-to-br from-[var(--projects-card-hover-from)] to-[var(--projects-card-hover-to)]" />
+                      <div
+                          className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                          style={{
+                            background: `linear-gradient(135deg, var(--internship-card-hover-from), var(--internship-card-hover-to))`,
+                          }}
+                      />
+
+                      <div className="absolute inset-0 opacity-0 group-hover:opacity-5 transition-opacity duration-300 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.1)_0%,transparent_50%)]" />
 
                       <CardHeader className="relative z-10">
                         <div className="flex items-start justify-between gap-2">
-                          <CardTitle className="line-clamp-2 text-lg group-hover:text-[var(--projects-accent)] transition-colors">
+                          <CardTitle className="line-clamp-2 text-lg group-hover:text-white transition-colors duration-300">
                             {proj.internship.title}
                           </CardTitle>
                           <Badge
                               variant={proj.status === "ONGOING" ? "secondary" : "default"}
-                              className="rounded-xl shrink-0 group-hover:scale-105 transition-transform"
+                              className="rounded-xl shrink-0 group-hover:scale-105 transition-transform group-hover:bg-white/20 group-hover:text-white group-hover:border-white/30"
                           >
                             {proj.status}
                           </Badge>
@@ -246,20 +253,23 @@ export function ProjectsTabContent() {
 
                       <CardContent className="space-y-3 relative z-10">
                         <div className="space-y-2">
-                          <div className="flex items-center text-sm text-muted-foreground">
-                            <div className="w-2 h-2 rounded-full bg-[var(--projects-accent)] mr-2 opacity-60"></div>
+                          <div className="flex items-center text-sm group-hover:text-white/90 transition-colors duration-300">
+                            <div
+                                className="w-2 h-2 rounded-full mr-2 group-hover:bg-white/80 transition-colors duration-300"
+                                style={{ backgroundColor: `var(--internship-card-hover-from)` }}
+                            ></div>
                             <span className="font-medium">Company:</span>
                             <span className="ml-1">{proj.internship.company?.name ?? "Unknown"}</span>
                           </div>
-                          <div className="flex items-center text-sm">
-                            <Users className="w-4 h-4 mr-2 text-muted-foreground" />
-                            <span className="font-medium text-muted-foreground">Student:</span>
+                          <div className="flex items-center text-sm group-hover:text-white/90 transition-colors duration-300">
+                            <Users className="w-4 h-4 mr-2 group-hover:text-white/70 transition-colors duration-300" />
+                            <span className="font-medium">Student:</span>
                             <span className="ml-1 truncate">{proj.student?.name ?? proj.student?.email ?? "Unknown"}</span>
                           </div>
                         </div>
 
-                        <div className="pt-2 border-t border-border/50">
-                          <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <div className="pt-2 border-t group-hover:border-white/20 transition-colors duration-300">
+                          <div className="flex items-center justify-between text-xs group-hover:text-white/80 transition-colors duration-300">
                             <div className="flex items-center">
                               <Clock className="w-3 h-3 mr-1" />
                               Started {new Date(proj.createdAt).toLocaleDateString()}
@@ -271,6 +281,13 @@ export function ProjectsTabContent() {
                           </div>
                         </div>
                       </CardContent>
+
+                      <div
+                          className="absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+                          style={{
+                            boxShadow: `0 20px 40px var(--internship-card-shadow-hover)`,
+                          }}
+                      />
                     </Card>
                 ))}
               </div>

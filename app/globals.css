@@ -127,7 +127,7 @@
   --internship-card-border-hover: oklch(54.1% 0.281 293.009);
   --internship-icon-background: oklch(0.97 0 0);
   --internship-status-pending: oklch(0.828 0.189 84.429);
-  --internship-status-approved: oklch(0.769 0.188 145);
+  --internship-status-approved: oklch(0.769 0.188 70.08);
   --internship-status-rejected: oklch(0.577 0.245 27.325);
 
   /* Experience component specific color variables */
@@ -272,5 +272,28 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  .project-card-enhanced {
+    background: linear-gradient(135deg, var(--internship-card-gradient-from), var(--internship-card-gradient-to));
+    border-color: var(--internship-card-border);
+    box-shadow: 0 4px 12px var(--internship-card-shadow);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .project-card-enhanced:hover {
+    border-color: var(--internship-card-border-hover);
+    box-shadow: 0 20px 40px var(--internship-card-shadow-hover);
+    transform: translateY(-4px) scale(1.02);
+  }
+
+  .project-card-enhanced:hover .project-card-content {
+    color: white;
+  }
+
+  .project-card-enhanced:hover .project-card-muted {
+    color: rgba(255, 255, 255, 0.8);
   }
 }
