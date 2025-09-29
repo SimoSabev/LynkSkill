@@ -129,8 +129,12 @@ export function ActiveProjectsSection({ setActiveTab }: ActiveProjectsSectionPro
                 </Card>
             ) : (
                 <div className="space-y-4">
-                    {projects.slice(0, 5).map((proj, index) => {
-                        const details = getProjectDetails(proj)
+                    {projects
+                        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) // newest first
+                        .slice(0, 3)
+                        .map((proj, index) => {
+
+                            const details = getProjectDetails(proj)
 
                         return (
                             <motion.div
