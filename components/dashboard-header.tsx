@@ -32,7 +32,7 @@ export function DashboardHeader({
         <PanelLeft className="h-5 w-5 text-foreground" />
       </Button>
       <div className="flex flex-1 items-center justify-between">
-        <h1 className="text-xl font-semibold text-foreground">LynkSkill's Dashboard</h1>
+        <h1 className="text-xl font-semibold text-foreground">LynkSkill&apos;s Dashboard</h1>
         <div className="flex items-center text-foreground gap-3">
           {/*<TooltipProvider>*/}
           {/*  <Tooltip>*/}
