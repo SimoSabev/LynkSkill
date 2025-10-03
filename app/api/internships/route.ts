@@ -56,10 +56,12 @@ export async function POST(req: Request) {
             qualifications: body.qualifications,
             paid: body.paid,
             salary: body.salary,
-            companyId: company.id, // using the first company's id
+            companyId: company.id,
             applicationStart: new Date(body.applicationStart),
             applicationEnd: new Date(body.applicationEnd),
-        }
+            startDate: body.startDate ? new Date(body.startDate) : null, // ✅
+            endDate: body.endDate ? new Date(body.endDate) : null,       // ✅
+        },
     });
 
     return NextResponse.json(internship)
@@ -84,7 +86,7 @@ export async function GET() {
             })
             : await prisma.internship.findMany({
                 orderBy: { createdAt: "desc" },
-                include: { company: true }, // 👈 for students, fetch company info too
+                include: { company: true },
             })
 
     return NextResponse.json(internships)
@@ -125,8 +127,10 @@ export async function PUT(req: Request) {
             qualifications: qualifications ?? null,
             paid,
             salary: paid ? salary : null,
+            startDate: body.startDate ? new Date(body.startDate) : null, // ✅
+            endDate: body.endDate ? new Date(body.endDate) : null,       // ✅
         },
-    })
+    });
 
     return NextResponse.json(updated)
 }

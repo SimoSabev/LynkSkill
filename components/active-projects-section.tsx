@@ -6,13 +6,17 @@ import { Clock, Building2, ArrowRight, Calendar, User, Target, CheckCircle2, Ale
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Progress } from "@/components/ui/progress"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 
 type ApiProject = {
     id: string
-    internship: { title: string; company: { name: string } }
+    internship: {
+        title: string
+        company: { name: string }
+        startDate: string | null
+        endDate: string | null
+    }
     student: { name: string; email: string }
     status: "ONGOING" | "COMPLETED"
     createdAt: string
@@ -44,6 +48,7 @@ export function ActiveProjectsSection({ setActiveTab }: ActiveProjectsSectionPro
                 setIsLoading(false)
             }
         }
+
         load()
     }, [])
 
@@ -59,18 +64,45 @@ export function ActiveProjectsSection({ setActiveTab }: ActiveProjectsSectionPro
     }
 
     const getProjectDetails = (proj: ApiProject) => {
-        const startDate = new Date(proj.createdAt)
-        const daysSinceStart = Math.floor((Date.now() - startDate.getTime()) / (1000 * 60 * 60 * 24))
-        const progress = proj.status === "COMPLETED" ? 100 : Math.min(Math.max(daysSinceStart * 2, 15), 85)
-        const estimatedDuration = proj.status === "COMPLETED" ? daysSinceStart : Math.max(90, daysSinceStart + 30)
-        const remainingDays = proj.status === "COMPLETED" ? 0 : Math.max(0, estimatedDuration - daysSinceStart)
+        const startDate = proj.internship.startDate ? new Date(proj.internship.startDate) : new Date(proj.createdAt)
+
+        const endDate = proj.internship.endDate ? new Date(proj.internship.endDate) : null
+        const now = new Date()
+
+        let progress = 0
+        let remainingDays: number | null = 0
+        let totalDays: number | null = 0
+
+        const daysSinceStart = Math.max(0, Math.floor((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)))
+
+        if (endDate) {
+            const start = startDate.getTime()
+            const end = endDate.getTime()
+            const nowTime = now.getTime()
+
+            // Calculate progress based on actual time elapsed (not just days)
+            progress = Math.min(100, Math.max(0, ((nowTime - start) / (end - start)) * 100))
+
+            // Calculate total and remaining days for display
+            totalDays = Math.max(1, Math.ceil((end - start) / (1000 * 60 * 60 * 24)))
+            remainingDays = Math.max(0, Math.ceil((end - nowTime) / (1000 * 60 * 60 * 24)))
+        } else {
+            // No end date → assume open-ended internship
+            totalDays = null
+            remainingDays = null
+            progress = 0 // could show "N/A" instead of progress bar
+        }
 
         return {
-            progress,
+            progress: parseFloat(progress.toFixed(2)),
             daysSinceStart,
             remainingDays,
-            estimatedDuration,
-            formattedStartDate: startDate.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+            totalDays,
+            formattedStartDate: startDate.toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+            }),
+            formattedEndDate: endDate ? endDate.toLocaleDateString("en-US", { month: "short", day: "numeric" }) : null,
         }
     }
 
@@ -133,102 +165,124 @@ export function ActiveProjectsSection({ setActiveTab }: ActiveProjectsSectionPro
                         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) // newest first
                         .slice(0, 3)
                         .map((proj, index) => {
-
                             const details = getProjectDetails(proj)
 
-                        return (
-                            <motion.div
-                                key={proj.id}
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ duration: 0.3, delay: index * 0.05 }}
-                                onClick={() => setActiveTab("projects")}
-                                className="cursor-pointer"
-                            >
-                                <Card className="hover:shadow-lg hover:shadow-[var(--application-shadow-light)] transition-all duration-300 group border-l-4 border-l-[var(--experience-accent)]">
-                                    <CardContent className="p-4">
-                                        <div className="space-y-4">
-                                            {/* Header Section */}
-                                            <div className="flex items-start gap-4">
-                                                <Avatar className="h-12 w-12 ring-2 ring-[var(--experience-accent)]/20">
-                                                    <AvatarFallback className="bg-gradient-to-br from-[var(--experience-accent)] to-[var(--experience-accent)]/80 text-white font-semibold">
-                                                        {proj.internship.company?.name?.charAt(0) || "?"}
-                                                    </AvatarFallback>
-                                                </Avatar>
+                            return (
+                                <motion.div
+                                    key={proj.id}
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ duration: 0.3, delay: index * 0.05 }}
+                                    onClick={() => setActiveTab("projects")}
+                                    className="cursor-pointer"
+                                >
+                                    <Card className="hover:shadow-lg hover:shadow-[var(--application-shadow-light)] transition-all duration-300 group border-l-4 border-l-[var(--experience-accent)]">
+                                        <CardContent className="p-4">
+                                            <div className="space-y-4">
+                                                {/* Header Section */}
+                                                <div className="flex items-start gap-4">
+                                                    <Avatar className="h-12 w-12 ring-2 ring-[var(--experience-accent)]/20">
+                                                        <AvatarFallback className="bg-gradient-to-br from-[var(--experience-accent)] to-[var(--experience-accent)]/80 text-white font-semibold">
+                                                            {proj.internship.company?.name?.charAt(0) || "?"}
+                                                        </AvatarFallback>
+                                                    </Avatar>
 
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="flex items-start justify-between mb-2">
-                                                        <div>
-                                                            <h4 className="font-semibold text-base group-hover:text-[var(--experience-accent)] transition-colors leading-tight">
-                                                                {proj.internship.title}
-                                                            </h4>
-                                                            <p className="text-sm text-muted-foreground font-medium">
-                                                                {proj.internship.company?.name || "Unknown Company"}
-                                                            </p>
-                                                        </div>
-                                                        <Badge className={`text-xs font-medium ${getStatusColor(proj.status)} shadow-sm`}>
-                                                            {proj.status === "ONGOING" ? (
-                                                                <AlertCircle className="h-3 w-3 mr-1" />
-                                                            ) : (
-                                                                <CheckCircle2 className="h-3 w-3 mr-1" />
-                                                            )}
-                                                            {proj.status}
-                                                        </Badge>
-                                                    </div>
-
-                                                    {/* Student Info */}
-                                                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
-                                                        <User className="h-4 w-4" />
-                                                        <span>{proj.student?.name || "Unknown Student"}</span>
-                                                        <span className="text-muted-foreground/60">•</span>
-                                                        <Calendar className="h-4 w-4" />
-                                                        <span>Started {details.formattedStartDate}</span>
-                                                    </div>
-
-                                                    {/* Progress Section */}
-                                                    <div className="space-y-3">
-                                                        <div className="flex items-center justify-between">
-                                                            <div className="flex items-center gap-2">
-                                                                <Target className="h-4 w-4 text-[var(--experience-accent)]" />
-                                                                <span className="text-sm font-medium">Progress</span>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-start justify-between mb-2">
+                                                            <div>
+                                                                <h4 className="font-semibold text-base group-hover:text-[var(--experience-accent)] transition-colors leading-tight">
+                                                                    {proj.internship.title}
+                                                                </h4>
+                                                                <p className="text-sm text-muted-foreground font-medium">
+                                                                    {proj.internship.company?.name || "Unknown Company"}
+                                                                </p>
                                                             </div>
-                                                            <span className="text-sm font-semibold text-[var(--experience-accent)]">
-                                                                {details.progress}%
-                                                              </span>
+                                                            <Badge className={`text-xs font-medium ${getStatusColor(proj.status)} shadow-sm`}>
+                                                                {proj.status === "ONGOING" ? (
+                                                                    <AlertCircle className="h-3 w-3 mr-1" />
+                                                                ) : (
+                                                                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                                                                )}
+                                                                {proj.status}
+                                                            </Badge>
                                                         </div>
 
-                                                        <div className="space-y-2">
-                                                            <Progress value={details.progress} className="h-2 bg-muted/50" />
+                                                        {/* Student Info */}
+                                                        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+                                                            <User className="h-4 w-4" />
+                                                            <span>{proj.student?.name || "Unknown Student"}</span>
+                                                            <span className="text-muted-foreground/60">•</span>
+                                                            <Calendar className="h-4 w-4" />
+                                                            <span>Started {details.formattedStartDate}</span>
+                                                        </div>
 
-                                                            {/* Detailed Stats */}
-                                                            <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                                                                                <div className="flex items-center gap-4">
-                                                                  <span className="flex items-center gap-1">
-                                                                    <Clock className="h-3 w-3" />
-                                                                      {details.daysSinceStart} days active
-                                                                  </span>
-                                                                    {proj.status === "ONGOING" && (
-                                                                        <span className="flex items-center gap-1">
-                                                                          <Calendar className="h-3 w-3" />~{details.remainingDays} days remaining
-                                                                        </span>
-                                                                    )}
+                                                        {/* Progress Section */}
+                                                        <div className="space-y-3">
+                                                            <div className="flex items-center justify-between">
+                                                                <div className="flex items-center gap-2">
+                                                                    <Target className="h-4 w-4 text-[var(--experience-accent)]" />
+                                                                    <span className="text-sm font-medium">Progress</span>
                                                                 </div>
-                                                                {proj.status === "COMPLETED" && (
-                                                                    <span className="text-[var(--application-approved)] font-medium">
-                                                                        Completed in {details.daysSinceStart} days
-                                                                      </span>
+                                                                {details.totalDays ? (
+                                                                    <span className="text-sm font-semibold text-[var(--experience-accent)]">
+                                    {details.progress}%
+                                  </span>
+                                                                ) : (
+                                                                    <span className="text-xs italic text-muted-foreground">Ongoing</span>
                                                                 )}
                                                             </div>
+
+                                                            {details.totalDays ? (
+                                                                <div className="space-y-2">
+                                                                    {/* Custom Progress Bar */}
+                                                                    <div className="w-full h-2 bg-muted/50 rounded-full overflow-hidden">
+                                                                        <div
+                                                                            className={`h-full transition-all duration-500 ${
+                                                                                details.progress < 50
+                                                                                    ? "bg-gradient-to-r from-blue-500 to-blue-600"
+                                                                                    : details.progress < 80
+                                                                                        ? "bg-gradient-to-r from-purple-500 to-blue-500"
+                                                                                        : details.progress < 100
+                                                                                            ? "bg-gradient-to-r from-yellow-500 to-orange-500"
+                                                                                            : "bg-gradient-to-r from-green-500 to-emerald-500"
+                                                                            }`}
+                                                                            style={{ width: `${details.progress}%` }}
+                                                                        />
+                                                                    </div>
+                                                                    {/* Detailed Stats */}
+                                                                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                                                        <div className="flex items-center gap-4">
+                                      <span className="flex items-center gap-1">
+                                        <Clock className="h-3 w-3" />
+                                          {details.daysSinceStart} days active
+                                      </span>
+                                                                            {proj.status === "ONGOING" && (
+                                                                                <span className="flex items-center gap-1">
+                                          <Calendar className="h-3 w-3" />~{details.remainingDays} days remaining
+                                        </span>
+                                                                            )}
+                                                                        </div>
+                                                                        {proj.status === "COMPLETED" && (
+                                                                            <span className="text-[var(--application-approved)] font-medium">
+                                        Completed in {details.daysSinceStart} days
+                                      </span>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="text-xs text-muted-foreground italic">
+                                                                    Ongoing internship (no end date)
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            </motion.div>
-                        )
-                    })}
+                                        </CardContent>
+                                    </Card>
+                                </motion.div>
+                            )
+                        })}
                 </div>
             )}
         </section>
