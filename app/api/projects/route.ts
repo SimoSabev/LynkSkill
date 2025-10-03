@@ -14,7 +14,7 @@ export async function GET(req: Request) {
         const companyId = searchParams.get("companyId");
 
         const projects = await prisma.project.findMany({
-            where: companyId ? { companyId } : undefined,
+            where: companyId ? { companyId } : {},
             include: {
                 internship: { include: { company: true } },
                 student: { include: { profile: true } },
@@ -25,23 +25,29 @@ export async function GET(req: Request) {
 
         const mapped = projects.map((p) => ({
             id: p.id,
-            name: p.internship?.title ?? "(no title)", // <-- add this
+            name: p.internship?.title ?? "(no title)",
             companyId: p.internship?.company?.id ?? "",
             internship: {
                 title: p.internship?.title ?? "(no title)",
                 company: { name: p.internship?.company?.name ?? "(no company)" },
+                startDate: p.internship?.applicationStart?.toISOString() ?? null,
+                endDate: p.internship?.applicationEnd?.toISOString() ?? null,
             },
             student: {
                 name: p.student?.profile?.name ?? p.student?.email ?? "Unknown",
                 email: p.student?.email ?? "",
             },
             status: "ONGOING",
-            createdAt: p.createdAt.toISOString(),
-        }))
+            createdAt: p.createdAt ? new Date(p.createdAt).toISOString() : null,
+        }));
+
 
         return NextResponse.json(mapped);
     } catch (err) {
         console.error("GET /api/projects error:", err);
-        return NextResponse.json({ error: "Failed to fetch projects", details: String(err) }, { status: 500 });
+        return NextResponse.json(
+            { error: "Failed to fetch projects", details: String(err) },
+            { status: 500 }
+        );
     }
 }
