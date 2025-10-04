@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { useUser } from "@clerk/nextjs"
+import { FileUpload } from "@/components/file-upload"
 import {
   User,
   Briefcase,
@@ -55,6 +56,7 @@ interface FileAttachment {
   url: string
   type: string
   size: number
+  path?: string
 }
 
 interface Education {
@@ -81,12 +83,6 @@ interface Certification {
   attachments?: FileAttachment[]
 }
 
-type PortfolioSections = {
-  education: Education
-  projects: Project
-  certifications: Certification
-}
-
 interface PortfolioData {
   fullName?: string
   headline?: string
@@ -106,7 +102,6 @@ interface PortfolioData {
   approvalStatus: "PENDING" | "APPROVED" | "REJECTED"
 }
 
-// Predefined skills and interests with icons
 const PREDEFINED_SKILLS = [
   { name: "JavaScript", icon: <Code className="h-4 w-4" /> },
   { name: "React", icon: <Layers className="h-4 w-4" /> },
@@ -160,8 +155,7 @@ const validateCustomText = (text: string): string | null => {
   if (!text || text.trim().length === 0) return "Cannot be empty"
   if (text.length > 50) return "Maximum 50 characters"
 
-  // Basic profanity filter (expand as needed)
-  const inappropriateWords = ["badword1", "badword2"] // Add actual words
+  const inappropriateWords = ["badword1", "badword2"]
   const lowerText = text.toLowerCase()
   for (const word of inappropriateWords) {
     if (lowerText.includes(word)) {
@@ -169,7 +163,6 @@ const validateCustomText = (text: string): string | null => {
     }
   }
 
-  // Only allow alphanumeric, spaces, and common punctuation
   if (!/^[a-zA-Z0-9\s\-.+#/]+$/.test(text)) {
     return "Only letters, numbers, and basic punctuation allowed"
   }
@@ -280,7 +273,6 @@ export function Portfolio({ userType }: { userType: "Student" | "Company" }) {
   async function handleSave() {
     const errors: Record<string, string> = {}
 
-    // Validate education years
     portfolio?.education.forEach((edu, i) => {
       const startError = validateYear(edu.startYear, "Start year")
       if (startError) errors[`education-${i}-start`] = startError
@@ -295,7 +287,6 @@ export function Portfolio({ userType }: { userType: "Student" | "Company" }) {
       }
     })
 
-    // Validate certification dates
     portfolio?.certifications.forEach((cert, i) => {
       const issuedDate = new Date(cert.issuedAt)
       if (isNaN(issuedDate.getTime())) {
@@ -417,8 +408,6 @@ export function Portfolio({ userType }: { userType: "Student" | "Company" }) {
   return (
       <div className="min-h-screen bg-background">
         <div className="relative">
-          {/* ... existing hero section code ... */}
-
           <motion.section
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -563,8 +552,6 @@ export function Portfolio({ userType }: { userType: "Student" | "Company" }) {
 
           <div className="container mx-auto px-4 mt-20 relative z-20">
             <div className="space-y-8">
-              {/* ... existing About Me and Links sections ... */}
-
               <div className="grid lg:grid-cols-3 gap-8">
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
@@ -880,7 +867,152 @@ export function Portfolio({ userType }: { userType: "Student" | "Company" }) {
                 </div>
               </motion.div>
 
-              {/* ... existing Projects section ... */}
+              <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                  className="bg-card/95 backdrop-blur-xl rounded-[2rem] shadow-2xl border-2 border-border overflow-hidden"
+              >
+                <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-6">
+                  <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+                    <div className="h-12 w-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                      <Briefcase className="h-6 w-6" />
+                    </div>
+                    Projects
+                  </h2>
+                </div>
+                <div className="p-8">
+                  {isEditing ? (
+                      <div className="space-y-4">
+                        {(portfolio?.projects || []).map((proj, i) => (
+                            <motion.div
+                                key={i}
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: "auto" }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className="p-6 border-2 rounded-[1.25rem] bg-accent/50 border-border space-y-4 hover:shadow-lg transition-all duration-300"
+                            >
+                              <div className="flex justify-between items-center">
+                                <h4 className="font-semibold text-accent-foreground">Project #{i + 1}</h4>
+                                <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={() =>
+                                        setPortfolio((prev) => ({
+                                          ...prev!,
+                                          projects: (prev?.projects || []).filter((_, idx) => idx !== i),
+                                        }))
+                                    }
+                                    className="rounded-xl"
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                              <Input
+                                  placeholder="Project Title"
+                                  value={proj.title || ""}
+                                  onChange={(e) => {
+                                    const copy = [...(portfolio?.projects || [])]
+                                    copy[i].title = e.target.value
+                                    setPortfolio((prev) => ({ ...prev!, projects: copy }))
+                                  }}
+                                  className="rounded-[1.25rem] border-2 focus:ring-2 focus:ring-purple-500"
+                              />
+                              <Textarea
+                                  placeholder="Project Description"
+                                  value={proj.description || ""}
+                                  onChange={(e) => {
+                                    const copy = [...(portfolio?.projects || [])]
+                                    copy[i].description = e.target.value
+                                    setPortfolio((prev) => ({ ...prev!, projects: copy }))
+                                  }}
+                                  className="rounded-[1.25rem] border-2 focus:ring-2 focus:ring-purple-500"
+                              />
+                              <Input
+                                  placeholder="Project Link (optional)"
+                                  value={proj.link || ""}
+                                  onChange={(e) => {
+                                    const copy = [...(portfolio?.projects || [])]
+                                    copy[i].link = e.target.value
+                                    setPortfolio((prev) => ({ ...prev!, projects: copy }))
+                                  }}
+                                  className="rounded-[1.25rem] border-2 focus:ring-2 focus:ring-purple-500"
+                              />
+                              <div className="space-y-3">
+                                <h5 className="font-medium text-accent-foreground">
+                                  Attach Files (screenshots, demos, documentation)
+                                </h5>
+                                <FileUpload
+                                    section="projects"
+                                    attachments={proj.attachments ?? []}
+                                    onAttachmentsChange={(newAttachments) => {
+                                      const copy = [...(portfolio?.projects || [])]
+                                      copy[i].attachments = newAttachments
+                                      setPortfolio((prev) => ({ ...prev!, projects: copy }))
+                                    }}
+                                    maxFiles={10}
+                                />
+                              </div>
+                            </motion.div>
+                        ))}
+                        <Button
+                            onClick={() =>
+                                setPortfolio((prev) => ({
+                                  ...prev!,
+                                  projects: [
+                                    ...(prev?.projects || []),
+                                    { title: "", description: "", link: "", attachments: [] },
+                                  ],
+                                }))
+                            }
+                            className="w-full rounded-xl border-2 border-dashed"
+                            variant="outline"
+                        >
+                          <Plus className="mr-2 h-5 w-5" />
+                          Add Project
+                        </Button>
+                      </div>
+                  ) : portfolio?.projects?.length ? (
+                      <div className="columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6">
+                        {portfolio.projects.map((proj, i) => (
+                            <motion.div
+                                key={i}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: i * 0.1 }}
+                                whileHover={{ scale: 1.02, y: -5 }}
+                                className="break-inside-avoid bg-gradient-to-br from-accent to-accent/50 p-6 rounded-[1.5rem] shadow-xl border-2 border-border hover:shadow-2xl transition-all"
+                            >
+                              <div className="flex items-start justify-between mb-4">
+                                <div className="h-12 w-12 bg-gradient-to-br from-purple-600 to-blue-600 rounded-xl flex items-center justify-center">
+                                  <Briefcase className="h-6 w-6 text-white" />
+                                </div>
+                                {proj.link && (
+                                    <motion.a
+                                        href={proj.link}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        whileHover={{ scale: 1.1 }}
+                                        className="p-2 bg-gradient-to-br from-purple-600 to-blue-600 rounded-lg"
+                                    >
+                                      <ExternalLink className="h-4 w-4 text-white" />
+                                    </motion.a>
+                                )}
+                              </div>
+                              <h4 className="font-bold text-xl mb-2">{proj.title}</h4>
+                              <p className="text-muted-foreground leading-relaxed">{proj.description}</p>
+                              <AttachmentDisplay attachments={proj.attachments} />
+                            </motion.div>
+                        ))}
+                      </div>
+                  ) : (
+                      <div className="text-center py-12">
+                        <Briefcase className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                        <p className="text-muted-foreground">No projects added yet</p>
+                      </div>
+                  )}
+                </div>
+              </motion.div>
 
               <div className="grid lg:grid-cols-2 gap-8">
                 <motion.div
@@ -995,6 +1127,20 @@ export function Portfolio({ userType }: { userType: "Student" | "Company" }) {
                                         </div>
                                     )}
                                   </div>
+                                </div>
+                                <div className="space-y-3">
+                                  <h5 className="font-medium text-accent-foreground">
+                                    Attach Files (transcripts, certificates, etc.)
+                                  </h5>
+                                  <FileUpload
+                                      section="education"
+                                      attachments={edu.attachments ?? []}
+                                      onAttachmentsChange={(newAttachments) => {
+                                        const copy = [...(portfolio?.education || [])]
+                                        copy[i].attachments = newAttachments
+                                        setPortfolio((prev) => ({ ...prev!, education: copy }))
+                                      }}
+                                  />
                                 </div>
                               </motion.div>
                           ))}
@@ -1149,6 +1295,21 @@ export function Portfolio({ userType }: { userType: "Student" | "Company" }) {
                                         </div>
                                     )}
                                   </div>
+                                </div>
+                                <div className="space-y-3">
+                                  <h5 className="font-medium text-accent-foreground">
+                                    Attach Files (certificates, badges, etc.)
+                                  </h5>
+                                  <FileUpload
+                                      section="certifications"
+                                      attachments={cert.attachments ?? []}
+                                      onAttachmentsChange={(newAttachments) => {
+                                        const copy = [...(portfolio?.certifications || [])]
+                                        copy[i].attachments = newAttachments
+                                        setPortfolio((prev) => ({ ...prev!, certifications: copy }))
+                                      }}
+                                      maxFiles={5}
+                                  />
                                 </div>
                               </motion.div>
                           ))}
