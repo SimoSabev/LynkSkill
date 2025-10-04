@@ -2,68 +2,65 @@ import { auth } from "@clerk/nextjs/server"
 import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
 
-// GET /api/projects/approved?companyId=xxx - Returns only projects from APPROVED applications
-export async function GET(req: Request) {
+// PATCH /api/experience/[id] - Update experience status and grade
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+    console.log("[v0] PATCH /api/experience/[id] called")
+
     try {
         const { userId } = await auth()
         if (!userId) {
+            console.log("[v0] Unauthorized - no userId")
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
         }
 
-        const student = await prisma.user.findUnique({
+        const { id } = await params
+        console.log("[v0] Experience ID:", id)
+
+        const user = await prisma.user.findUnique({
             where: { clerkId: userId },
+            include: { companies: true },
         })
 
-        if (!student || student.role !== "STUDENT") {
-            return NextResponse.json({ error: "Only students can access this endpoint" }, { status: 403 })
+        if (!user || user.role !== "COMPANY") {
+            console.log("[v0] Forbidden - user is not a company")
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 })
         }
 
-        // Get companyId from query params
-        const { searchParams } = new URL(req.url)
-        const companyId = searchParams.get("companyId")
+        const body = await req.json()
+        const { status, grade } = body as { status: string; grade?: number }
+        console.log("[v0] Request body:", { status, grade })
 
-        if (!companyId) {
-            return NextResponse.json({ error: "companyId is required" }, { status: 400 })
+        const experience = await prisma.experience.findUnique({
+            where: { id },
+        })
+
+        if (!experience) {
+            console.log("[v0] Experience not found")
+            return NextResponse.json({ error: "Experience not found" }, { status: 404 })
         }
 
-        // Find all APPROVED applications for this student with this company
-        const approvedApplications = await prisma.application.findMany({
-            where: {
-                studentId: student.id,
-                status: "APPROVED",
-                internship: {
-                    companyId: companyId,
-                },
-            },
-            include: {
-                internship: true,
+        if (!user.companies.some((c) => c.id === experience.companyId)) {
+            console.log("[v0] Forbidden - not company's experience")
+            return NextResponse.json({ error: "Not your company's experience" }, { status: 403 })
+        }
+
+        if (status === "approved" && (grade === null || grade === undefined)) {
+            console.log("[v0] Bad request - grade required for approval")
+            return NextResponse.json({ error: "Grade is required when approving" }, { status: 400 })
+        }
+
+        const updated = await prisma.experience.update({
+            where: { id },
+            data: {
+                status,
+                grade: status === "approved" ? grade : null,
             },
         })
 
-        // Get the application IDs
-        const applicationIds = approvedApplications.map((app) => app.id)
-
-        // Find projects created from these approved applications
-        const projects = await prisma.project.findMany({
-            where: {
-                applicationId: { in: applicationIds },
-                companyId: companyId,
-                studentId: student.id,
-            },
-            select: {
-                id: true,
-                title: true,
-                description: true,
-                companyId: true,
-                internshipId: true,
-                applicationId: true,
-            },
-            orderBy: { createdAt: "desc" },
-        })
-
-        return NextResponse.json(projects)
-    } catch (err) {
-        console.error("GET /api/projects/approved error:", err)
-        return NextResponse.json({ error: "Failed to fetch approved projects", details: String(err) }, { status: 500 })
+        console.log("[v0] Experience updated successfully:", updated.id)
+        return NextResponse.json(updated)
+    } catch (error) {
+        console.error("[v0] PATCH /experience/[id] error:", error)
+        return NextResponse.json({ error: "Failed to update experience" }, { status: 500 })
     }
 }

@@ -102,6 +102,9 @@ export default function ExperienceTabContent() {
 
   const [fileSizeError, setFileSizeError] = useState<string | null>(null)
 
+  const [selectedGrade, setSelectedGrade] = useState<number | null>(null)
+  const [approvingExpId, setApprovingExpId] = useState<string | null>(null)
+
   const handleDownloadClick = (url: string) => {
     setSelectedFile(url)
     setScanProgress(0)
@@ -350,6 +353,9 @@ export default function ExperienceTabContent() {
       if (!res.ok) throw new Error("Action failed")
       const updated = await res.json()
       setExperiences((prev) => prev.map((exp) => (exp.id === updated.id ? updated : exp)))
+
+      setSelectedGrade(null)
+      setApprovingExpId(null)
     } catch (err) {
       console.error(err)
       alert("Action failed")
@@ -889,7 +895,17 @@ export default function ExperienceTabContent() {
                             {/* Company Actions */}
                             {role === "COMPANY" && exp.status === "pending" && (
                                 <div className="pt-2">
-                                  <Dialog>
+                                  <Dialog
+                                      onOpenChange={(open) => {
+                                        if (open) {
+                                          setApprovingExpId(exp.id)
+                                          setSelectedGrade(null)
+                                        } else {
+                                          setApprovingExpId(null)
+                                          setSelectedGrade(null)
+                                        }
+                                      }}
+                                  >
                                     <DialogTrigger asChild>
                                       <Button
                                           size="sm"
@@ -924,27 +940,25 @@ export default function ExperienceTabContent() {
                                                     key={gradeValue}
                                                     type="button"
                                                     onClick={() => {
-                                                      setExperiences((prev) =>
-                                                          prev.map((ex) => (ex.id === exp.id ? { ...ex, grade: gradeValue } : ex)),
-                                                      )
+                                                      setSelectedGrade(gradeValue)
                                                     }}
                                                     className={`
-                                                                                    relative aspect-square rounded-2xl border-2 transition-all duration-300
-                                                                                    flex flex-col items-center justify-center gap-1 p-3
-                                                                                    hover:scale-105 hover:shadow-lg
-                                                                                    ${
-                                                        exp.grade === gradeValue
+                                          relative aspect-square rounded-2xl border-2 transition-all duration-300
+                                          flex flex-col items-center justify-center gap-1 p-3
+                                          hover:scale-105 hover:shadow-lg
+                                          ${
+                                                        selectedGrade === gradeValue
                                                             ? "border-[var(--experience-accent)] bg-gradient-to-br from-[var(--experience-hero-gradient-from)] to-[var(--experience-hero-gradient-to)] text-white shadow-lg shadow-[var(--experience-accent)]/30"
                                                             : "border-[var(--experience-step-border)] bg-[var(--experience-step-background)] hover:border-[var(--experience-accent)]/50"
                                                     }
-                                                                                `}
+                                        `}
                                                 >
                                         <span
-                                            className={`text-2xl font-bold ${exp.grade === gradeValue ? "text-white" : "text-foreground"}`}
+                                            className={`text-2xl font-bold ${selectedGrade === gradeValue ? "text-white" : "text-foreground"}`}
                                         >
                                           {gradeValue}
                                         </span>
-                                                  {exp.grade === gradeValue && (
+                                                  {selectedGrade === gradeValue && (
                                                       <CheckCircle className="h-4 w-4 text-white absolute top-1 right-1" />
                                                   )}
                                                 </button>
@@ -952,17 +966,17 @@ export default function ExperienceTabContent() {
                                           </div>
 
                                           {/* Grade Description */}
-                                          {exp.grade && (
+                                          {selectedGrade && (
                                               <div className="mt-4 p-4 rounded-2xl bg-[var(--experience-step-background)] border border-[var(--experience-step-border)]">
                                                 <p className="text-sm font-medium text-[var(--experience-accent)] mb-1">
-                                                  Grade {exp.grade} Selected
+                                                  Grade {selectedGrade} Selected
                                                 </p>
                                                 <p className="text-xs text-muted-foreground">
-                                                  {exp.grade === 2 && "Basic performance - Needs significant improvement"}
-                                                  {exp.grade === 3 && "Satisfactory performance - Meets minimum requirements"}
-                                                  {exp.grade === 4 && "Good performance - Meets expectations"}
-                                                  {exp.grade === 5 && "Very good performance - Exceeds expectations"}
-                                                  {exp.grade === 6 && "Excellent performance - Outstanding work"}
+                                                  {selectedGrade === 2 && "Basic performance - Needs significant improvement"}
+                                                  {selectedGrade === 3 && "Satisfactory performance - Meets minimum requirements"}
+                                                  {selectedGrade === 4 && "Good performance - Meets expectations"}
+                                                  {selectedGrade === 5 && "Very good performance - Exceeds expectations"}
+                                                  {selectedGrade === 6 && "Excellent performance - Outstanding work"}
                                                 </p>
                                               </div>
                                           )}
@@ -974,16 +988,25 @@ export default function ExperienceTabContent() {
                                             variant="outline"
                                             className="flex-1 rounded-2xl border-2 bg-transparent"
                                             onClick={() => {
-                                              const dialog = document.querySelector<HTMLButtonElement>("[data-state='open']")
-                                              dialog?.click()
+                                              const closeButton = document.querySelector<HTMLButtonElement>(
+                                                  '[data-state="open"] button[aria-label="Close"]',
+                                              )
+                                              if (closeButton) closeButton.click()
                                             }}
                                         >
                                           Cancel
                                         </Button>
 
                                         <Button
-                                            disabled={exp.grade == null || exp.grade < 2 || exp.grade > 6}
-                                            onClick={() => handleAction(exp.id, "approve", exp.grade!)}
+                                            disabled={selectedGrade == null || selectedGrade < 2 || selectedGrade > 6}
+                                            onClick={async () => {
+                                              await handleAction(exp.id, "approve", selectedGrade!)
+                                              // Close the dialog after successful approval
+                                              const closeButton = document.querySelector<HTMLButtonElement>(
+                                                  '[data-state="open"] button[aria-label="Close"]',
+                                              )
+                                              if (closeButton) closeButton.click()
+                                            }}
                                             className="flex-1 rounded-2xl bg-gradient-to-r from-[var(--experience-hero-gradient-from)] to-[var(--experience-hero-gradient-to)] hover:opacity-90 text-white font-semibold disabled:opacity-50"
                                         >
                                           <CheckCircle className="h-4 w-4 mr-2" />
