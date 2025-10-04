@@ -14,28 +14,23 @@ export async function GET() {
         if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 })
 
         const experiences = await prisma.experience.findMany({
-            where:
-                user.role === "STUDENT"
-                    ? { studentId: user.id }
-                    : { companyId: { in: user.companies.map((c) => c.id) } },
+            where: user.role === "STUDENT" ? { studentId: user.id } : { companyId: { in: user.companies.map((c) => c.id) } },
             orderBy: { createdAt: "desc" },
-            take: 10,
+            take: 4, // Take only 4 most recent experiences
         })
 
-        const files = experiences.flatMap((exp) =>
-            exp.mediaUrls.map((url) => ({
-                url,
-                createdAt: exp.createdAt,
-                uploader: {
-                    name: exp.uploaderName || "Unknown Student",
-                    image: exp.uploaderImage,
-                },
-            }))
-        )
+        const groupedExperiences = experiences.map((exp) => ({
+            id: exp.id,
+            files: exp.mediaUrls.map((url) => ({ url })),
+            createdAt: exp.createdAt,
+            uploader: {
+                name: exp.uploaderName || "Unknown Student",
+                image: exp.uploaderImage,
+            },
+            isBulk: exp.mediaUrls.length > 1, // Flag for bulk uploads
+        }))
 
-        return NextResponse.json(
-            files.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 4)
-        )
+        return NextResponse.json(groupedExperiences)
     } catch (err) {
         console.error("recent-files error", err)
         return NextResponse.json({ error: "Failed to load recent files", details: String(err) }, { status: 500 })
