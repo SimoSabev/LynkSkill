@@ -1,202 +1,215 @@
-generator client {
-  provider = "prisma-client-js"
-}
+  generator client {
+    provider = "prisma-client-js"
+  }
 
-datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
-}
+  datasource db {
+    provider  = "postgresql"
+    url       = env("DATABASE_URL")
+    directUrl = env("DIRECT_URL")
+  }
 
-// ---------------------
-// USERS
-// ---------------------
-model User {
-  id                 String        @id @default(cuid())
-  clerkId            String        @unique
-  email              String
-  role               Role
-  onboardingComplete Boolean       @default(false)
-  profile            Profile?
-  companies          Company[]     // companies owned by user
-  applications       Application[] @relation("StudentApplications") // applications made by student
-  portfolio          Portfolio?    // ✅ relation back to Portfolio
-  projects           Project[]     @relation("StudentProjects")     // ✅ student's projects
-  experiences        Experience[]  // ✅ student's experiences
-}
+  // ---------------------
+  // USERS
+  // ---------------------
+  model User {
+    id                 String        @id @default(cuid())
+    clerkId            String        @unique
+    email              String
+    role               Role
+    onboardingComplete Boolean       @default(false)
+    profile            Profile?
+    companies          Company[]     @relation("UserCompanies") // ✅ Named relation
+    applications       Application[] @relation("StudentApplications")
+    portfolio          Portfolio?
+    projects           Project[]     @relation("StudentProjects")
+    experiences        Experience[]
+  }
 
-// ---------------------
-// COMPANIES
-// ---------------------
-model Company {
-  id          String       @id @default(cuid())
-  name        String
-  description String
-  location    String
-  website     String?
-  logo        String?
-  ownerId     String
-  owner       User         @relation(fields: [ownerId], references: [id])
-  internships Internship[] // ✅ internships owned by this company
-  projects    Project[]    // ✅ projects owned by this company
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  experiences        Experience[]  // ✅ student's experiences
-}
+  // ---------------------
+  // Company
+  // ---------------------
 
-// ---------------------
-// USER PROFILE
-// ---------------------
-model Profile {
-  id     String @id @default(cuid())
-  userId String @unique
-  name   String
-  bio    String?
-  user   User   @relation(fields: [userId], references: [id])
-}
-
-// ---------------------
-// INTERNSHIPS
-// ---------------------
-model Internship {
-  id             String   @id @default(cuid())
-  companyId      String
-  title          String
-  description    String
-  qualifications String?
-  location       String
-  paid           Boolean  @default(false)
-  salary         Float?
-
-  applicationStart DateTime @default(now())
-  applicationEnd   DateTime @default(now())
-  startDate        DateTime?
-  endDate          DateTime?
-
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  company        Company       @relation(fields: [companyId], references: [id])
-  applications   Application[]
-  projects       Project[]
-}
-
-// ---------------------
-// APPLICATIONS
-// ---------------------
-model Application {
-  id           String            @id @default(cuid())
-  internshipId String
-  studentId    String
-  status       ApplicationStatus @default(PENDING)
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
-
-  internship   Internship @relation(fields: [internshipId], references: [id])
-  student      User       @relation("StudentApplications", fields: [studentId], references: [id])
-  project      Project?   // ✅ when approved, linked project is created
-
-  @@unique([internshipId, studentId]) // prevent duplicate applications
-}
-
-// ---------------------
-// Portfolio
-// ---------------------
-model Portfolio {
-  id        String   @id @default(cuid())
-  student   User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  studentId String   @unique
-
-  fullName     String?
-  headline     String?   // e.g. "Aspiring Web Developer"
-  age          Int?
-  bio          String?   // short introduction
-
-  skills       String[]
-  interests    String[]
-  experience   String?
-  education    Json?     // [{school, degree, startYear, endYear}]
-  projects     Json?     // [{title, description, link, techStack}]
-  certifications Json?   // [{name, authority, issuedAt, expiresAt?}]
-
-  linkedin     String?
-  github       String?
-  portfolioUrl String?
-
-  needsApproval   Boolean @default(false)
-  approvedBy      String?
-  approvalStatus  ApprovalStatus @default(PENDING)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-// ---------------------
-// PROJECTS
-// ---------------------
-model Project {
-  id            String      @id @default(cuid())
-  title         String
-  description   String
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-
-  // Relations
-  internshipId  String
-  internship    Internship  @relation(fields: [internshipId], references: [id])
-
-  applicationId String       @unique
-  application   Application  @relation(fields: [applicationId], references: [id])
-
-  studentId     String
-  student       User         @relation("StudentProjects", fields: [studentId], references: [id])
-
-  companyId     String
-  company       Company      @relation(fields: [companyId], references: [id])
-
-  experiences   Experience[] // Added relation to Experience
-}
-
-// ---------------------
-// EXPERIENCE
-// ---------------------
-
-model Experience {
-  id        String   @id @default(cuid())
-  studentId String
-  companyId String
-  projectId String   // Added projectId field to link to approved project
-  mediaUrls String[] // Supabase storage file links
-  status    String   @default("pending") // "pending" | "approved" | "rejected"
-  grade     Int?     // 1–6 (given when approved)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  uploaderName  String?
-  uploaderImage String?
-
-  student User    @relation(fields: [studentId], references: [id])
-  company Company @relation(fields: [companyId], references: [id])
-  project Project @relation(fields: [projectId], references: [id]) // Added relation to Project
-}
+  model Company {
+    id          String       @id @default(cuid())
+    name        String
+    eik         String?
+    description String
+    location    String
+    website     String?
+    logo        String?
+    ownerId     String
+    owner       User         @relation("UserCompanies", fields: [ownerId], references: [id]) // ✅ Only here
+    internships Internship[]
+    projects    Project[]
+    createdAt   DateTime     @default(now())
+    updatedAt   DateTime     @updatedAt
+    experiences Experience[]
+    tosAccepted     Boolean  @default(false)
+    privacyAccepted Boolean  @default(false)
+  }
 
 
 
-// ---------------------
-// ENUMS
-// ---------------------
-enum Role {
-  STUDENT
-  COMPANY
-}
+  // ---------------------
+  // USER PROFILE
+  // ---------------------
+  model Profile {
+    id     String @id @default(cuid())
+    userId String @unique
+    name   String
+    bio    String?
+    user   User   @relation(fields: [userId], references: [id])
+  }
 
-enum ApplicationStatus {
-  PENDING
-  APPROVED
-  REJECTED
-}
+  // ---------------------
+  // INTERNSHIPS
+  // ---------------------
+  model Internship {
+    id             String   @id @default(cuid())
+    companyId      String
+    title          String
+    description    String
+    qualifications String?
+    location       String
+    paid           Boolean  @default(false)
+    salary         Float?
 
-enum ApprovalStatus {
-  PENDING
-  APPROVED
-  REJECTED
-}
+    applicationStart DateTime @default(now())
+    applicationEnd   DateTime @default(now())
+    startDate        DateTime?
+    endDate          DateTime?
+
+    createdAt      DateTime @default(now())
+    updatedAt      DateTime @updatedAt
+
+    company        Company       @relation(fields: [companyId], references: [id])
+    applications   Application[]
+    projects       Project[]
+  }
+
+  // ---------------------
+  // APPLICATIONS
+  // ---------------------
+  model Application {
+    id           String            @id @default(cuid())
+    internshipId String
+    studentId    String
+    status       ApplicationStatus @default(PENDING)
+    createdAt    DateTime          @default(now())
+    updatedAt    DateTime          @updatedAt
+
+    internship   Internship @relation(fields: [internshipId], references: [id])
+    student      User       @relation("StudentApplications", fields: [studentId], references: [id])
+    project      Project?   // ✅ when approved, linked project is created
+
+    @@unique([internshipId, studentId]) // prevent duplicate applications
+  }
+
+  // ---------------------
+  // Portfolio
+  // ---------------------
+  model Portfolio {
+    id        String   @id @default(cuid())
+    student   User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+    studentId String   @unique
+
+    fullName     String?
+    headline     String?   // e.g. "Aspiring Web Developer"
+    age          Int?
+    bio          String?   // short introduction
+
+    skills       String[]
+    interests    String[]
+    experience   String?
+    education    Json?     // [{school, degree, startYear, endYear}]
+    projects     Json?     // [{title, description, link, techStack}]
+    certifications Json?   // [{name, authority, issuedAt, expiresAt?}]
+
+    linkedin     String?
+    github       String?
+    portfolioUrl String?
+
+    needsApproval   Boolean @default(false)
+    approvedBy      String?
+    approvalStatus  ApprovalStatus @default(PENDING)
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+  }
+
+  // ---------------------
+  // PROJECTS
+  // ---------------------
+  model Project {
+    id            String      @id @default(cuid())
+    title         String
+    description   String
+    createdAt     DateTime    @default(now())
+    updatedAt     DateTime    @updatedAt
+
+    // Relations
+    internshipId  String
+    internship    Internship  @relation(fields: [internshipId], references: [id])
+
+    applicationId String       @unique
+    application   Application  @relation(fields: [applicationId], references: [id])
+
+    studentId     String
+    student       User         @relation("StudentProjects", fields: [studentId], references: [id])
+
+    companyId     String
+    company       Company      @relation(fields: [companyId], references: [id])
+
+    experiences   Experience[] // Added relation to Experience
+  }
+
+  // ---------------------
+  // EXPERIENCE
+  // ---------------------
+
+  model Experience {
+    id        String   @id @default(cuid())
+    studentId String
+    companyId String
+    projectId String   // Added projectId field to link to approved project
+    mediaUrls String[] // Supabase storage file links
+    status    String   @default("pending") // "pending" | "approved" | "rejected"
+    grade     Int?     // 1–6 (given when approved)
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+    uploaderName  String?
+    uploaderImage String?
+
+    student User    @relation(fields: [studentId], references: [id])
+    company Company @relation(fields: [companyId], references: [id])
+    project Project @relation(fields: [projectId], references: [id]) // Added relation to Project
+  }
+
+  model eikCheck {
+    id        Int      @id @default(autoincrement())
+    eik       String
+    ip        String
+    valid     Boolean
+    timestamp DateTime @default(now())
+  }
+
+
+  // ---------------------
+  // ENUMS
+  // ---------------------
+  enum Role {
+    STUDENT
+    COMPANY
+  }
+
+  enum ApplicationStatus {
+    PENDING
+    APPROVED
+    REJECTED
+  }
+
+  enum ApprovalStatus {
+    PENDING
+    APPROVED
+    REJECTED
+  }

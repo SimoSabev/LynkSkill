@@ -1,9 +1,9 @@
-// app/redirect-after-signin/page.tsx
 "use client"
 
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useUser } from "@clerk/nextjs"
+import { Loader2 } from "lucide-react"
 
 export default function RedirectAfterSignIn() {
     const router = useRouter()
@@ -11,8 +11,7 @@ export default function RedirectAfterSignIn() {
 
     useEffect(() => {
         if (!isLoaded) return
-
-        (async () => {
+            ;(async () => {
             if (!isSignedIn || !user) {
                 router.replace("/sign-in")
                 return
@@ -42,8 +41,21 @@ export default function RedirectAfterSignIn() {
     }, [user, isSignedIn, isLoaded, router])
 
     return (
-        <div className="min-h-screen flex items-center justify-center">
-            <p>Redirecting…</p>
+        <div className="min-h-screen flex items-center justify-center bg-background">
+            <div className="flex flex-col items-center gap-6 max-w-md text-center px-6">
+                <div className="relative">
+                    <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Loader2 className="w-10 h-10 animate-spin text-primary" />
+                    </div>
+                    <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping" />
+                </div>
+                <div className="space-y-2">
+                    <h2 className="text-2xl font-semibold text-foreground">Setting up your account</h2>
+                    <p className="text-muted-foreground text-balance">
+                        Please wait while we prepare your personalized experience...
+                    </p>
+                </div>
+            </div>
         </div>
     )
 }
