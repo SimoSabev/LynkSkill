@@ -12,14 +12,19 @@ export async function completeOnboarding(formData: FormData) {
     const role: "COMPANY" | "STUDENT" = roleInput === "COMPANY" ? "COMPANY" : "STUDENT"
 
     try {
+        // Update Clerk metadata
         await clerkClient.users.updateUser(userId, {
             publicMetadata: { role, onboardingComplete: true },
         })
 
+        // Get Clerk user info
         const clerkUser = await clerkClient.users.getUser(userId)
         const email =
-            clerkUser.emailAddresses.find((e) => e.id === clerkUser.primaryEmailAddressId)?.emailAddress || ""
+            clerkUser.emailAddresses.find(
+                (e) => e.id === clerkUser.primaryEmailAddressId
+            )?.emailAddress || ""
 
+        // Ensure user exists and update onboarding state
         const user = await prisma.user.upsert({
             where: { clerkId: userId },
             update: { role, onboardingComplete: true },
@@ -32,6 +37,7 @@ export async function completeOnboarding(formData: FormData) {
             },
         })
 
+        // --- STUDENT FLOW ---
         if (role === "STUDENT") {
             const dob = formData.get("dob") as string
             const age = dob ? calculateAge(new Date(dob)) : null
@@ -52,21 +58,24 @@ export async function completeOnboarding(formData: FormData) {
                     certifications: [],
                 },
             })
+
+            return { message: "Student onboarding complete", dashboard: "/dashboard/student" }
         }
 
+        // --- COMPANY FLOW ---
         if (role === "COMPANY") {
             const companyName = (formData.get("companyName") as string) || ""
             const companyDescription = (formData.get("companyDescription") as string) || ""
             const companyLocation = (formData.get("companyLocation") as string) || ""
             const companyWebsite = (formData.get("companyWebsite") as string) || null
             const companyEik = (formData.get("companyEik") as string) || ""
-            const companyLogo = (formData.get("companyLogoHidden") as string) || null // ✅ Read logo URL
+            const companyLogo = (formData.get("companyLogoHidden") as string) || null
 
             if (!companyName || !companyDescription || !companyLocation || !companyEik) {
                 return { error: "Please fill all required company fields" }
             }
 
-            if (companyEik.length !== 9) {
+            if (companyEik.length !== 9 && companyEik.length !== 13) {
                 return { error: "Invalid EIK format" }
             }
 
@@ -85,11 +94,10 @@ export async function completeOnboarding(formData: FormData) {
                         website: companyWebsite,
                         ownerId: user.id,
                         eik: companyEik,
-                        logo: companyLogo, // ✅ Save logo URL
+                        logo: companyLogo,
                     },
                 })
             } else {
-                // ✅ Update existing company with logo if provided
                 createdCompany = await prisma.company.update({
                     where: { id: existing.id },
                     data: {
@@ -98,17 +106,28 @@ export async function completeOnboarding(formData: FormData) {
                         location: companyLocation,
                         website: companyWebsite,
                         eik: companyEik,
-                        logo: companyLogo || existing.logo, // Keep existing if no new logo
+                        logo: companyLogo || existing.logo,
                     },
                 })
             }
 
-            return { message: "Company created", createdCompanyId: createdCompany.id }
+            // ✅ Force update Prisma role (important if switching from student)
+            await prisma.user.update({
+                where: { id: user.id },
+                data: { role: "COMPANY" },
+            })
+
+            return {
+                message: "Company onboarding complete",
+                createdCompanyId: createdCompany.id,
+                dashboard: "/dashboard/company",
+            }
         }
-        return { message: "Onboarding complete", dashboard: "/dashboard/student" }
-    } catch (err: unknown) {
+
+        return { error: "Unknown role" }
+    } catch (err) {
         console.error("❌ completeOnboarding error:", err)
-        return { error: err instanceof Error ? err.message : "Error completing onboarding" }
+        return { error: "Error completing onboarding" }
     }
 }
 

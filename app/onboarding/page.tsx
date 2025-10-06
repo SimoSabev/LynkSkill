@@ -56,6 +56,27 @@ export default function OnboardingPage() {
     const [logoPreview, setLogoPreview] = React.useState<string | null>(null)
     const [isUploadingLogo, setIsUploadingLogo] = React.useState(false)
 
+    React.useEffect(() => {
+        if (!isLoaded || !user) return
+            ;(async () => {
+            try {
+                const res = await fetch("/api/get-role", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ clerkId: user.id }),
+                })
+                const data = await res.json()
+                if (data?.onboardingComplete) {
+                    // already finished onboarding: navigate to their dashboard
+                    const dest = data.role === "COMPANY" ? "/dashboard/company" : "/dashboard/student"
+                    router.replace(dest)
+                }
+            } catch (err) {
+                console.error(err)
+            }
+        })()
+    }, [isLoaded, user, router])
+
     if (!isLoaded) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 p-6 flex items-center justify-center">
