@@ -8,8 +8,10 @@ export async function completeOnboarding(formData: FormData) {
     const { userId } = await auth()
     if (!userId) return { error: "No logged in user" }
 
-    const roleInput = (formData.get("role") as string)?.toUpperCase()
-    const role: "COMPANY" | "STUDENT" = roleInput === "COMPANY" ? "COMPANY" : "STUDENT"
+    const roleInput = (formData.get("role") as string)?.toLowerCase()
+    const role: "COMPANY" | "STUDENT" = roleInput === "company" ? "COMPANY" : "STUDENT"
+
+    console.log("🔍 Role input:", roleInput, "→ Role:", role)
 
     try {
         // Update Clerk metadata
@@ -37,6 +39,8 @@ export async function completeOnboarding(formData: FormData) {
             },
         })
 
+        console.log("✅ User created/updated with role:", user.role)
+
         // --- STUDENT FLOW ---
         if (role === "STUDENT") {
             const dob = formData.get("dob") as string
@@ -59,6 +63,7 @@ export async function completeOnboarding(formData: FormData) {
                 },
             })
 
+            console.log("✅ Portfolio created for student")
             return { message: "Student onboarding complete", dashboard: "/dashboard/student" }
         }
 
@@ -70,6 +75,8 @@ export async function completeOnboarding(formData: FormData) {
             const companyWebsite = (formData.get("companyWebsite") as string) || null
             const companyEik = (formData.get("companyEik") as string) || ""
             const companyLogo = (formData.get("companyLogoHidden") as string) || null
+
+            console.log("📝 Company data:", { companyName, companyEik, companyLocation })
 
             if (!companyName || !companyDescription || !companyLocation || !companyEik) {
                 return { error: "Please fill all required company fields" }
@@ -97,6 +104,7 @@ export async function completeOnboarding(formData: FormData) {
                         logo: companyLogo,
                     },
                 })
+                console.log("✅ Company created:", createdCompany.id)
             } else {
                 createdCompany = await prisma.company.update({
                     where: { id: existing.id },
@@ -109,13 +117,15 @@ export async function completeOnboarding(formData: FormData) {
                         logo: companyLogo || existing.logo,
                     },
                 })
+                console.log("✅ Company updated:", createdCompany.id)
             }
 
-            // ✅ Force update Prisma role (important if switching from student)
+            // ✅ Double-check: Force update Prisma role to COMPANY
             await prisma.user.update({
                 where: { id: user.id },
                 data: { role: "COMPANY" },
             })
+            console.log("✅ Role force-updated to COMPANY for user:", user.id)
 
             return {
                 message: "Company onboarding complete",

@@ -339,6 +339,7 @@ export default function OnboardingPage() {
                 </div>
 
                 <form onSubmit={handleSubmit} className="max-w-5xl mx-auto space-y-10">
+                    <input type="hidden" name="role" value={selectedRole} />
                     <div className="space-y-4">
                         <div className="text-center space-y-2 mb-8">
                             <h2 className="text-2xl font-bold text-foreground">Select Your Role</h2>
