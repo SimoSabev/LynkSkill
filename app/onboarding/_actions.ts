@@ -8,7 +8,7 @@ export async function completeOnboarding(formData: FormData) {
     const { userId } = await auth()
     if (!userId) return { error: "No logged in user" }
 
-    const roleInput = (formData.get("role") as string)?.toLowerCase()
+    const roleInput = (formData.get("role") as string)?.toLowerCase() || "student"
     const role: "COMPANY" | "STUDENT" = roleInput === "company" ? "COMPANY" : "STUDENT"
 
     console.log("🔍 Role input:", roleInput, "→ Role:", role)

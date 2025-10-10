@@ -42,7 +42,7 @@ export default function OnboardingPage() {
     const router = useRouter()
     const [isPending, setIsPending] = React.useState(false)
     const [error, setError] = React.useState("")
-    const [selectedRole, setSelectedRole] = React.useState<string>("")
+    const [selectedRole, setSelectedRole] = React.useState<"student" | "company" | null>(null)
     const [createdCompanyId, setCreatedCompanyId] = React.useState<string | null>(null)
 
     const [showPolicyModal, setShowPolicyModal] = React.useState(false)
@@ -91,19 +91,39 @@ export default function OnboardingPage() {
     const handleEikChange = async (value: string) => {
         setEik(value)
         setCompanyValid(null)
+        setError("")
 
         if (value.length < 9) return
 
         try {
-            const res = await fetch(`/api/validate-eik?eik=${value}`)
-            const data = await res.json()
-            if (data.valid) {
+            const res = await fetch(`/api/validate-eik?eik=${value}`, { cache: "no-store" })
+
+            // Read body once, as text
+            const raw = await res.text()
+
+            let data: any = null
+            try {
+                data = JSON.parse(raw)
+            } catch {
+                console.error("EIK API returned non-JSON response:", raw.slice(0, 200))
+                setCompanyValid(false)
+                setError("Server returned invalid response")
+                return
+            }
+
+            console.log("EIK API Response:", { ok: res.ok, data })
+
+            if (res.ok && (data.valid === true || data.valid === "true")) {
                 setCompanyValid(true)
+                setError("")
             } else {
                 setCompanyValid(false)
+                setError(data?.error || "EIK not found")
             }
-        } catch {
+        } catch (err) {
+            console.error("EIK validation error:", err)
             setCompanyValid(false)
+            setError("Unexpected error")
         }
     }
 
@@ -187,6 +207,7 @@ export default function OnboardingPage() {
                 "companyLocation",
                 document.querySelector<HTMLInputElement>('[name="companyLocation"]')?.value || "",
             )
+
 
             const res = await completeOnboarding(formData)
 
@@ -339,7 +360,7 @@ export default function OnboardingPage() {
                 </div>
 
                 <form onSubmit={handleSubmit} className="max-w-5xl mx-auto space-y-10">
-                    <input type="hidden" name="role" value={selectedRole} />
+                    <input type="hidden" name="role" value={selectedRole ?? ""} />
                     <div className="space-y-4">
                         <div className="text-center space-y-2 mb-8">
                             <h2 className="text-2xl font-bold text-foreground">Select Your Role</h2>
@@ -352,7 +373,7 @@ export default function OnboardingPage() {
                                 return (
                                     <Card
                                         key={r.value}
-                                        onClick={() => setSelectedRole(r.value)}
+                                        onClick={() => setSelectedRole(r.value as "student" | "company")}
                                         className={`cursor-pointer transition-all duration-500 group relative overflow-hidden ${
                                             isSelected
                                                 ? "ring-2 ring-[var(--experience-accent)] shadow-2xl shadow-[var(--experience-accent)]/20 scale-[1.02]"

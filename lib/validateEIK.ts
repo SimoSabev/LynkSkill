@@ -1,4 +1,4 @@
-// /lib/validateEIK.ts
+
 
 export function validateEIK(eik: string): boolean {
     // Да е точно 9 или 13 цифри
