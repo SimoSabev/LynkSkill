@@ -59,7 +59,7 @@ const servicesData: ServiceData[] = [
         color: "blue",
         businessBenefit: "Discover talent through comprehensive portfolios",
         studentBenefit: "Stand out with professional presentation",
-        mascotImage: "/linky-mascot.png",
+        mascotImage: "/linky-mascot-portfolio.png",
     },
     {
         id: "experience",

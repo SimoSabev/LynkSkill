@@ -1,23 +1,32 @@
 import { Home, Grid, FileText, Layers, Briefcase } from "lucide-react"
+import {HouseIcon} from "@/components/dashboard/home-icon";
+import {BookOpenTextIcon} from "@/components/dashboard/portfolio-icon";
 
 export const sidebarItems = [
   {
     title: "Home",
     value: "home",
-    icon: <Home />,
+    icon: <HouseIcon />,
     isActive: true,
-    badge: "3", // 👈 add optional badge
   },
+  // Portfolio — only for students
   {
     title: "Portfolio",
     value: "apps",
-    icon: <Grid />,
+    icon: <BookOpenTextIcon/>,
     items: [
       { title: "All Projects", url: "#" },
       { title: "Recent", url: "#" },
       { title: "Highlights", url: "#" },
     ],
-    badge: "New", // 👈 optional
+    roles: ["Student"],           // <-- show only for Student
+  },
+  // Leaderboard — only for companies (same position in the array)
+  {
+    title: "Leaderboard",
+    value: "leaderboard",
+    icon: <Grid />,
+    roles: ["Company"],           // <-- show only for Company
   },
   {
     title: "Applied",
@@ -47,9 +56,9 @@ export const sidebarItems = [
       { title: "Volunteering", url: "#" },
       { title: "Achievements", url: "#" },
     ],
-    badge: "5",
   },
 ]
+
 
 
 

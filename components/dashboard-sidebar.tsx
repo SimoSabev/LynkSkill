@@ -76,27 +76,33 @@ export function DashboardSidebar({
 
             <ScrollArea className="flex-1 px-3 py-2">
                 <div className="space-y-1">
-                    {sidebarItems.map((item) => (
-                        <button
-                            key={item.title}
-                            onClick={() => setActiveTab(item.value)} // 👈 switch active tab
-                            className="flex w-full cursor-pointer items-center justify-between rounded-2xl px-3 py-2 text-sm hover:bg-muted"
-                        >
-                            <div className="flex items-center gap-2">
-                                {item.icon}
-                                <span>{item.title}</span>
-                            </div>
+                    {sidebarItems
+                        .filter(item => {
+                            // If item.roles exists, only include when userType is in the list
+                            if (item.roles && Array.isArray(item.roles)) {
+                                return item.roles.includes(userType)
+                            }
+                            // No roles set => show for everyone
+                            return true
+                        })
+                        .map((item) => (
+                            <button
+                                key={item.title}
+                                onClick={() => setActiveTab(item.value)}
+                                className="flex w-full cursor-pointer items-center justify-between rounded-2xl px-3 py-2 text-sm hover:bg-muted transition-colors"
+                            >
+                                <div className="flex items-center gap-2">
+                                    {item.icon}
+                                    <span>{item.title}</span>
+                                </div>
 
-                            {/*{item.badge && (*/}
-                            {/*    <Badge*/}
-                            {/*        variant="outline"*/}
-                            {/*        className="ml-auto rounded-full px-2 py-0.5 text-xs"*/}
-                            {/*    >*/}
-                            {/*        {item.badge}*/}
-                            {/*    </Badge>*/}
-                            {/*)}*/}
-                        </button>
-                    ))}
+                                {item.badge && (
+                                    <span className="ml-auto rounded-full bg-muted-foreground/10 px-2 py-0.5 text-xs text-foreground">
+                                      {item.badge}
+                                    </span>
+                                )}
+                            </button>
+                        ))}
                 </div>
             </ScrollArea>
 
