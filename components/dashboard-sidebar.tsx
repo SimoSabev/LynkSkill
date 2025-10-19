@@ -1,13 +1,19 @@
 "use client"
 
 import {useState} from "react"
-import {Settings, X,} from "lucide-react"
+import {Settings, X, Grid, FileText, Layers, Briefcase,} from "lucide-react"
 import Image from "next/image"
 import {Button} from "@/components/ui/button"
 import {ScrollArea} from "@/components/ui/scroll-area"
 import {cn} from "@/lib/utils"
-import {sidebarItems} from "@/lib/dashboard-data"
-import {SignedIn, UserButton} from "@clerk/nextjs";
+import {SignedIn, UserButton} from "@clerk/nextjs"
+import {HouseIcon} from "@/components/dashboard/home-icon"
+import {BookOpenTextIcon} from "@/components/dashboard/portfolio-icon"
+import {AnimateIcon} from "@/components/animate-ui/icons/icon";
+import {ChartColumnIncreasing} from "@/components/animate-ui/icons/chart-column-increasing";
+import {ClipboardList} from "@/components/animate-ui/icons/clipboard-list";
+import {CheckCheck} from "@/components/animate-ui/icons/check-check";
+import {UsersRound} from "@/components/animate-ui/icons/users-round";
 
 interface DashboardSidebarProps {
     userType: "Student" | "Company"
@@ -16,9 +22,8 @@ interface DashboardSidebarProps {
     onClose?: () => void
     companyName?: string | null
     companyLogo?: string | null
-    setActiveTab: (tab: string) => void   // 👈 add this
+    setActiveTab: (tab: string) => void
 }
-
 
 export function DashboardSidebar({
                                      userType,
@@ -26,18 +31,8 @@ export function DashboardSidebar({
                                      isMobile = false,
                                      onClose,
                                      companyName,
-                                     setActiveTab,  // 👈 add this
+                                     setActiveTab,
                                  }: DashboardSidebarProps) {
-
-
-    const [, setExpandedItems] = useState<Record<string, boolean>>({})
-
-    const toggleExpanded = (title: string) => {
-        setExpandedItems((prev) => ({
-            ...prev,
-            [title]: !prev[title],
-        }))
-    }
 
     const sidebarContent = (
         <div className="flex h-full flex-col border-r text-foreground">
@@ -76,27 +71,84 @@ export function DashboardSidebar({
 
             <ScrollArea className="flex-1 px-3 py-2">
                 <div className="space-y-1">
-                    {sidebarItems
-                        .filter(item => {
-                            // If item.roles exists, only include when userType is in the list
-                            if (item.roles && Array.isArray(item.roles)) {
-                                return item.roles.includes(userType)
-                            }
-                            // No roles set => show for everyone
-                            return true
-                        })
-                        .map((item) => (
+                    {/* Home - Always visible */}
+                    <AnimateIcon animateOnHover>
+                        <button
+                            onClick={() => setActiveTab("home")}
+                            className="flex w-full cursor-pointer items-center justify-between rounded-2xl px-3 py-2 text-sm hover:bg-muted transition-colors"
+                        >
+                            <div className="flex items-center gap-2">
+
+                                <ChartColumnIncreasing/>
+
+                                <span>Home</span>
+                            </div>
+                        </button>
+                    </AnimateIcon>
+
+                    {/* Portfolio - Only for Students */}
+                    {userType === "Student" && (
+                        <AnimateIcon animateOnHover>
                             <button
-                                key={item.title}
-                                onClick={() => setActiveTab(item.value)}
+                                onClick={() => setActiveTab("apps")}
                                 className="flex w-full cursor-pointer items-center justify-between rounded-2xl px-3 py-2 text-sm hover:bg-muted transition-colors"
                             >
                                 <div className="flex items-center gap-2">
-                                    {item.icon}
-                                    <span>{item.title}</span>
+                                    <ClipboardList/>
+                                    <span>Portfolio</span>
                                 </div>
                             </button>
-                        ))}
+                        </AnimateIcon>
+                    )}
+
+                    {/* Leaderboard - Only for Companies */}
+                    {userType === "Company" && (
+                        <AnimateIcon animateOnHover>
+                            <button
+                                onClick={() => setActiveTab("leaderboard")}
+                                className="flex w-full cursor-pointer items-center justify-between rounded-2xl px-3 py-2 text-sm hover:bg-muted transition-colors"
+                            >
+                                <div className="flex items-center gap-2">
+                                    <UsersRound />
+                                    <span>Leaderboard</span>
+                                </div>
+                            </button>
+                        </AnimateIcon>
+                    )}
+
+                    {/* Applied - Always visible */}
+                <AnimateIcon animateOnHover>
+                    <button
+                        onClick={() => setActiveTab("files")}
+                        className="flex w-full cursor-pointer items-center justify-between rounded-2xl px-3 py-2 text-sm hover:bg-muted transition-colors"
+                    >
+                        <div className="flex items-center gap-2">
+                            <CheckCheck/>
+                            <span>Applied</span>
+                        </div>
+                    </button>
+                </AnimateIcon>
+                    {/* Assignments - Always visible */}
+                    <button
+                        onClick={() => setActiveTab("projects")}
+                        className="flex w-full cursor-pointer items-center justify-between rounded-2xl px-3 py-2 text-sm hover:bg-muted transition-colors"
+                    >
+                        <div className="flex items-center gap-2">
+                            <Layers className="h-5 w-5"/>
+                            <span>Assignments</span>
+                        </div>
+                    </button>
+
+                    {/* My Experience - Always visible */}
+                    <button
+                        onClick={() => setActiveTab("learn")}
+                        className="flex w-full cursor-pointer items-center justify-between rounded-2xl px-3 py-2 text-sm hover:bg-muted transition-colors"
+                    >
+                        <div className="flex items-center gap-2">
+                            <Briefcase className="h-5 w-5"/>
+                            <span>My Experience</span>
+                        </div>
+                    </button>
                 </div>
             </ScrollArea>
 
@@ -112,8 +164,6 @@ export function DashboardSidebar({
                             <UserButton
                                 appearance={{
                                     elements: {
-                                        // userButtonAvatarBox:
-                                        //     "w-8 h-8 sm:w-8 sm:h-8 ring-2 ring-purple-500/50 ring-offset-2 ring-offset-black transition-all duration-300 hover:ring-purple-400",
                                         userButtonPopoverCard:
                                             "bg-gray-900/95 backdrop-blur-sm border border-gray-700 text-white shadow-2xl",
                                         userButtonPopoverActionButton:
