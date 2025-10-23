@@ -21,6 +21,13 @@ export default clerkMiddleware(async (auth, req) => {
     const { userId, sessionClaims } = await auth();
     const url = req.nextUrl;
 
+    // ✅ Allow Googlebot and other crawlers to access public pages without redirect
+    const userAgent = req.headers.get("user-agent") || "";
+    if (/googlebot|bingbot|slurp|duckduckbot|baiduspider|yandex/i.test(userAgent)) {
+        return NextResponse.next();
+    }
+
+
     // ✅ Always allow public APIs and static pages
     if (isPublicRoute(req)) {
         // 👇 Special case: if logged in and visiting "/", redirect to dashboard
