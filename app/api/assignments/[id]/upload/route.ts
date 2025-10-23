@@ -10,17 +10,17 @@ const supabase = createClient(
 
 export async function POST(
     req: Request,
-    { params }: { params: { id: string } } // id = internshipId
+    context: { params: Promise<{ id: string }> } // 👈 note Promise
 ) {
-    try {
-        const internshipId = params.id
+    const { id } = await context.params // 👈 must await params
+    const internshipId = id
 
+    try {
         const clerkUser = await currentUser()
         if (!clerkUser) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
         }
 
-        // 🔍 Find matching user in your DB
         const dbUser = await prisma.user.findUnique({
             where: { clerkId: clerkUser.id },
         })
@@ -36,7 +36,6 @@ export async function POST(
             return NextResponse.json({ error: "No files provided" }, { status: 400 })
         }
 
-        // ✅ Check internship
         const internship = await prisma.internship.findUnique({
             where: { id: internshipId },
         })
@@ -44,19 +43,15 @@ export async function POST(
             return NextResponse.json({ error: "Internship not found" }, { status: 404 })
         }
 
-        // ✅ Find or create assignment
         let assignment = await prisma.assignment.findFirst({
-            where: {
-                internshipId,
-                studentId: dbUser.id, // ✅ fixed
-            },
+            where: { internshipId, studentId: dbUser.id },
         })
 
         if (!assignment) {
             assignment = await prisma.assignment.create({
                 data: {
                     internshipId,
-                    studentId: dbUser.id, // ✅ fixed
+                    studentId: dbUser.id,
                     title: "Student Submission",
                     description: "Auto-created assignment submission",
                     dueDate: new Date(),
@@ -66,7 +61,6 @@ export async function POST(
 
         const uploadedFilesData = []
 
-        // ✅ Upload files
         for (const file of files) {
             const arrayBuffer = await file.arrayBuffer()
             const buffer = Buffer.from(arrayBuffer)
@@ -85,7 +79,7 @@ export async function POST(
             const fileRecord = await prisma.assignmentFile.create({
                 data: {
                     assignmentId: assignment.id,
-                    userId: dbUser.id, // ✅ fixed
+                    userId: dbUser.id,
                     name: file.name,
                     size: file.size,
                     url: publicUrlData.publicUrl,
