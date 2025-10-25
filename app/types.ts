@@ -21,6 +21,7 @@ export interface Application {
     status: "PENDING" | "APPROVED" | "REJECTED"
     studentId: string
     internshipId: string
+    hasUploadedFiles?: boolean
     student?: {
         name: string | undefined;
         id: string

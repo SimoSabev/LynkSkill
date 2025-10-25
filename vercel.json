@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cleanup/delete-expired-applications",
+      "schedule": "0 * * * *"
+    }
+  ]
+}

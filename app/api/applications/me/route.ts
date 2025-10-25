@@ -2,6 +2,15 @@ import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
+await prisma.application.deleteMany({
+    where: {
+        internship: {
+            testAssignmentDueDate: { lt: new Date() },
+        },
+    },
+});
+
+
 export async function GET() {
     try {
         const { userId } = await auth();

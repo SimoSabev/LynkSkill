@@ -1,12 +1,12 @@
 "use client"
 
 import type React from "react"
-
+import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { FileText, Clock, AlertCircle, Upload, X, CheckCircle2, File } from "lucide-react"
+import { FileText, Clock, AlertCircle, Upload, X, CheckCircle2, File, TrendingUp, Sparkles } from "lucide-react"
 import { format } from "date-fns"
 import { motion, AnimatePresence } from "framer-motion"
 
@@ -35,6 +35,8 @@ export default function AssignmentPage() {
     const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
     const [uploading, setUploading] = useState(false)
     const [dragActive, setDragActive] = useState(false)
+
+    const router = useRouter()
 
     useEffect(() => {
         async function fetchAssignment() {
@@ -102,7 +104,6 @@ export default function AssignmentPage() {
             })
 
             if (!res.ok) {
-                // 🧠 Get error info directly from backend
                 const text = await res.text()
                 console.error("❌ Upload failed:", res.status, res.statusText, text)
                 throw new Error(`Upload failed (${res.status}): ${text}`)
@@ -113,6 +114,9 @@ export default function AssignmentPage() {
 
             setUploadedFiles((prev) => [...prev, ...data.files])
             setFiles([])
+
+            // ✅ Redirect to dashboard on success
+            router.push("/dashboard/student")
         } catch (err) {
             console.error("🚨 Upload failed:", err)
             alert(err instanceof Error ? err.message : "Failed to upload files")
@@ -120,8 +124,6 @@ export default function AssignmentPage() {
             setUploading(false)
         }
     }
-
-
 
     const formatFileSize = (bytes: number) => {
         if (bytes === 0) return "0 Bytes"
@@ -131,13 +133,45 @@ export default function AssignmentPage() {
         return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i]
     }
 
+    const formatDate = (date: string | Date | undefined, formatString: string) => {
+        if (!date) return "No date available"
+        const dateObj = new Date(date)
+        if (isNaN(dateObj.getTime())) return "Invalid date"
+        return format(dateObj, formatString)
+    }
+
     if (loading) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-8">
+            <div className="min-h-screen bg-background p-8">
                 <div className="max-w-5xl mx-auto">
-                    <div className="animate-pulse space-y-6">
-                        <div className="h-64 bg-slate-800/50 rounded-2xl" />
-                        <div className="h-96 bg-slate-800/50 rounded-2xl" />
+                    <div className="relative overflow-hidden mb-8">
+                        <div className="bg-gradient-to-r from-[var(--application-header-gradient-from)] to-[var(--application-header-gradient-to)] rounded-2xl p-8 shadow-[0_20px_50px_var(--application-shadow-medium)]">
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-3">
+                                    <div className="h-8 bg-white/20 animate-pulse rounded-lg w-64 backdrop-blur-sm"></div>
+                                    <div className="h-4 bg-white/15 animate-pulse rounded-lg w-96 backdrop-blur-sm"></div>
+                                </div>
+                                <div className="h-6 bg-white/20 animate-pulse rounded-lg w-32 backdrop-blur-sm"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="space-y-6">
+                        {[...Array(2)].map((_, i) => (
+                            <motion.div
+                                key={i}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: i * 0.1 }}
+                                className="relative overflow-hidden bg-gradient-to-br from-[var(--application-card-gradient-from)] to-[var(--application-card-gradient-to)] rounded-2xl p-6 shadow-[0_8px_30px_var(--application-shadow-light)] border border-border/50"
+                            >
+                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -skew-x-12 animate-pulse"></div>
+                                <div className="space-y-4">
+                                    <div className="h-5 bg-muted/30 animate-pulse rounded-lg w-3/4"></div>
+                                    <div className="h-4 bg-muted/20 animate-pulse rounded-lg w-1/2"></div>
+                                    <div className="h-32 bg-muted/25 animate-pulse rounded-lg"></div>
+                                </div>
+                            </motion.div>
+                        ))}
                     </div>
                 </div>
             </div>
@@ -146,49 +180,69 @@ export default function AssignmentPage() {
 
     if (error || !assignment) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-8">
+            <div className="min-h-screen bg-background p-8">
                 <div className="max-w-5xl mx-auto">
-                    <Card className="rounded-2xl border-red-500/20 bg-slate-900/50">
-                        <CardContent className="p-12 text-center">
-                            <AlertCircle className="mx-auto h-12 w-12 text-red-400 mb-4" />
-                            <h2 className="text-2xl font-semibold text-red-400 mb-2">Error Loading Assignment</h2>
-                            <p className="text-slate-400">{error}</p>
-                        </CardContent>
-                    </Card>
+                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center py-16">
+                        <div className="relative mb-8">
+                            <div className="bg-gradient-to-br from-red-500/20 to-red-600/20 rounded-full w-24 h-24 flex items-center justify-center mx-auto shadow-lg border border-red-500/30">
+                                <AlertCircle className="w-12 h-12 text-red-400" />
+                            </div>
+                        </div>
+                        <h3 className="text-2xl font-bold text-foreground mb-3">Error Loading Assignment</h3>
+                        <p className="text-muted-foreground text-lg max-w-md mx-auto">{error}</p>
+                        <Button onClick={() => router.back()} variant="outline" className="mt-6 rounded-xl">
+                            Go Back
+                        </Button>
+                    </motion.div>
                 </div>
             </div>
         )
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-6 md:p-8">
-            <div className="max-w-5xl mx-auto space-y-6">
-                <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-                    <Card
-                        className="rounded-2xl border-2 overflow-hidden"
-                        style={{
-                            borderColor: "transparent",
-                            background: "linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(59, 130, 246, 0.1))",
-                        }}
+        <div className="min-h-screen bg-background p-6 md:p-8">
+            <div className="max-w-5xl mx-auto space-y-8">
+                <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
+                    <Button
+                        onClick={() => router.back()}
+                        variant="ghost"
+                        className="relative group px-4 py-2 hover:bg-muted/50 rounded-xl transition-all duration-200"
                     >
-                        <div className="absolute inset-0 bg-gradient-to-br from-purple-600/10 via-blue-600/10 to-transparent" />
-                        <CardHeader className="relative z-10 pb-8">
-                            <div className="flex items-start gap-4">
-                                <div className="p-4 rounded-xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-purple-500/30">
-                                    <FileText className="h-8 w-8 text-purple-400" />
+                        <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-purple-500/10 via-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <div className="relative flex items-center gap-2">
+                            <div className="h-5 w-5 rounded-full bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center">
+                                <span className="text-purple-400">←</span>
+                            </div>
+                            <span className="text-muted-foreground group-hover:text-foreground transition-colors">Back</span>
+                        </div>
+                    </Button>
+                </motion.div>
+
+                <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+                    <div className="relative overflow-hidden">
+                        <div className="bg-gradient-to-r from-[var(--application-header-gradient-from)] to-[var(--application-header-gradient-to)] rounded-2xl p-8 shadow-[0_20px_50px_var(--application-shadow-medium)]">
+                            <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-transparent to-white/10"></div>
+                            <div className="relative flex items-center justify-between">
+                                <div className="flex items-center gap-6">
+                                    <div className="h-16 w-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg">
+                                        <FileText className="h-8 w-8 text-white" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <h1 className="text-3xl font-bold tracking-tight text-white text-balance">{assignment.title}</h1>
+                                        <p className="text-white/80 text-lg font-medium">
+                                            For <span className="text-white font-semibold">{assignment.internshipTitle}</span> at{" "}
+                                            <span className="text-white font-semibold">{assignment.companyName}</span>
+                                        </p>
+                                    </div>
                                 </div>
-                                <div className="flex-1">
-                                    <CardTitle className="text-3xl font-bold text-slate-100 mb-2 text-balance">
-                                        {assignment.title}
-                                    </CardTitle>
-                                    <p className="text-base text-slate-400">
-                                        For <span className="text-purple-400 font-medium">{assignment.internshipTitle}</span> at{" "}
-                                        <span className="text-blue-400 font-medium">{assignment.companyName}</span>
-                                    </p>
+                                <div className="text-right">
+                                    <div className="p-2 bg-white/10 rounded-xl backdrop-blur-sm">
+                                        <TrendingUp className="w-6 h-6 text-white" />
+                                    </div>
                                 </div>
                             </div>
-                        </CardHeader>
-                    </Card>
+                        </div>
+                    </div>
                 </motion.div>
 
                 <motion.div
@@ -196,31 +250,31 @@ export default function AssignmentPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.1 }}
                 >
-                    <Card className="rounded-2xl border border-slate-800/80 bg-slate-900/50 backdrop-blur-sm">
+                    <Card className="rounded-2xl border border-border/50 bg-gradient-to-br from-[var(--application-card-gradient-from)] to-[var(--application-card-gradient-to)] backdrop-blur-sm shadow-[0_8px_30px_var(--application-shadow-light)]">
                         <CardHeader>
-                            <CardTitle className="text-xl font-semibold text-slate-200 flex items-center gap-2">
-                                <FileText className="h-5 w-5 text-purple-400" />
+                            <CardTitle className="text-xl font-semibold text-card-foreground flex items-center gap-3">
+                                <div className="p-2 bg-purple-500/20 rounded-xl">
+                                    <FileText className="h-5 w-5 text-purple-400" />
+                                </div>
                                 Assignment Details
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-6">
-                            <div className="p-6 rounded-xl bg-slate-800/50 border border-slate-700/50">
-                                <p className="text-slate-300 whitespace-pre-wrap leading-relaxed">{assignment.description}</p>
+                            <div className="p-6 rounded-xl bg-card/50 border border-border/30 backdrop-blur-sm">
+                                <p className="text-card-foreground whitespace-pre-wrap leading-relaxed">{assignment.description}</p>
                             </div>
 
-                            <div className="flex items-center justify-between p-5 rounded-xl bg-gradient-to-br from-purple-500/10 to-blue-500/10 border border-purple-500/20">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2.5 rounded-lg bg-purple-500/20">
-                                        <Clock className="h-5 w-5 text-purple-400" />
+                            <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-purple-500/10 via-blue-500/10 to-transparent border border-purple-500/20 p-5">
+                                <div className="absolute inset-0 bg-gradient-to-r from-white/5 via-transparent to-white/5"></div>
+                                <div className="relative flex items-center gap-4">
+                                    <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 shadow-lg">
+                                        <Clock className="h-6 w-6 text-purple-400" />
                                     </div>
                                     <div>
-                                        <p className="text-sm text-slate-400 font-medium">Due Date</p>
-                                        <p className="text-lg font-semibold text-slate-200">
-                                            {assignment.dueDate && !isNaN(new Date(assignment.dueDate).getTime())
-                                                ? format(new Date(assignment.dueDate), "MMMM d, yyyy 'at' h:mm a")
-                                                : "No due date"}
+                                        <p className="text-sm text-muted-foreground font-medium mb-1">Due Date</p>
+                                        <p className="text-lg font-semibold text-card-foreground">
+                                            {formatDate(assignment.dueDate, "MMMM d, yyyy 'at' h:mm a")}
                                         </p>
-
                                     </div>
                                 </div>
                             </div>
@@ -233,13 +287,15 @@ export default function AssignmentPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.2 }}
                 >
-                    <Card className="rounded-2xl border border-slate-800/80 bg-slate-900/50 backdrop-blur-sm">
+                    <Card className="rounded-2xl border border-border/50 bg-gradient-to-br from-[var(--application-card-gradient-from)] to-[var(--application-card-gradient-to)] backdrop-blur-sm shadow-[0_8px_30px_var(--application-shadow-light)]">
                         <CardHeader>
-                            <CardTitle className="text-xl font-semibold text-slate-200 flex items-center gap-2">
-                                <Upload className="h-5 w-5 text-blue-400" />
+                            <CardTitle className="text-xl font-semibold text-card-foreground flex items-center gap-3">
+                                <div className="p-2 bg-blue-500/20 rounded-xl">
+                                    <Upload className="h-5 w-5 text-blue-400" />
+                                </div>
                                 Submit Your Work
                             </CardTitle>
-                            <p className="text-sm text-slate-400 mt-1">Upload your assignment files below</p>
+                            <p className="text-sm text-muted-foreground mt-2 font-medium">Upload your assignment files below</p>
                         </CardHeader>
                         <CardContent className="space-y-6">
                             {/* Drag and drop area */}
@@ -251,7 +307,7 @@ export default function AssignmentPage() {
                                 className={`relative border-2 border-dashed rounded-xl p-12 transition-all duration-300 ${
                                     dragActive
                                         ? "border-purple-500 bg-purple-500/10"
-                                        : "border-slate-700 bg-slate-800/30 hover:border-slate-600 hover:bg-slate-800/50"
+                                        : "border-border bg-card/30 hover:border-purple-500/50 hover:bg-card/50"
                                 }`}
                             >
                                 <input
@@ -262,14 +318,14 @@ export default function AssignmentPage() {
                                     id="file-upload"
                                 />
                                 <div className="text-center space-y-4">
-                                    <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center">
-                                        <Upload className="h-8 w-8 text-purple-400" />
+                                    <div className="mx-auto w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center shadow-lg border border-purple-500/20">
+                                        <Upload className="h-10 w-10 text-purple-400" />
                                     </div>
                                     <div>
-                                        <p className="text-lg font-medium text-slate-200 mb-1">
-                                            Drop your files here, or <span className="text-purple-400">browse</span>
+                                        <p className="text-lg font-medium text-card-foreground mb-1">
+                                            Drop your files here, or <span className="text-purple-400 font-semibold">browse</span>
                                         </p>
-                                        <p className="text-sm text-slate-500">Support for PDF, DOC, DOCX, ZIP, and more</p>
+                                        <p className="text-sm text-muted-foreground">Support for PDF, DOC, DOCX, ZIP, and more</p>
                                     </div>
                                 </div>
                             </div>
@@ -283,7 +339,10 @@ export default function AssignmentPage() {
                                         exit={{ opacity: 0, height: 0 }}
                                         className="space-y-3"
                                     >
-                                        <h4 className="text-sm font-medium text-slate-300">Selected Files ({files.length})</h4>
+                                        <div className="flex items-center gap-2">
+                                            <Sparkles className="w-4 h-4 text-purple-400" />
+                                            <h4 className="text-sm font-semibold text-card-foreground">Selected Files ({files.length})</h4>
+                                        </div>
                                         <div className="space-y-2">
                                             {files.map((file, index) => (
                                                 <motion.div
@@ -291,22 +350,22 @@ export default function AssignmentPage() {
                                                     initial={{ opacity: 0, x: -20 }}
                                                     animate={{ opacity: 1, x: 0 }}
                                                     exit={{ opacity: 0, x: 20 }}
-                                                    className="flex items-center justify-between p-4 rounded-lg bg-slate-800/50 border border-slate-700/50 group hover:border-slate-600 transition-colors"
+                                                    className="flex items-center justify-between p-4 rounded-xl bg-card/50 border border-border/30 group hover:border-purple-500/30 transition-all duration-200"
                                                 >
                                                     <div className="flex items-center gap-3 flex-1 min-w-0">
-                                                        <div className="p-2 rounded-lg bg-blue-500/10">
+                                                        <div className="p-2.5 rounded-lg bg-gradient-to-br from-blue-500/20 to-purple-500/20">
                                                             <File className="h-5 w-5 text-blue-400" />
                                                         </div>
                                                         <div className="flex-1 min-w-0">
-                                                            <p className="text-sm font-medium text-slate-200 truncate">{file.name}</p>
-                                                            <p className="text-xs text-slate-500">{formatFileSize(file.size)}</p>
+                                                            <p className="text-sm font-medium text-card-foreground truncate">{file.name}</p>
+                                                            <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
                                                         </div>
                                                     </div>
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
                                                         onClick={() => removeFile(index)}
-                                                        className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-red-400 hover:bg-red-500/10"
+                                                        className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-red-400 hover:bg-red-500/10 rounded-lg"
                                                     >
                                                         <X className="h-4 w-4" />
                                                     </Button>
@@ -337,35 +396,35 @@ export default function AssignmentPage() {
                                 )}
                             </AnimatePresence>
 
-                            {/* Uploaded files history */}
                             {uploadedFiles.length > 0 && (
-                                <div className="pt-6 border-t border-slate-800">
-                                    <h4 className="text-sm font-medium text-slate-300 mb-4 flex items-center gap-2">
-                                        <CheckCircle2 className="h-4 w-4 text-green-400" />
+                                <div className="pt-6 border-t border-border/50">
+                                    <h4 className="text-sm font-semibold text-card-foreground mb-4 flex items-center gap-2">
+                                        <div className="p-1.5 bg-green-500/20 rounded-lg">
+                                            <CheckCircle2 className="h-4 w-4 text-green-400" />
+                                        </div>
                                         Previously Submitted ({uploadedFiles.length})
                                     </h4>
                                     <div className="space-y-2">
                                         {uploadedFiles.map((file) => (
-                                            <div
+                                            <motion.div
                                                 key={file.id}
-                                                className="flex items-center justify-between p-4 rounded-lg bg-green-500/5 border border-green-500/20"
+                                                initial={{ opacity: 0, y: 10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-br from-green-500/5 to-emerald-500/5 border border-green-500/20"
                                             >
                                                 <div className="flex items-center gap-3">
-                                                    <div className="p-2 rounded-lg bg-green-500/10">
+                                                    <div className="p-2.5 rounded-lg bg-green-500/20">
                                                         <CheckCircle2 className="h-5 w-5 text-green-400" />
                                                     </div>
                                                     <div>
-                                                        <p className="text-sm font-medium text-slate-200">{file.name}</p>
-                                                        <p className="text-xs text-slate-500">
+                                                        <p className="text-sm font-medium text-card-foreground">{file.name}</p>
+                                                        <p className="text-xs text-muted-foreground">
                                                             {formatFileSize(file.size)} • Uploaded{" "}
-                                                            {file.uploadedAt && !isNaN(new Date(file.uploadedAt).getTime())
-                                                                ? format(new Date(file.uploadedAt), "MMM d, yyyy 'at' h:mm a")
-                                                                : "Unknown time"}
+                                                            {formatDate(file.uploadedAt, "MMM d, yyyy 'at' h:mm a")}
                                                         </p>
-
                                                     </div>
                                                 </div>
-                                            </div>
+                                            </motion.div>
                                         ))}
                                     </div>
                                 </div>

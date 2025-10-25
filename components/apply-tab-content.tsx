@@ -24,7 +24,7 @@ import {
   TrendingUp,
   RefreshCw,
   Search,
-  Layers,
+  Layers, FileText,
 } from "lucide-react"
 
 interface ApplicationsTabContentProps {
@@ -37,13 +37,20 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
   const [portfolio, setPortfolio] = useState<Portfolio | null>(null)
   const [showPortfolio, setShowPortfolio] = useState(false)
   const [showCompany, setShowCompany] = useState<{
-    id: string
-    name: string
-    description?: string
-    location?: string
-    website?: string
-    email?: string // 👈 add this
+    company: {
+      id: string
+      name: string
+      description?: string
+      location?: string
+      website?: string
+      email?: string
+    } | null
+    internship: {
+      id: string
+      title: string
+    } | null
   } | null>(null)
+
 
   const [refreshing, setRefreshing] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
@@ -417,21 +424,38 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                                         <>
                                           <Button
                                               size="sm"
+                                              disabled={!app.hasUploadedFiles}
                                               onClick={() => updateApplication(app.id, "APPROVED")}
-                                              className="flex-1 bg-green-600 hover:bg-green-600/70 text-[var(--application-approved-foreground)] shadow-lg hover:shadow-xl transition-all duration-200 font-semibold"
+                                              className={`flex-1 font-semibold transition-all duration-200 ${
+                                                  app.hasUploadedFiles
+                                                      ? "bg-green-600 hover:bg-green-600/70 text-[var(--application-approved-foreground)] shadow-lg hover:shadow-xl"
+                                                      : "bg-muted text-muted-foreground cursor-not-allowed"
+                                              }`}
                                           >
                                             <CheckCircle className="w-4 h-4 mr-2" />
                                             Approve
                                           </Button>
+
                                           <Button
                                               size="sm"
                                               variant="outline"
+                                              disabled={!app.hasUploadedFiles}
                                               onClick={() => updateApplication(app.id, "REJECTED")}
-                                              className="flex-1 border-2 border-[var(--application-rejected)] text-[var(--application-rejected)] hover:bg-[var(--application-rejected)] hover:text-[var(--application-rejected-foreground)] transition-all duration-200 font-semibold"
+                                              className={`flex-1 font-semibold transition-all duration-200 ${
+                                                  app.hasUploadedFiles
+                                                      ? "border-2 border-[var(--application-rejected)] text-[var(--application-rejected)] hover:bg-[var(--application-rejected)] hover:text-[var(--application-rejected-foreground)]"
+                                                      : "border-muted text-muted-foreground cursor-not-allowed"
+                                              }`}
                                           >
                                             <XCircle className="w-4 h-4 mr-2" />
                                             Reject
                                           </Button>
+
+                                          {!app.hasUploadedFiles && (
+                                              <p className="text-xs text-muted-foreground mt-2 text-center">
+                                                ⚠️ Student must upload an assignment before you can review.
+                                              </p>
+                                          )}
                                         </>
                                     )}
                                     <Button
@@ -450,7 +474,12 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                                       size="sm"
                                       variant="outline"
                                       className="w-full bg-muted/50 border-border/50 font-semibold"
-                                      onClick={() => setShowCompany(app.internship?.company || null)}
+                                      onClick={() =>
+                                          setShowCompany({
+                                            company: app.internship?.company || null,
+                                            internship: app.internship || null,
+                                          })
+                                      }
                                   >
                                     <Eye className="w-4 h-4 mr-2" />
                                     View Details
@@ -661,12 +690,12 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                     <div className="relative flex items-center justify-between">
                       <div className="flex items-center gap-6">
                         <div className="h-20 w-20 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-white font-bold text-2xl shadow-lg">
-                          {showCompany.name?.charAt(0) ?? "C"}
+                          {showCompany.company?.name?.charAt(0) ?? "C"}
                         </div>
                         <div className="space-y-2">
-                          <h2 className="text-3xl font-bold tracking-tight text-white">{showCompany.name}</h2>
-                          {showCompany.description && (
-                              <p className="text-white/80 text-lg font-medium line-clamp-2">{showCompany.description}</p>
+                          <h2 className="text-3xl font-bold tracking-tight text-white">{showCompany.company?.name}</h2>
+                          {showCompany.company?.description && (
+                              <p className="text-white/80 text-lg font-medium line-clamp-2">{showCompany.company?.description}</p>
                           )}
                         </div>
                       </div>
@@ -698,24 +727,24 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                             Company Information
                           </h3>
                           <div className="space-y-4 text-sm">
-                            {showCompany.email && (
+                            {showCompany.company?.email && (
                                 <div className="flex items-center">
                                   <div className="w-2 h-2 bg-primary rounded-full mr-3"></div>
                                   <span className="font-medium text-muted-foreground">Email:</span>
-                                  <span className="ml-2 text-foreground">{showCompany.email}</span>
+                                  <span className="ml-2 text-foreground">{showCompany.company?.email}</span>
                                 </div>
                             )}
-                            {showCompany.location && (
+                            {showCompany.company?.location && (
                                 <div className="flex items-center">
                                   <div className="w-2 h-2 bg-primary rounded-full mr-3"></div>
                                   <span className="font-medium text-muted-foreground">Location:</span>
-                                  <span className="ml-2 text-foreground">{showCompany.location}</span>
+                                  <span className="ml-2 text-foreground">{showCompany.company?.location}</span>
                                 </div>
                             )}
-                            {showCompany.description && (
+                            {showCompany.company?.description && (
                                 <div className="mt-4">
                                   <span className="font-medium text-muted-foreground block mb-2">About:</span>
-                                  <p className="text-foreground leading-relaxed">{showCompany.description}</p>
+                                  <p className="text-foreground leading-relaxed">{showCompany.company?.description}</p>
                                 </div>
                             )}
                           </div>
@@ -760,24 +789,31 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                             Links & Resources
                           </h3>
                           <div className="space-y-3">
-                            {showCompany.website ? (
+                            {showCompany.company?.website ? (
                                 <Button
                                     size="sm"
                                     variant="outline"
                                     asChild
                                     className="w-full font-semibold bg-transparent border-2 border-primary/20 hover:bg-primary hover:text-primary-foreground"
                                 >
-                                  <a href={showCompany.website} target="_blank" rel="noopener noreferrer">
+                                  <a
+                                      href={showCompany.company?.website}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                  >
                                     <ExternalLink className="w-4 h-4 mr-2" />
                                     Visit Website
                                   </a>
                                 </Button>
                             ) : (
-                                <div className="text-center py-4 text-muted-foreground text-sm">No website available</div>
+                                <div className="text-center py-4 text-muted-foreground text-sm">
+                                  No website available
+                                </div>
                             )}
                           </div>
                         </motion.div>
 
+                        {/* --- Application Status --- */}
                         <motion.div
                             initial={{ opacity: 0, x: 20 }}
                             animate={{ opacity: 1, x: 0 }}
@@ -792,10 +828,59 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                           </h3>
                           <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-xl p-4">
                             <p className="text-sm text-foreground font-medium">
-                              Your application has been submitted to this company. You&apos;ll be notified of any status
-                              updates via email.
+                              Your application has been submitted to this company. You&apos;ll be
+                              notified of any status updates via email.
                             </p>
                           </div>
+                        </motion.div>
+
+                        {/* --- Internship Details + Assignment --- */}
+                        <motion.div
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.3 }}
+                            className="bg-card/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-border/50"
+                        >
+                          <h3 className="font-bold text-card-foreground mb-4 flex items-center text-lg">
+                            <div className="p-2 bg-primary/10 rounded-xl mr-3">
+                              <Briefcase className="w-5 h-5 text-primary" />
+                            </div>
+                            Internship Details
+                          </h3>
+
+                          {showCompany && (
+                              <>
+                                {/* Replace with dynamic internship data */}
+                                <p className="text-muted-foreground mb-3">
+                                  {showCompany.company?.description ||
+                                      "No internship description available."}
+                                </p>
+
+                                <div className="space-y-2 text-sm text-muted-foreground">
+                                  <div>
+                                    <span className="font-medium text-foreground">Location:</span>{" "}
+                                    {showCompany.company?.location || "Not specified"}
+                                  </div>
+                                </div>
+
+                                {/* --- Assignment Link --- */}
+                                <div className="mt-4">
+                                  <Button
+                                      onClick={() =>
+                                          window.location.assign(`/assignments/${showCompany.internship?.id}`)
+                                      }
+                                      className="rounded-xl text-foreground px-4 py-2 text-sm font-semibold flex items-center justify-center"
+                                      style={{
+                                        background:
+                                            "linear-gradient(135deg, var(--internship-modal-gradient-from), var(--internship-modal-gradient-to))",
+                                      }}
+                                  >
+                                    <FileText className="h-4 w-4 mr-2" />
+                                    View Assignment Page
+                                  </Button>
+                                </div>
+                              </>
+                          )}
                         </motion.div>
                       </div>
                     </div>
