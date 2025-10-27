@@ -10,9 +10,9 @@ const supabase = createClient(
 
 export async function POST(
     req: Request,
-    context: { params: Promise<{ id: string }> } // 👈 note Promise
+    context: { params: Promise<{ id: string }> }
 ) {
-    const { id } = await context.params // 👈 must await params
+    const { id } = await context.params
     const internshipId = id
 
     try {
@@ -26,23 +26,73 @@ export async function POST(
         })
 
         if (!dbUser) {
-            return NextResponse.json({ error: "User not found in database" }, { status: 404 })
+            return NextResponse.json(
+                { error: "User not found in database" },
+                { status: 404 }
+            )
         }
 
         const formData = await req.formData()
         const files = formData.getAll("files") as File[]
 
         if (!files || files.length === 0) {
-            return NextResponse.json({ error: "No files provided" }, { status: 400 })
+            return NextResponse.json(
+                { error: "No files provided" },
+                { status: 400 }
+            )
         }
 
         const internship = await prisma.internship.findUnique({
             where: { id: internshipId },
         })
         if (!internship) {
-            return NextResponse.json({ error: "Internship not found" }, { status: 404 })
+            return NextResponse.json(
+                { error: "Internship not found" },
+                { status: 404 }
+            )
         }
 
+        // 🧩 Access control
+        if (dbUser.role === "STUDENT") {
+            const hasApplied = await prisma.application.findFirst({
+                where: {
+                    studentId: dbUser.id,
+                    internshipId,
+                },
+            })
+
+            if (!hasApplied) {
+                return NextResponse.json(
+                    {
+                        error:
+                            "You cannot upload an assignment for an internship you haven’t applied to.",
+                        hint:
+                            "Please apply for this internship first to submit your work.",
+                    },
+                    { status: 403 }
+                )
+            }
+        }
+
+        if (dbUser.role === "COMPANY") {
+            const ownsInternship = await prisma.internship.findFirst({
+                where: { id: internshipId, companyId: dbUser.id },
+            })
+
+            if (!ownsInternship) {
+                return NextResponse.json(
+                    {
+                        error:
+                            "You cannot upload files for another company's internship.",
+                        hint:
+                            "Only the company that owns this internship can manage its assignments.",
+                    },
+                    { status: 403 }
+                )
+            }
+        }
+
+        // ✅ Create or find assignment
         let assignment = await prisma.assignment.findFirst({
             where: { internshipId, studentId: dbUser.id },
         })
@@ -59,6 +109,7 @@ export async function POST(
             })
         }
 
+        // ✅ Upload files
         const uploadedFilesData = []
 
         for (const file of files) {
@@ -92,7 +143,8 @@ export async function POST(
         return NextResponse.json({ success: true, files: uploadedFilesData })
     } catch (err: unknown) {
         console.error("🚨 Upload error:", err)
-        const message = err instanceof Error ? err.message : "Failed to upload files"
+        const message =
+            err instanceof Error ? err.message : "Failed to upload files"
         return NextResponse.json({ error: message }, { status: 500 })
     }
 }
