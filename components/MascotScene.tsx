@@ -6,7 +6,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 
 interface MascotSceneProps {
-    steps: string[] // 👈 array of messages
+    steps: string[]
     onFinish: () => void
     mascotUrl: string
 }
@@ -21,6 +21,12 @@ export function MascotScene({ steps, onFinish, mascotUrl }: MascotSceneProps) {
         } else {
             setVisible(false)
             onFinish()
+        }
+    }
+
+    const handleBack = () => {
+        if (stepIndex > 0) {
+            setStepIndex((prev) => prev - 1)
         }
     }
 
@@ -51,20 +57,35 @@ export function MascotScene({ steps, onFinish, mascotUrl }: MascotSceneProps) {
                             transition={{ type: "spring", duration: 0.5 }}
                         >
                             <div className="relative bg-gradient-to-br from-purple-500 to-blue-500 text-white rounded-3xl px-8 py-6 shadow-2xl max-w-md">
-                                {/* Allow HTML in message */}
                                 <p
-                                    className="text-lg md:text-xl font-semibold mb-4 leading-relaxed"
+                                    className="text-lg md:text-xl font-semibold mb-6 leading-relaxed"
                                     dangerouslySetInnerHTML={{ __html: steps[stepIndex] }}
                                 />
-                                <Button
-                                    onClick={handleNext}
-                                    className="w-full bg-white text-purple-500 hover:bg-gray-100 rounded-2xl font-bold"
-                                >
-                                    {stepIndex === steps.length - 1 ? "Finish" : "Next"}
-                                </Button>
 
-                                {/* Arrow pointer (desktop only) */}
-                                <div className="hidden md:block absolute -right-4 top-1/2 -translate-y-1/2 w-0 h-0 border-t-[20px] border-t-transparent border-l-[20px] border-l-purple-500 border-b-[20px] border-b-transparent" />
+                                <div className="flex gap-3">
+                                    <Button
+                                        onClick={handleBack}
+                                        disabled={stepIndex === 0}
+                                        variant="outline"
+                                        className={`flex-1 rounded-2xl font-bold ${
+                                            stepIndex === 0
+                                                ? "opacity-50 cursor-not-allowed"
+                                                : "bg-transparent border-white text-white hover:bg-white/20"
+                                        }`}
+                                    >
+                                        Back
+                                    </Button>
+
+                                    <Button
+                                        onClick={handleNext}
+                                        className="flex-1 bg-white text-purple-600 hover:bg-gray-100 rounded-2xl font-bold"
+                                    >
+                                        {stepIndex === steps.length - 1 ? "Finish" : "Next"}
+                                    </Button>
+                                </div>
+
+                                {/* Arrow pointer */}
+                                <div className="hidden md:block absolute -right-4 top-1/2 -translate-y-1/2 w-0 h-0 border-t-[20px] border-t-transparent border-l-[20px] border-l-blue-500 border-b-[20px] border-b-transparent" />
                             </div>
                         </motion.div>
 

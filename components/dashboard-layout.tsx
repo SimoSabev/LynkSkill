@@ -375,24 +375,38 @@ export function DashboardLayout({userType, children}: DashboardLayoutProps) {
                     </Tabs>
                 </main>
             </div>
-            {showMascot && userType === "Student" && (
+            {showMascot && (
                 <MascotScene
                     mascotUrl="/linky-mascot.png"
-                    steps={[
-                        `👋 Hi <strong>${userName || "Student"}</strong>, I am <strong>Linky</strong>, your guide in <em>LynkSkill</em>.`,
-                        `✨ You made the <strong>best choice</strong> choosing <em>LynkSkill</em> for your professional growth.`,
-                        `🚀 So let me guide you through it.`,
-                        `📁 First, here you have to <strong>make your portfolio</strong> so you can start applying.`,
-                        `💼 After it is done, here you can <strong>apply to the businesses</strong>.`,
-                        `🕓 Once you have applied, here you can see if you are <em>pending</em>, <em>accepted</em> or <em>not</em>.`,
-                        `🌟 After you have been approved, this section <strong>"My Experience"</strong> is the place where you document your journey and receive points which you earn by this formula:<br/><br/><code>{points from approved documentation} + {grade converted to points} × {number of companies which have accepted your documentation}</code>.`,
-                    ]}
+                    steps={
+                        userType === "Student"
+                            ? [
+                                `👋 Hi <strong>${userName || "Student"}</strong>, I am <strong>Linky</strong>, your guide in <em>LynkSkill</em>.`,
+                                `✨ You made the <strong>best choice</strong> choosing <em>LynkSkill</em> for your professional growth.`,
+                                `🚀 So let me guide you through it.`,
+                                `📁 First, here you have to <strong>make your portfolio</strong> so you can start applying.`,
+                                `💼 After it is done, here you can <strong>apply to the businesses</strong>.`,
+                                `🕓 Once you have applied, here you can see if you are <em>pending</em>, <em>accepted</em> or <em>not</em>.`,
+                                `📚 After you have been approved, this section <strong>"Assignments"</strong> is the place where you see the tasks that you start with a company.`,
+                                `🌟 Finally, this section <strong>"My Experience"</strong> is where you document your journey and receive points using the formula:<br/><br/><code>{points from approved documentation} + {grade converted to points} × {number of companies that have accepted your documentation}</code>.`,
+                            ]
+                            : [
+                                `👋 Hi <strong>${companyName || "Company"}</strong>, I am <strong>Linky</strong>, your guide in <em>LynkSkill</em>.`,
+                                `🏢 You made the <strong>best choice</strong> choosing <em>LynkSkill</em> for finding the next generation that will inherit your profession.`,
+                                `🚀 So let me guide you through it.`,
+                                `📝 First, from here you <strong>create an internship</strong> so students can see you.`,
+                                `📥 After that, this is the tab where you can <strong>see students who applied</strong> and decide to accept or reject them.<br/><br/><em>P.S. If you gave them a test, they must complete it before you can decide.</em>`,
+                                `🧩 Here is the <strong>"Assignments"</strong> tab where you can track any assignments you gave to students.`,
+                                `🎓 On the <strong>"My Experience"</strong> tab, you can see which students have tagged you with pictures and videos of your work together. You can validate and accept if they really worked with you — or reject if not. Then you’ll <strong>grade them</strong> based on their performance.`,
+                            ]
+                    }
                     onFinish={async () => {
                         setShowMascot(false)
                         await fetch("/api/user/intro-shown", { method: "POST" })
                     }}
                 />
             )}
+
         </div>
     )
 }
