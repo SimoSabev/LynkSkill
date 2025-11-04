@@ -2,13 +2,12 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { currentUser } from "@clerk/nextjs/server"
 
-
 export async function GET(
     request: Request,
-    context: { params: Promise<{ id: string }> } // 👈 must be Promise
+    context: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { id } = await context.params // 👈 await params
+        const { id } = await context.params
 
         const internship = await prisma.internship.findUnique({
             where: { id },
@@ -19,16 +18,14 @@ export async function GET(
                 testAssignmentDescription: true,
                 testAssignmentDueDate: true,
                 company: {
-                    select: {
-                        name: true,
-                    },
+                    select: { id: true, name: true },
                 },
             },
         })
 
         if (!internship) {
             return NextResponse.json(
-                { error: "Assignment not found" },
+                { error: "Internship not found" },
                 { status: 404 }
             )
         }
@@ -46,7 +43,7 @@ export async function GET(
             return NextResponse.json({ error: "User not found in database" }, { status: 404 })
         }
 
-// 🧩 Access control
+        // 🧩 Access control
         if (dbUser.role === "STUDENT") {
             const hasApplied = await prisma.application.findFirst({
                 where: {
@@ -64,8 +61,16 @@ export async function GET(
         }
 
         if (dbUser.role === "COMPANY") {
+            const company = await prisma.company.findFirst({
+                where: { ownerId: dbUser.id },
+            })
+
+            if (!company) {
+                return NextResponse.json({ error: "Company not found" }, { status: 404 })
+            }
+
             const ownsInternship = await prisma.internship.findFirst({
-                where: { id: internship.id, companyId: dbUser.id },
+                where: { id: internship.id, companyId: company.id },
             })
 
             if (!ownsInternship) {

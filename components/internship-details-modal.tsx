@@ -30,6 +30,7 @@ interface Internship {
     testAssignmentTitle?: string
     testAssignmentDescription?: string
     testAssignmentDueDate?: string
+    testAssignmentId?: string
     company: {
         id: string
         name: string
@@ -332,16 +333,20 @@ export default function InternshipDetailsModal({internshipId, open, onClose}: In
                                                 <h3 className="text-base font-semibold text-slate-200">Test
                                                     Assignment</h3>
                                             </div>
-                                            <Button
-                                                onClick={() => window.location.href = `/assignments/${internship.id}`}
-                                                className="rounded-xl text-foreground px-4 py-2 text-sm"
-                                                style={{
-                                                    background: "linear-gradient(135deg, var(--internship-modal-gradient-from), var(--internship-modal-gradient-to))",
-                                                }}
-                                            >
-                                                <FileText className="h-4 w-4 mr-2"/>
-                                                View Assignment Page
-                                            </Button>
+                                            {/*<Button*/}
+                                            {/*    onClick={() => {*/}
+                                            {/*        // If the backend provides a specific testAssignmentId, use it; fallback to internship.id if needed*/}
+                                            {/*        const assignmentId = internship.testAssignmentId || internship.id;*/}
+                                            {/*        window.location.href = `/assignments/${assignmentId}`;*/}
+                                            {/*    }}*/}
+                                            {/*    className="rounded-xl text-foreground px-4 py-2 text-sm"*/}
+                                            {/*    style={{*/}
+                                            {/*        background: "linear-gradient(135deg, var(--internship-modal-gradient-from), var(--internship-modal-gradient-to))",*/}
+                                            {/*    }}*/}
+                                            {/*>*/}
+                                            {/*    <FileText className="h-4 w-4 mr-2" />*/}
+                                            {/*    View Assignment Page*/}
+                                            {/*</Button>*/}
                                         </div>
 
                                         <div
