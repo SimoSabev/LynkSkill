@@ -276,7 +276,7 @@ export function DashboardLayout({userType, children}: DashboardLayoutProps) {
                 <main className="flex-1 p-4 md:p-6 text-foreground">
                     <Tabs defaultValue="home" value={activeTab} onValueChange={setActiveTab} className="w-full">
                         <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                            <TabsList className="grid w-full max-w-[900px] grid-cols-6 rounded-2xl p-1">
+                            <TabsList className="grid w-full max-w-[900px] grid-cols-5 rounded-2xl p-1">
                                 <TabsTrigger value="home"
                                              className="rounded-xl cursor-pointer data-[state=active]:rounded-xl">
                                     Home
