@@ -283,7 +283,7 @@ export default function OnboardingPage() {
                 }),
             })
 
-            let data: any = null
+            let data: { error?: string } | null = null
             try {
                 data = await res.json()
             } catch {
