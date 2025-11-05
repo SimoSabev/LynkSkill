@@ -183,14 +183,26 @@ export function DashboardSidebar({
 
     if (isMobile) {
         return (
-            <div
-                className={cn(
-                    "fixed inset-y-0 left-0 z-50 w-64 transform bg-background transition-transform duration-300 ease-in-out md:hidden",
-                    isOpen ? "translate-x-0" : "-translate-x-full",
+            <>
+                {/* Backdrop */}
+                {isOpen && (
+                    <div
+                        className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm md:hidden"
+                        onClick={onClose} // Close when clicking outside
+                    />
                 )}
-            >
-                {sidebarContent}
-            </div>
+
+                {/* Sidebar */}
+                <div
+                    className={cn(
+                        "fixed inset-y-0 left-0 z-50 w-64 transform bg-background transition-transform duration-300 ease-in-out md:hidden",
+                        isOpen ? "translate-x-0" : "-translate-x-full",
+                    )}
+                    onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
+                >
+                    {sidebarContent}
+                </div>
+            </>
         )
     }
 
