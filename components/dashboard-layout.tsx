@@ -495,7 +495,7 @@ export function DashboardLayout({ userType, children }: DashboardLayoutProps) {
                                 `💼 After it is done, here you can <strong>apply to the businesses</strong>.`,
                                 `🕓 Once you have applied, here you can see if you are <em>pending</em>, <em>accepted</em> or <em>not</em>.`,
                                 `📚 After you have been approved, this section <strong>"Assignments"</strong> is the place where you see the tasks that you start with a company.`,
-                                `🌟 Finally, this section <strong>"My Experience"</strong> is where you document your journey and receive points using the formula:<br/><br/><code>{points from approved documentation} + {grade converted to points} × {number of companies that have accepted your documentation}</code>.`,
+                                `🌟 Finally, this section <strong>"My Experience"</strong> is where you document your journey and receive points.`,
                             ]
                             : [
                                 `👋 Hi <strong>${companyName || "Company"}</strong>, I am <strong>Linky</strong>, your guide in <em>LynkSkill</em>.`,
