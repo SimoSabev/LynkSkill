@@ -295,7 +295,7 @@ export function DashboardLayout({ userType, children }: DashboardLayoutProps) {
                                         <Home className="h-4 w-4 transition-all duration-300 group-data-[state=active]:scale-110 group-data-[state=active]:drop-shadow-[0_0_8px_rgba(147,51,234,0.8)] group-hover:drop-shadow-[0_0_6px_rgba(147,51,234,0.6)]" />
                                         <span className="relative">
                                             Home
-                                            <span className="absolute inset-0 blur-sm opacity-0 group-data-[state=active]:opacity-100 bg-gradient-to-r from-purple-400 to-blue-400 transition-opacity duration-300" />
+                                            {/*<span className="absolute inset-0 blur-sm opacity-0 group-data-[state=active]:opacity-100 bg-gradient-to-r from-purple-400 to-blue-400 transition-opacity duration-300" />*/}
                                         </span>
                                     </TabsTrigger>
 
