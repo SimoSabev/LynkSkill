@@ -297,3 +297,12 @@
     color: rgba(255, 255, 255, 0.8);
   }
 }
+
+/* Hide scrollbar for a clean horizontal scroll on mobile */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE/Edge */
+  scrollbar-width: none; /* Firefox */
+}
