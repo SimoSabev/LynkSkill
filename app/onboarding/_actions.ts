@@ -8,7 +8,12 @@ export async function completeOnboarding(formData: FormData) {
     const { userId } = await auth()
     if (!userId) return { error: "No logged in user" }
 
-    const roleInput = (formData.get("role") as string)?.toLowerCase() || "student"
+    // ✅ Require explicit role selection (no auto-student)
+    const roleInput = (formData.get("role") as string)?.toLowerCase()
+    if (!roleInput) {
+        return { error: "Please select your role before continuing." }
+    }
+
     const role: "COMPANY" | "STUDENT" = roleInput === "company" ? "COMPANY" : "STUDENT"
 
     console.log("🔍 Role input:", roleInput, "→ Role:", role)
@@ -21,7 +26,9 @@ export async function completeOnboarding(formData: FormData) {
 
         // Get Clerk user info
         const clerkUser = await clerkClient.users.getUser(userId)
-        const email = clerkUser.emailAddresses.find((e) => e.id === clerkUser.primaryEmailAddressId)?.emailAddress || ""
+        const email =
+            clerkUser.emailAddresses.find((e) => e.id === clerkUser.primaryEmailAddressId)
+                ?.emailAddress || ""
 
         // Ensure user exists and update onboarding state
         const user = await prisma.user.upsert({
@@ -39,16 +46,21 @@ export async function completeOnboarding(formData: FormData) {
         console.log("✅ User created/updated with role:", user.role)
 
         // --- STUDENT FLOW ---
-        // --- STUDENT FLOW ---
         if (role === "STUDENT") {
-            const dob = formData.get("dob") as string;
-            const age = dob ? calculateAge(new Date(dob)) : null;
+            const dob = formData.get("dob") as string
 
-            if (age !== null && age < 16) {
-                return { error: "You must be at least 16 years old to use this platform" };
+            // ✅ Require DOB
+            if (!dob) {
+                return { error: "Please enter your date of birth." }
             }
 
-            const needsApproval = age !== null && age < 18;
+            const age = dob ? calculateAge(new Date(dob)) : null
+
+            if (age !== null && age < 16) {
+                return { error: "You must be at least 16 years old to use this platform" }
+            }
+
+            const needsApproval = age !== null && age < 18
 
             const portfolio = await prisma.portfolio.upsert({
                 where: { studentId: user.id },
@@ -70,15 +82,15 @@ export async function completeOnboarding(formData: FormData) {
                     projects: [],
                     certifications: [],
                 },
-            });
+            })
 
-            console.log("✅ Portfolio created/updated for student:", portfolio.id);
+            console.log("✅ Portfolio created/updated for student:", portfolio.id)
 
             return {
                 message: "Student portfolio created or updated",
                 createdPortfolioId: portfolio.id,
                 dashboard: "/dashboard/student",
-            };
+            }
         }
 
         // --- COMPANY FLOW ---
@@ -92,12 +104,14 @@ export async function completeOnboarding(formData: FormData) {
 
             console.log("📝 Company data:", { companyName, companyEik, companyLocation })
 
+            // ✅ Require all company fields
             if (!companyName || !companyDescription || !companyLocation || !companyEik) {
                 return { error: "Please fill all required company fields" }
             }
 
-            if (companyEik.length !== 9 && companyEik.length !== 13) {
-                return { error: "Invalid EIK format" }
+            // ✅ Validate EIK format (must be 9 or 13 digits)
+            if (!companyEik.match(/^\d{9,13}$/)) {
+                return { error: "Invalid EIK format — must be 9 or 13 digits" }
             }
 
             const existing = await prisma.company.findFirst({
@@ -154,6 +168,7 @@ export async function completeOnboarding(formData: FormData) {
         return { error: "Error completing onboarding" }
     }
 }
+
 
 function calculateAge(dob: Date): number {
     const diff = Date.now() - dob.getTime()

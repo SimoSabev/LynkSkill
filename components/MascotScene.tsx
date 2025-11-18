@@ -145,25 +145,37 @@ export function MascotScene({
                                     />
 
                                     <div className="flex gap-3 mt-6">
-                                        <Button
-                                            onClick={handleBack}
-                                            disabled={step === 0}
-                                            variant="outline"
-                                            className={`flex-1 rounded-2xl font-bold ${
-                                                step === 0
-                                                    ? "opacity-50 cursor-not-allowed"
-                                                    : "bg-transparent border-white text-white hover:bg-white/20"
-                                            }`}
-                                        >
-                                            Back
-                                        </Button>
-                                        <Button
-                                            onClick={handleNext}
-                                            className="flex-1 bg-white text-purple-600 hover:bg-gray-100 rounded-2xl font-bold"
-                                        >
-                                            {step === steps.length - 1 ? "Finish" : "Next"}
-                                        </Button>
-                                    </div>
+    <Button
+        onClick={handleBack}
+        disabled={step === 0}
+        variant="outline"
+        className={`flex-1 rounded-2xl font-bold ${
+            step === 0
+                ? "opacity-50 cursor-not-allowed"
+                : "bg-transparent border-white text-white hover:bg-white/20"
+        }`}
+    >
+        Back
+    </Button>
+
+    <Button
+        onClick={() => {
+            setVisible(false)
+            onFinish()
+        }}
+        className="flex-1 bg-transparent border border-white text-white hover:bg-white/20 rounded-2xl font-bold"
+    >
+        Skip
+    </Button>
+
+    <Button
+        onClick={handleNext}
+        className="flex-1 bg-white text-purple-600 hover:bg-gray-100 rounded-2xl font-bold"
+    >
+        {step === steps.length - 1 ? "Finish" : "Next"}
+    </Button>
+</div>
+
 
                                     <div className="hidden md:block absolute -left-3 top-1/2 -translate-y-1/2 w-0 h-0 border-t-[15px] border-t-transparent border-r-[15px] border-r-purple-500 border-b-[15px] border-b-transparent" />
                                 </motion.div>
