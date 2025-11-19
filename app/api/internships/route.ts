@@ -74,7 +74,7 @@ export async function POST(req: Request) {
 }
 
 // ------------------- READ internships -------------------
-export async function GET() {
+export async function GET(req: Request) {
     const { userId } = await auth();
     if (!userId) return new NextResponse("Unauthorized", { status: 401 });
 
@@ -84,11 +84,72 @@ export async function GET() {
     });
     if (!user) return new NextResponse("Unauthorized", { status: 401 });
 
+    // Check if requesting a specific internship
+    const { searchParams } = new URL(req.url);
+    const internshipId = searchParams.get("id");
+
+    if (internshipId) {
+        // Fetch single internship with authorization
+        const internship = await prisma.internship.findUnique({
+            where: { id: internshipId },
+            include: {
+                company: true,
+                applications: {
+                    include: {
+                        student: {
+                            include: {
+                                profile: true
+                            }
+                        }
+                    }
+                }
+            },
+        });
+
+        if (!internship) {
+            return new NextResponse("Internship not found", { status: 404 });
+        }
+
+        // Authorization check
+        if (user.role === "COMPANY") {
+            // Company can only see their own internships
+            const company = user.companies[0];
+            if (!company || internship.companyId !== company.id) {
+                return new NextResponse("Forbidden", { status: 403 });
+            }
+            // Return full details including applications for company
+            return NextResponse.json(internship);
+        } else {
+            // Students can see any internship but without sensitive company data
+            // Remove sensitive application data that doesn't belong to this student
+            const sanitizedInternship = {
+                ...internship,
+                applications: internship.applications.filter(
+                    (app) => app.studentId === user.id
+                ),
+            };
+            return NextResponse.json(sanitizedInternship);
+        }
+    }
+
+    // Fetch all internships based on role
     const internships =
         user.role === "COMPANY"
             ? await prisma.internship.findMany({
                 where: { companyId: user.companies[0]?.id },
                 orderBy: { createdAt: "desc" },
+                include: {
+                    company: true,
+                    applications: {
+                        include: {
+                            student: {
+                                include: {
+                                    profile: true
+                                }
+                            }
+                        }
+                    }
+                },
             })
             : await prisma.internship.findMany({
                 orderBy: { createdAt: "desc" },
@@ -123,7 +184,9 @@ export async function PUT(req: Request) {
     if (!body.id) return new NextResponse("Internship ID required", { status: 400 });
 
     const existing = await prisma.internship.findUnique({ where: { id: body.id } });
-    if (!existing || existing.companyId !== company.id) return new NextResponse("Not found or unauthorized", { status: 404 });
+    if (!existing || existing.companyId !== company.id) {
+        return new NextResponse("Not found or unauthorized", { status: 404 });
+    }
 
     const updated = await prisma.internship.update({
         where: { id: body.id },
@@ -163,7 +226,9 @@ export async function DELETE(req: Request) {
     if (!id) return new NextResponse("Internship ID required", { status: 400 });
 
     const existing = await prisma.internship.findUnique({ where: { id } });
-    if (!existing || existing.companyId !== company.id) return new NextResponse("Not found or unauthorized", { status: 404 });
+    if (!existing || existing.companyId !== company.id) {
+        return new NextResponse("Not found or unauthorized", { status: 404 });
+    }
 
     await prisma.internship.delete({ where: { id } });
 
