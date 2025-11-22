@@ -404,8 +404,7 @@ function AnimateIcon({
 
   const content = asChild ? (
     <Slot
-        // @ts-expect-error temporary ref type mismatch
-        ref={inViewRef}
+      ref={inViewRef}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onPointerDown={handlePointerDown}

@@ -17,7 +17,7 @@ export default function LynkSkillLanding() {
             <ServicesSection />
             <HowItWorks />
             <StatsSection />
-            <TestimonialsSection />
+            {/*<TestimonialsSection />*/}
             <FAQSection />
             <FooterCTA />
         </div>

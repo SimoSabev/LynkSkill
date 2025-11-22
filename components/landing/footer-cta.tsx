@@ -7,7 +7,7 @@ import { ArrowRight } from "lucide-react"
 
 export function FooterCTA() {
     return (
-        <section className="relative py-16 md:py-24 px-4 sm:px-6 lg:px-8">
+        <section className="relative py-16 md:py-24 px-4 sm:px-6 lg:px-8 bg-muted/30">
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}

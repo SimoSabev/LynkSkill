@@ -1,19 +1,18 @@
 "use client"
 
-import {useState} from "react"
-import {Settings, X, Grid, FileText, Layers, Briefcase,} from "lucide-react"
+import {Settings, X, Briefcase,} from "lucide-react"
 import Image from "next/image"
 import {Button} from "@/components/ui/button"
 import {ScrollArea} from "@/components/ui/scroll-area"
 import {cn} from "@/lib/utils"
 import {SignedIn, UserButton} from "@clerk/nextjs"
-import {HouseIcon} from "@/components/dashboard/home-icon"
-import {BookOpenTextIcon} from "@/components/dashboard/portfolio-icon"
 import {AnimateIcon} from "@/components/animate-ui/icons/icon";
 import {ChartColumnIncreasing} from "@/components/animate-ui/icons/chart-column-increasing";
 import {ClipboardList} from "@/components/animate-ui/icons/clipboard-list";
 import {CheckCheck} from "@/components/animate-ui/icons/check-check";
 import {UsersRound} from "@/components/animate-ui/icons/users-round";
+import {Layers} from "@/components/animate-ui/icons/layers";
+import {ClipboardCheck} from "@/components/animate-ui/icons/clipboard-check";
 
 interface DashboardSidebarProps {
     userType: "Student" | "Company"
@@ -127,28 +126,32 @@ export function DashboardSidebar({
                             <span>Applied</span>
                         </div>
                     </button>
-                </AnimateIcon>
+                </AnimateIcon >
                     {/* Assignments - Always visible */}
-                    <button
-                        onClick={() => setActiveTab("projects")}
-                        className="flex w-full cursor-pointer items-center justify-between rounded-2xl px-3 py-2 text-sm hover:bg-muted transition-colors"
-                    >
-                        <div className="flex items-center gap-2">
-                            <Layers className="h-5 w-5"/>
-                            <span>Assignments</span>
-                        </div>
-                    </button>
+                    <AnimateIcon animateOnHover>
+                        <button
+                            onClick={() => setActiveTab("projects")}
+                            className="flex w-full cursor-pointer items-center justify-between rounded-2xl px-3 py-2 text-sm hover:bg-muted transition-colors"
+                        >
+                            <div className="flex items-center gap-2">
+                                <Layers/>
+                                <span>Assignments</span>
+                            </div>
+                        </button>
+                    </AnimateIcon >
 
                     {/* My Experience - Always visible */}
-                    <button
-                        onClick={() => setActiveTab("learn")}
-                        className="flex w-full cursor-pointer items-center justify-between rounded-2xl px-3 py-2 text-sm hover:bg-muted transition-colors"
-                    >
-                        <div className="flex items-center gap-2">
-                            <Briefcase className="h-5 w-5"/>
-                            <span>My Experience</span>
-                        </div>
-                    </button>
+                    <AnimateIcon animateOnHover>
+                        <button
+                            onClick={() => setActiveTab("learn")}
+                            className="flex w-full cursor-pointer items-center justify-between rounded-2xl px-3 py-2 text-sm hover:bg-muted transition-colors"
+                        >
+                            <div className="flex items-center gap-2">
+                                <ClipboardCheck/>
+                                <span>My Experience</span>
+                            </div>
+                        </button>
+                    </AnimateIcon >
                 </div>
             </ScrollArea>
 

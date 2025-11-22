@@ -20,20 +20,20 @@ type SlotProps<T extends HTMLElement = HTMLElement> = {
   children?: any;
 } & DOMMotionProps<T>;
 
-function mergeRefs<T>(...refs: (React.Ref<T> | undefined)[]): React.RefCallback<T> {
-    return (node) => {
-        refs.forEach((ref) => {
-            if (!ref) return;
-            if (typeof ref === 'function') {
-                ref(node);
-            } else {
-                // Use a mutable cast to allow writing to `.current`
-                (ref as unknown as { current: T | null }).current = node;
-            }
-        });
-    };
+function mergeRefs<T>(
+  ...refs: (React.Ref<T> | undefined)[]
+): React.RefCallback<T> {
+  return (node) => {
+    refs.forEach((ref) => {
+      if (!ref) return;
+      if (typeof ref === 'function') {
+        ref(node);
+      } else {
+        (ref as React.MutableRefObject<T | null>).current = node;
+      }
+    });
+  };
 }
-
 
 function mergeProps<T extends HTMLElement>(
   childProps: AnyProps,

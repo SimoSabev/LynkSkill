@@ -1,6 +1,8 @@
-import { Home, Grid, FileText, Layers, Briefcase } from "lucide-react"
+import { Grid, FileText, Layers, Briefcase } from "lucide-react"
 import {HouseIcon} from "@/components/dashboard/home-icon";
 import {BookOpenTextIcon} from "@/components/dashboard/portfolio-icon";
+import {BookOpenCheckIcon} from "@/components/BookOpenCheckIcon";
+
 
 export const sidebarItems = [
   {
@@ -41,7 +43,7 @@ export const sidebarItems = [
   {
     title: "Assignments",
     value: "projects",
-    icon: <Layers />,
+    icon: <BookOpenCheckIcon/>,
     items: [
       { title: "Active Projects", url: "#" },
       { title: "Archived", url: "#" },
