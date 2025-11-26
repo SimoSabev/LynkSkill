@@ -456,7 +456,6 @@ export default function OnboardingPage() {
         <div className="min-h-screen relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-[var(--experience-hero-gradient-from)] via-background to-[var(--experience-hero-gradient-to)] opacity-[0.03]" />
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,var(--experience-accent)_0%,transparent_50%)] opacity-[0.05]" />
-
             <div className="relative z-10 p-6 md:p-8 lg:p-12">
                 <div className="max-w-5xl mx-auto mb-16 text-center space-y-6">
                     <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[var(--experience-accent)]/10 to-primary/10 border border-[var(--experience-accent)]/20 rounded-full mb-6 shadow-sm">
