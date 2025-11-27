@@ -217,27 +217,25 @@ export function RecentInternshipsSection({ userType, setActiveTab }: RecentAppsS
                                                             whileHover={{ scale: 1.15 }}
                                                             whileTap={{ scale: 0.9 }}
                                                             onClick={async () => {
-                                                                const confirm = window.confirm("Are you sure you want to delete this internship?")
-                                                                if (!confirm) return
-
+                                                                const confirmDelete = window.confirm("Are you sure you want to delete this internship?");
+                                                                if (!confirmDelete) return;
+                                                        
                                                                 try {
-                                                                    const res = await fetch("/api/internship/delete", {
-                                                                        method: "DELETE",
-                                                                        headers: {
-                                                                            "Content-Type": "application/json",
-                                                                        },
-                                                                        body: JSON.stringify({ id: item.id }),
-                                                                    })
-                                                                    const data = await res.json()
-                                                                    if (data.error) throw new Error(data.error)
-
+                                                                    const res = await fetch(`/api/internship/delete?id=${item.id}`, {
+                                                                        method: "DELETE"
+                                                                    });
+                                                        
+                                                                    const data = await res.json();
+                                                                    if (data.error) throw new Error(data.error);
+                                                        
+                                                                    // Refresh UI
                                                                     window.dispatchEvent(
                                                                         new CustomEvent("internshipDeleted", {
                                                                             detail: item.id,
-                                                                        }),
-                                                                    )
+                                                                        })
+                                                                    );
                                                                 } catch (err) {
-                                                                    console.error(err)
+                                                                    console.error("Delete internship error:", err);
                                                                 }
                                                             }}
                                                             className="p-1.5 md:p-2 rounded-lg md:rounded-xl cursor-pointer bg-destructive/10 hover:bg-destructive/20 transition-all duration-200 shadow-md hover:shadow-lg"
