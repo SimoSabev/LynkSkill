@@ -37,21 +37,27 @@ export function ApplicationsTabContent({userType}: ApplicationsTabContentProps) 
     const [loading, setLoading] = useState(true)
     const [portfolio, setPortfolio] = useState<Portfolio | null>(null)
     const [showPortfolio, setShowPortfolio] = useState(false)
-   const [showCompany, setShowCompany] = useState<{
-    company: {
-        id: string
-        name: string
-        description?: string
-        location?: string
-        website?: string
-        email?: string
-    } | null
-    internship: {
-        id: string
-        title: string
-    } | null
-    application: Application | null
-} | null>(null)
+    const [showCompany, setShowCompany] = useState<{
+        company: {
+            id: string
+            name: string
+            description?: string
+            location?: string
+            website?: string
+            email?: string
+        } | null
+        internship: {
+            id: string
+            title: string
+        } | null
+        application: Application | null
+        assignmentRequired: boolean
+        project: {
+            id: string
+            title: string
+        } | null
+    } | null>(null)
+
 
 
 
@@ -516,20 +522,22 @@ export function ApplicationsTabContent({userType}: ApplicationsTabContentProps) 
                                                 )}
                                                 {userType === "Student" && (
                                                     <Button
-    size="sm"
-    variant="outline"
-    className="w-full bg-muted/50 border-border/50 font-semibold"
-    onClick={() =>
-        setShowCompany({
-            company: app.internship?.company || null,
-            internship: app.internship || null,
-            application: app,
-        })
-    }
->
-    <Eye className="w-4 h-4 mr-2"/>
-    View Details
-</Button>
+                                                        size="sm"
+                                                        variant="outline"
+                                                        className="w-full bg-muted/50 border-border/50 font-semibold"
+                                                        oonClick={() =>
+                                                        setShowCompany({
+                                                            company: app.internship?.company || null,
+                                                            internship: app.internship || null,
+                                                            application: app,
+                                                            assignmentRequired: Boolean(app.assignmentRequired),
+                                                            project: app.project || null,
+                                                        })
+                                                    }
+                                                    >
+                                                        <Eye className="w-4 h-4 mr-2"/>
+                                                        View Details
+                                                    </Button>
 
                                                 )}
                                             </div>
@@ -932,12 +940,11 @@ export function ApplicationsTabContent({userType}: ApplicationsTabContentProps) 
                                                         </div>
                                                     </div>
 
-                                                    {(showCompany?.application?.assignmentRequired ||
-                                                      showCompany?.application?.hasUploadedFiles) && (
+                                                    (showCompany?.assignmentRequired || showCompany?.project) && (
                                                         <div className="mt-4">
                                                             <Button
                                                                 onClick={() =>
-                                                                    window.location.assign(`/assignments/${showCompany.internship?.id}`)
+                                                                    window.location.assign(`/assignments/${showCompany.project?.id ?? showCompany.internship?.id}`)
                                                                 }
                                                                 className="rounded-xl text-foreground px-4 py-2 text-sm font-semibold flex items-center justify-center"
                                                                 style={{
