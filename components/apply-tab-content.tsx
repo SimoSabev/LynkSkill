@@ -525,13 +525,13 @@ export function ApplicationsTabContent({userType}: ApplicationsTabContentProps) 
                                                         size="sm"
                                                         variant="outline"
                                                         className="w-full bg-muted/50 border-border/50 font-semibold"
-                                                        onClick={() =>
+                                                       onClick={() =>
                                                             setShowCompany({
                                                                 company: app.internship?.company || null,
                                                                 internship: app.internship || null,
                                                                 application: app,
                                                                 assignmentRequired: Boolean(app.assignmentRequired),
-                                                                project: app.project || null,
+                                                                project: null, // FIXED
                                                             })
                                                         }
                                                     >
