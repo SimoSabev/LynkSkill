@@ -20,14 +20,14 @@ export async function PATCH(
         }
 
         // ======================================================
-        // 1) Load application with internship + project
+        // 1) Load the application + internship + project
         // ======================================================
         const data = await prisma.application.findUnique({
             where: { id },
             include: {
                 internship: true,
                 student: true,
-                project: true, // <-- REQUIRED
+                project: true,   // IMPORTANT for project creation check
             },
         })
 
@@ -38,11 +38,9 @@ export async function PATCH(
             )
 
         // ======================================================
-        // 2) Assignment check only if internship HAS assignment
+        // 2) Check assignment upload ONLY IF internship requires it
         // ======================================================
         const assignmentRequired = Boolean(data.internship.testAssignmentTitle)
-
-        let hasUploadedFiles = false
 
         if (assignmentRequired) {
             const assignments = await prisma.assignment.findMany({
@@ -55,7 +53,9 @@ export async function PATCH(
                 },
             })
 
-            hasUploadedFiles = assignments.some(a => a.submissions.length > 0)
+            const hasUploadedFiles = assignments.some(
+                a => a.submissions.length > 0
+            )
 
             if (!hasUploadedFiles) {
                 return NextResponse.json(
@@ -81,7 +81,7 @@ export async function PATCH(
         })
 
         // ======================================================
-        // 4) Create project on approval (only if none exists)
+        // 4) Create project if APPROVED and no project exists
         // ======================================================
         if (status === "APPROVED" && data.project === null) {
             await prisma.project.create({
