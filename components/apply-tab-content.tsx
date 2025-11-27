@@ -924,24 +924,24 @@ export function ApplicationsTabContent({userType}: ApplicationsTabContentProps) 
                                                         </div>
                                                     </div>
 
-                                                    {showCompany?.application?.hasUploadedFiles && (
-    <div className="mt-4">
-        <Button
-            onClick={() =>
-                window.location.assign(`/assignments/${showCompany.internship?.id}`)
-            }
-            className="rounded-xl text-foreground px-4 py-2 text-sm font-semibold flex items-center justify-center"
-            style={{
-                background:
-                    "linear-gradient(135deg, var(--internship-modal-gradient-from), var(--internship-modal-gradient-to))",
-            }}
-        >
-            <FileText className="h-4 w-4 mr-2" />
-            View Assignment Page
-        </Button>
-    </div>
-)}
-
+                                                    {(showCompany?.application?.assignmentRequired ||
+                                                      showCompany?.application?.hasUploadedFiles) && (
+                                                        <div className="mt-4">
+                                                            <Button
+                                                                onClick={() =>
+                                                                    window.location.assign(`/assignments/${showCompany.internship?.id}`)
+                                                                }
+                                                                className="rounded-xl text-foreground px-4 py-2 text-sm font-semibold flex items-center justify-center"
+                                                                style={{
+                                                                    background:
+                                                                        "linear-gradient(135deg, var(--internship-modal-gradient-from), var(--internship-modal-gradient-to))",
+                                                                }}
+                                                            >
+                                                                <FileText className="h-4 w-4 mr-2" />
+                                                                View Assignment Page
+                                                            </Button>
+                                                        </div>
+                                                    )}
                                                 </>
                                             )}
                                         </motion.div>
