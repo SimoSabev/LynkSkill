@@ -940,11 +940,13 @@ export function ApplicationsTabContent({userType}: ApplicationsTabContentProps) 
                                                         </div>
                                                     </div>
 
-                                                    (showCompany?.assignmentRequired || showCompany?.project) && (
+                                                    {(showCompany?.assignmentRequired || showCompany?.project) && (
                                                         <div className="mt-4">
                                                             <Button
                                                                 onClick={() =>
-                                                                    window.location.assign(`/assignments/${showCompany.project?.id ?? showCompany.internship?.id}`)
+                                                                    window.location.assign(
+                                                                        `/assignments/${showCompany.project?.id ?? showCompany.internship?.id}`
+                                                                    )
                                                                 }
                                                                 className="rounded-xl text-foreground px-4 py-2 text-sm font-semibold flex items-center justify-center"
                                                                 style={{
