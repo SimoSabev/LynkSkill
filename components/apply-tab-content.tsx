@@ -37,20 +37,22 @@ export function ApplicationsTabContent({userType}: ApplicationsTabContentProps) 
     const [loading, setLoading] = useState(true)
     const [portfolio, setPortfolio] = useState<Portfolio | null>(null)
     const [showPortfolio, setShowPortfolio] = useState(false)
-    const [showCompany, setShowCompany] = useState<{
-        company: {
-            id: string
-            name: string
-            description?: string
-            location?: string
-            website?: string
-            email?: string
-        } | null
-        internship: {
-            id: string
-            title: string
-        } | null
-    } | null>(null)
+   const [showCompany, setShowCompany] = useState<{
+    company: {
+        id: string
+        name: string
+        description?: string
+        location?: string
+        website?: string
+        email?: string
+    } | null
+    internship: {
+        id: string
+        title: string
+    } | null
+    application: Application | null
+} | null>(null)
+
 
 
     const [refreshing, setRefreshing] = useState(false)
