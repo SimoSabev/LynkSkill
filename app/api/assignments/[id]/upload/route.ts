@@ -2,29 +2,24 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { createClient } from "@supabase/supabase-js"
 import { currentUser } from "@clerk/nextjs/server"
-import slugify from "slugify" // ✅ make sure to install this
+import slugify from "slugify"
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-// ✅ Safe and clean filename sanitizer using slugify
 const sanitizeFileName = (name: string) => {
-    // Split filename and extension safely
     const [base, ext] = name.split(/\.(?=[^\.]+$)/)
-    // Convert to URL-safe, lowercase slug
     const safeBase = slugify(base, { lower: true, strict: true })
-    // Reattach extension (if any)
     return `${safeBase}.${ext || ""}`
 }
 
 export async function POST(
     req: Request,
-    context: { params: Promise<{ id: string }> }
+    { params }: { params: { id: string } }
 ) {
-    const { id } = await context.params
-    const internshipId = id
+    const assignmentId = params.id
 
     try {
         const clerkUser = await currentUser()
@@ -37,95 +32,55 @@ export async function POST(
         })
 
         if (!dbUser) {
-            return NextResponse.json(
-                { error: "User not found in database" },
-                { status: 404 }
-            )
+            return NextResponse.json({ error: "User not found" }, { status: 404 })
         }
 
-        const formData = await req.formData()
-        const files = formData.getAll("files") as File[]
-
-        if (!files || files.length === 0) {
-            return NextResponse.json({ error: "No files provided" }, { status: 400 })
-        }
-
-        const internship = await prisma.internship.findUnique({
-            where: { id: internshipId },
+        const assignment = await prisma.assignment.findUnique({
+            where: { id: assignmentId },
+            include: {
+                internship: true,
+            },
         })
 
-        if (!internship) {
+        if (!assignment) {
             return NextResponse.json(
-                { error: "Internship not found" },
+                { error: "Assignment not found" },
                 { status: 404 }
             )
         }
 
-        // 🧩 Access control
+        // Access control
         if (dbUser.role === "STUDENT") {
-            const hasApplied = await prisma.application.findFirst({
-                where: {
-                    studentId: dbUser.id,
-                    internshipId,
-                },
-            })
-
-            if (!hasApplied) {
+            if (assignment.studentId !== dbUser.id) {
                 return NextResponse.json(
-                    {
-                        error:
-                            "You cannot upload an assignment for an internship you haven’t applied to.",
-                        hint: "Please apply for this internship first to submit your work.",
-                    },
+                    { error: "Forbidden: not your assignment" },
                     { status: 403 }
                 )
             }
         }
 
         if (dbUser.role === "COMPANY") {
-            const ownsInternship = await prisma.internship.findFirst({
-                where: { id: internshipId, companyId: dbUser.id },
-            })
-
-            if (!ownsInternship) {
+            if (assignment.internship.companyId !== dbUser.id) {
                 return NextResponse.json(
-                    {
-                        error:
-                            "You cannot upload files for another company's internship.",
-                        hint:
-                            "Only the company that owns this internship can manage its assignments.",
-                    },
+                    { error: "Forbidden: not your internship" },
                     { status: 403 }
                 )
             }
         }
 
-        // ✅ Create or find assignment
-        let assignment = await prisma.assignment.findFirst({
-            where: { internshipId, studentId: dbUser.id },
-        })
+        const formData = await req.formData()
+        const files = formData.getAll("files") as File[]
 
-        if (!assignment) {
-            assignment = await prisma.assignment.create({
-                data: {
-                    internshipId,
-                    studentId: dbUser.id,
-                    title: "Student Submission",
-                    description: "Auto-created assignment submission",
-                    dueDate: new Date(),
-                },
-            })
+        if (!files.length) {
+            return NextResponse.json({ error: "No files provided" }, { status: 400 })
         }
 
-        // ✅ Upload files safely
         const uploadedFilesData = []
 
         for (const file of files) {
-            const arrayBuffer = await file.arrayBuffer()
-            const buffer = Buffer.from(arrayBuffer)
-
-            const safeFileName = sanitizeFileName(file.name)
-            const filePath = `${assignment.id}/${Date.now()}-${safeFileName}`
+            const buffer = Buffer.from(await file.arrayBuffer())
+            const safeName = sanitizeFileName(file.name)
+            const filePath = `${assignmentId}/${Date.now()}-${safeName}`
 
             const { error: uploadError } = await supabase.storage
                 .from("assignments-files")
@@ -133,28 +88,29 @@ export async function POST(
 
             if (uploadError) throw uploadError
 
-            const { data: publicUrlData } = supabase.storage
+            const { data: urlData } = supabase.storage
                 .from("assignments-files")
                 .getPublicUrl(filePath)
 
-            const fileRecord = await prisma.assignmentFile.create({
+            const record = await prisma.assignmentFile.create({
                 data: {
-                    assignmentId: assignment.id,
+                    assignmentId,
                     userId: dbUser.id,
-                    name: file.name, // keep original visible name
+                    name: file.name,
                     size: file.size,
-                    url: publicUrlData.publicUrl,
+                    url: urlData.publicUrl,
                 },
             })
 
-            uploadedFilesData.push(fileRecord)
+            uploadedFilesData.push(record)
         }
 
         return NextResponse.json({ success: true, files: uploadedFilesData })
-    } catch (err: unknown) {
-        console.error("🚨 Upload error:", err)
-        const message =
-            err instanceof Error ? err.message : "Failed to upload files"
-        return NextResponse.json({ error: message }, { status: 500 })
+    } catch (err) {
+        console.error("Upload error:", err)
+        return NextResponse.json(
+            { error: err instanceof Error ? err.message : "Upload failed" },
+            { status: 500 }
+        )
     }
 }
