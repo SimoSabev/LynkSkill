@@ -525,15 +525,15 @@ export function ApplicationsTabContent({userType}: ApplicationsTabContentProps) 
                                                         size="sm"
                                                         variant="outline"
                                                         className="w-full bg-muted/50 border-border/50 font-semibold"
-                                                        oonClick={() =>
-                                                        setShowCompany({
-                                                            company: app.internship?.company || null,
-                                                            internship: app.internship || null,
-                                                            application: app,
-                                                            assignmentRequired: Boolean(app.assignmentRequired),
-                                                            project: app.project || null,
-                                                        })
-                                                    }
+                                                        onClick={() =>
+                                                            setShowCompany({
+                                                                company: app.internship?.company || null,
+                                                                internship: app.internship || null,
+                                                                application: app,
+                                                                assignmentRequired: Boolean(app.assignmentRequired),
+                                                                project: app.project || null,
+                                                            })
+                                                        }
                                                     >
                                                         <Eye className="w-4 h-4 mr-2"/>
                                                         View Details
