@@ -34,8 +34,10 @@ export async function GET() {
         })
 
         // Extract unique companies from approved applications
-        const companiesMap = new Map()
-        approvedApplications.forEach((app) => {
+        // Extract unique companies from approved applications
+        const companiesMap = new Map<string, { id: string; name: string; logo: string | null }>()
+
+        approvedApplications.forEach((app: typeof approvedApplications[0]) => {
             if (app.internship?.company) {
                 const company = app.internship.company
                 if (!companiesMap.has(company.id)) {
@@ -47,6 +49,7 @@ export async function GET() {
                 }
             }
         })
+
 
         const companies = Array.from(companiesMap.values())
 

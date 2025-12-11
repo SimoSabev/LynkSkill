@@ -145,6 +145,7 @@ export async function GET() {
                 include: { student: true },
                 orderBy: { createdAt: "desc" },
             })
+
         }
 
         return NextResponse.json({ experiences, summary })

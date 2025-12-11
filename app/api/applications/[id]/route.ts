@@ -54,8 +54,9 @@ export async function PATCH(
             })
 
             const hasUploadedFiles = assignments.some(
-                a => a.submissions.length > 0
+                (a: { submissions: { id: string }[] }) => a.submissions.length > 0
             )
+
 
             if (!hasUploadedFiles) {
                 return NextResponse.json(

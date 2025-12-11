@@ -46,13 +46,13 @@ export async function GET() {
             orderBy: { createdAt: "desc" },
         })
 
-        const formatted = applications.map(app => {
+        const formatted = applications.map((app: typeof applications[0]) => {
             const assignmentsForInternship = app.student.assignments.filter(
-                (a) => a.internshipId === app.internshipId
+                (a: { internshipId: string }) => a.internshipId === app.internshipId
             )
 
             const hasUploadedFiles = assignmentsForInternship.some(
-                (a) => a.submissions.length > 0
+                (a: { submissions: { id: string }[] }) => a.submissions.length > 0
             )
 
             const assignmentRequired = Boolean(app.internship.testAssignmentTitle)
@@ -60,18 +60,20 @@ export async function GET() {
             const project =
                 assignmentsForInternship.length > 0
                     ? {
-                          id: assignmentsForInternship[0].id,
-                          title: assignmentsForInternship[0].title
-                      }
+                        id: assignmentsForInternship[0].id,
+                        title: assignmentsForInternship[0].title,
+                    }
                     : null
 
             return {
                 ...app,
                 hasUploadedFiles,
                 assignmentRequired,
-                project
+                project,
             }
         })
+
+
 
         return NextResponse.json(formatted)
     } catch (err) {

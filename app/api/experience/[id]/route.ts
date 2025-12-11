@@ -39,10 +39,11 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
             return NextResponse.json({ error: "Experience not found" }, { status: 404 })
         }
 
-        if (!user.companies.some((c) => c.id === experience.companyId)) {
-            console.log(" Forbidden - not company's experience")
-            return NextResponse.json({ error: "Not your company's experience" }, { status: 403 })
-        }
+        if (!user.companies.some((c: { id: string }) => c.id === experience.companyId)) {
+    console.log(" Forbidden - not company's experience")
+    return NextResponse.json({ error: "Not your company's experience" }, { status: 403 })
+}
+
 
         if (status === "approved" && (grade === null || grade === undefined)) {
             console.log(" Bad request - grade required for approval")
