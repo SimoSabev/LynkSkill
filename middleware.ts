@@ -56,7 +56,7 @@ export default clerkMiddleware(async (auth, req) => {
 
     // ✅ Sync Clerk user with Supabase if logged in
     if (userId) {
-        fetch(`${req.nextUrl.origin}/api/sync-user`, {
+        fetch(`${req.nextUrl.origin}/api/sync-users`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ userId, sessionClaims }),

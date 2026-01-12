@@ -2,9 +2,13 @@ import { prisma } from "@/lib/prisma";
 import { clerkClient } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
-export async function GET() {
+export async function GET(req: Request) {
     try {
-        // 1️⃣ Fetch all students from Prisma
+        const { searchParams } = new URL(req.url);
+        const limit = parseInt(searchParams.get("limit") || "50");
+        const offset = parseInt(searchParams.get("offset") || "0");
+
+        // 1️⃣ Fetch paginated students from Prisma
         const students = await prisma.user.findMany({
             where: { role: "STUDENT" },
             include: {
@@ -12,17 +16,24 @@ export async function GET() {
                     where: { status: "approved" },
                 },
             },
+            take: limit,
+            skip: offset,
+            orderBy: { id: "asc" },
         });
 
-        // 2️⃣ Get Clerk client instance (✅ new syntax)
+        // 2️⃣ Get Clerk client instance
         const clerk = await clerkClient();
 
-        // 3️⃣ Fetch all Clerk users (✅)
-        const clerkUsers = await clerk.users.getUserList();
+        // 3️⃣ Fetch only needed Clerk users (batch by clerkIds)
+        const clerkIds = students.map(s => s.clerkId);
+        const clerkUsers = await clerk.users.getUserList({ userId: clerkIds });
 
-        // 4️⃣ Combine Clerk + Prisma data
+        // 4️⃣ Create Map for O(1) lookup instead of O(n) find
+        const clerkUserMap = new Map(clerkUsers.data.map(u => [u.id, u]));
+
+        // 5️⃣ Combine Clerk + Prisma data with O(n) complexity
         const leaderboard = students.map((student) => {
-            const clerkUser = clerkUsers.data.find((u) => u.id === student.clerkId);
+            const clerkUser = clerkUserMap.get(student.clerkId);
 
             const approved = student.experiences;
             const totalPoints = approved.length * 20;
@@ -48,7 +59,7 @@ export async function GET() {
             };
         });
 
-        // 5️⃣ Sort leaderboard
+        // 6️⃣ Sort leaderboard (after pagination for efficiency)
         leaderboard.sort((a, b) => b.allRound - a.allRound);
 
         return NextResponse.json(leaderboard);

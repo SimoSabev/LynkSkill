@@ -31,6 +31,8 @@ model User {
   testSubmissions    TestSubmission[]
   assignments        Assignment[]  @relation("StudentAssignments") // ✅ student assignments
   assignmentFiles    AssignmentFile[]
+
+  @@index([role])
 }
 
 //
@@ -99,6 +101,8 @@ model Internship {
   projects       Project[]
   testSubmissions TestSubmission[]
   assignments    Assignment[]  // ← one internship can have multiple assignments
+
+  @@index([companyId])
 }
 
 //
@@ -170,6 +174,9 @@ model Application {
   project      Project?
 
   @@unique([internshipId, studentId])
+  @@index([studentId])
+  @@index([status])
+  @@index([studentId, status])
 }
 
 //
@@ -203,6 +210,8 @@ model Portfolio {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([approvalStatus])
 }
 
 //
@@ -254,6 +263,10 @@ model Experience {
   student User    @relation(fields: [studentId], references: [id])
   company Company  @relation(fields: [companyId], references: [id])
   project Project  @relation(fields: [projectId], references: [id])
+
+  @@index([studentId])
+  @@index([companyId])
+  @@index([status])
 }
 
 

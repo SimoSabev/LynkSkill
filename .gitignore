@@ -1,4 +1,6 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# JetBrains / IntelliJ / WebStorm
+.idea/
 
 # dependencies
 /node_modules
