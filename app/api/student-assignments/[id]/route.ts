@@ -4,10 +4,10 @@ import { currentUser } from "@clerk/nextjs/server"
 
 export async function GET(
     request: Request,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const assignmentId = params.id
+        const { id } = await params; const assignmentId = id
 
         const clerkUser = await currentUser()
         if (!clerkUser) {

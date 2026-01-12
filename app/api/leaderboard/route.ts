@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { clerkClient } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
+export const revalidate = 300;
+
 export async function GET(req: Request) {
     try {
         const { searchParams } = new URL(req.url);

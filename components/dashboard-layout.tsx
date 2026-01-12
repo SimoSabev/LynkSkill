@@ -34,7 +34,7 @@ export function DashboardLayout({ userType, children }: DashboardLayoutProps) {
     const [activeTab, setActiveTab] = useState("home")
     const [sidebarOpen, setSidebarOpen] = useState(true)
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-    const [isInitialLoading, setIsInitialLoading] = useState(true)
+    const [isInitialLoading, setIsInitialLoading] = useState(false)
     const [internships, setInternships] = useState<Internship[]>([])
     const [modalOpen, setModalOpen] = useState(false)
     const [companyName, setCompanyName] = useState<string | null>(null)
@@ -127,11 +127,6 @@ export function DashboardLayout({ userType, children }: DashboardLayoutProps) {
         }
     }, [])
 
-    // ✅ Fake loading animation
-    useEffect(() => {
-        const timer = setTimeout(() => setIsInitialLoading(false), 1000)
-        return () => clearTimeout(timer)
-    }, [])
 
     if (isInitialLoading) {
         return (

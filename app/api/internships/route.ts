@@ -6,7 +6,7 @@ import { z } from "zod";
 
 // Prisma + Supabase pgBouncer optimisation
 export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 // ZOD schema
 const internshipSchema = z.object({

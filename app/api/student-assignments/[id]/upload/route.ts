@@ -8,8 +8,8 @@ const supabase = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-export async function POST(req: Request, { params }: { params: { id: string } }) {
-    const assignmentId = params.id
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params; const assignmentId = id
 
     try {
         const clerkUser = await currentUser()
