@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { prisma } from "@/lib/prisma";
 import { openai } from "@/lib/openai";
 import {
   generatePortfolioAudit,
   PortfolioData,
 } from "../prompts";
-import { Prisma } from "@prisma/client";
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -21,20 +19,11 @@ interface EvaluationRequestBody {
 }
 
 /**
- * Evaluation result structure stored in database
- */
-interface EvaluationResult {
-  evaluation: string;
-  generatedAt: string;
-}
-
-/**
  * API response structure
  */
 interface EvaluationResponse {
   success: boolean;
   evaluation?: string;
-  evaluationId?: string;
   error?: string;
 }
 
@@ -45,10 +34,8 @@ enum EvaluationErrorType {
   UNAUTHORIZED = "UNAUTHORIZED",
   INVALID_REQUEST = "INVALID_REQUEST",
   API_KEY_MISSING = "API_KEY_MISSING",
-  EVALUATION_EXISTS = "EVALUATION_EXISTS",
   OPENAI_TIMEOUT = "OPENAI_TIMEOUT",
   OPENAI_API_ERROR = "OPENAI_API_ERROR",
-  DATABASE_ERROR = "DATABASE_ERROR",
   UNKNOWN_ERROR = "UNKNOWN_ERROR",
 }
 
@@ -64,6 +51,53 @@ class EvaluationError extends Error {
     super(message);
     this.name = "EvaluationError";
   }
+}
+
+// ============================================================================
+// IN-MEMORY RATE LIMITING
+// ============================================================================
+
+/**
+ * Simple in-memory rate limiter to prevent abuse
+ * Key: userId, Value: { count, resetTime }
+ */
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+const MAX_EVALUATIONS_PER_WINDOW = 5; // Max 5 evaluations per hour
+
+// Clean up old entries every 10 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [userId, data] of rateLimitMap.entries()) {
+    if (now > data.resetTime) {
+      rateLimitMap.delete(userId);
+    }
+  }
+}, 10 * 60 * 1000);
+
+/**
+ * Checks and updates rate limit for a user
+ * Returns true if the request should be allowed
+ */
+function checkRateLimit(userId: string): boolean {
+  const now = Date.now();
+  const userData = rateLimitMap.get(userId);
+
+  if (!userData || now > userData.resetTime) {
+    // First request or window expired - reset
+    rateLimitMap.set(userId, {
+      count: 1,
+      resetTime: now + RATE_LIMIT_WINDOW_MS,
+    });
+    return true;
+  }
+
+  if (userData.count >= MAX_EVALUATIONS_PER_WINDOW) {
+    return false;
+  }
+
+  userData.count++;
+  return true;
 }
 
 // ============================================================================
@@ -133,58 +167,6 @@ function validateRequestSize(req: Request): void {
       "Request payload too large. Maximum 10KB allowed.",
       400
     );
-  }
-}
-
-// ============================================================================
-// DATABASE FUNCTIONS
-// ============================================================================
-
-/**
- * Checks if an evaluation already exists for the user
- */
-async function checkExistingEvaluation(userId: string): Promise<boolean> {
-  try {
-    const existing = await prisma.evaluation.findFirst({
-      where: { userId },
-      select: { id: true },
-    });
-    return existing !== null;
-  } catch (error) {
-    console.error("Error checking existing evaluation:", error);
-    throw new EvaluationError(
-      EvaluationErrorType.DATABASE_ERROR,
-      "Failed to check existing evaluation.",
-      500
-    );
-  }
-}
-
-/**
- * Stores evaluation result in database asynchronously
- * This runs after the response is sent to the client
- */
-async function storeEvaluationAsync(
-  userId: string,
-  portfolioData: PortfolioData,
-  evaluationResult: string
-): Promise<void> {
-  try {
-    const result: EvaluationResult = {
-      evaluation: evaluationResult,
-      generatedAt: new Date().toISOString(),
-    };
-
-    await prisma.evaluation.create({
-      data: {
-        userId,
-        portfolioData: portfolioData as unknown as Prisma.InputJsonValue,
-        result: result as unknown as Prisma.InputJsonValue,
-      },
-    });
-  } catch (error) {
-    console.error("Error storing evaluation asynchronously:", error);
-    // Don't throw - this is a background operation
   }
 }
 
@@ -272,7 +254,20 @@ export async function POST(req: Request): Promise<NextResponse<EvaluationRespons
     }
 
     // -----------------------------------------------------------------------
-    // STEP 3: Request validation
+    // STEP 3: Rate limiting check
+    // -----------------------------------------------------------------------
+    if (!checkRateLimit(userId)) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Rate limit exceeded. You can generate up to 5 evaluations per hour.",
+        },
+        { status: 429 }
+      );
+    }
+
+    // -----------------------------------------------------------------------
+    // STEP 4: Request validation
     // -----------------------------------------------------------------------
     validateRequestSize(req);
 
@@ -292,41 +287,17 @@ export async function POST(req: Request): Promise<NextResponse<EvaluationRespons
     validatePortfolioData(portfolioData);
 
     // -----------------------------------------------------------------------
-    // STEP 4: Check for existing evaluation (one-time only)
-    // -----------------------------------------------------------------------
-    const hasExistingEvaluation = await checkExistingEvaluation(userId);
-    if (hasExistingEvaluation) {
-      throw new EvaluationError(
-        EvaluationErrorType.EVALUATION_EXISTS,
-        "Evaluation already exists for this user. Each user can only have one evaluation.",
-        409
-      );
-    }
-
-    // -----------------------------------------------------------------------
     // STEP 5: Generate portfolio audit using OpenAI
     // -----------------------------------------------------------------------
     const evaluationResult = await generatePortfolioAudit(portfolioData, openai);
 
     // -----------------------------------------------------------------------
-    // STEP 6: Return response immediately (before DB write)
+    // STEP 6: Return response
     // -----------------------------------------------------------------------
-    const response = NextResponse.json({
+    return NextResponse.json({
       success: true,
       evaluation: evaluationResult,
     } as EvaluationResponse);
-
-    // -----------------------------------------------------------------------
-    // STEP 7: Store evaluation asynchronously (after response is sent)
-    // -----------------------------------------------------------------------
-    // This runs in the background and doesn't block the response
-    storeEvaluationAsync(userId, portfolioData, evaluationResult).catch(
-      (error) => {
-        console.error("Async evaluation storage failed:", error);
-      }
-    );
-
-    return response;
 
   } catch (error) {
     return handleError(error);
