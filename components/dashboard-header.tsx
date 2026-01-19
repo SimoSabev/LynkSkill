@@ -7,6 +7,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { ModeToggle } from "@/components/theme-toggle"
 import { SignedIn, UserButton } from "@clerk/nextjs"
 import { NotificationBell } from "@/components/notification-bell"
+import { LanguageSwitcher } from "@/components/language-switcher"
+import { useTranslation } from "@/lib/i18n"
 
 interface DashboardHeaderProps {
   sidebarOpen: boolean
@@ -23,6 +25,8 @@ export function DashboardHeader({
                                   notifications: _notifications = 5,
                                   userType: _userType,
                                 }: DashboardHeaderProps) {
+  const { t } = useTranslation()
+  
   return (
       <header className="sticky top-0 z-10 flex h-16 w-full items-center gap-3 border-b border-purple-500/20 bg-gradient-to-r from-background via-purple-950/10 to-background px-4 backdrop-blur-xl transition-all duration-500 animate-gradient-x">
         <Button
@@ -45,11 +49,13 @@ export function DashboardHeader({
 
         <div className="flex flex-1 w-full items-center justify-between gap-2">
           <h1 className="text-lg sm:text-xl font-semibold bg-clip-text text-foreground animate-gradient-x bg-[length:200%_auto] transition-all duration-500">
-            LynkSkill&apos;s Dashboard
+            {t('dashboard.title')}
           </h1>
 
           <div className="flex items-center text-foreground gap-2 sm:gap-3">
             <NotificationBell />
+            
+            <LanguageSwitcher />
             
             <TooltipProvider>
               <Tooltip>
@@ -63,7 +69,7 @@ export function DashboardHeader({
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent className="bg-purple-950/90 border-purple-500/30 text-foreground backdrop-blur-sm">
-                  Toggle theme
+                  {t('dashboard.toggleTheme')}
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>

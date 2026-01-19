@@ -51,6 +51,7 @@ import {
     AlertCircle,
 } from "lucide-react"
 import AIMascotScene from "./AIMascotScene"
+import { useTranslation } from "@/lib/i18n"
 
 interface FileAttachment {
     id: string
@@ -203,6 +204,7 @@ const AttachmentDisplay = ({ attachments }: { attachments?: FileAttachment[] }) 
 }
 
 export function Portfolio({ userType }: { userType: "Student" | "Company" }) {
+    const { t } = useTranslation()
     const [portfolio, setPortfolio] = useState<PortfolioData | null>(null)
     const [isEditing, setIsEditing] = useState(false)
     const [loading, setLoading] = useState(true)
@@ -539,7 +541,7 @@ export function Portfolio({ userType }: { userType: "Student" | "Company" }) {
                                     >
                                         <Code className="h-8 w-8 mb-3" />
                                         <div className="text-3xl font-bold">{portfolio?.skills?.length || 0}</div>
-                                        <div className="text-white/80 font-medium">Skills</div>
+                                        <div className="text-white/80 font-medium">{t('portfolio.skills')}</div>
                                     </motion.div>
                                     <motion.div
                                         whileHover={{ scale: 1.05, y: -5 }}

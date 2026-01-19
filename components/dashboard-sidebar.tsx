@@ -1,6 +1,6 @@
 "use client"
 
-import {Settings, X} from "lucide-react"
+import {Settings, X, MessageSquare, Calendar, Bookmark} from "lucide-react"
 import Image from "next/image"
 import {Button} from "@/components/ui/button"
 import {ScrollArea} from "@/components/ui/scroll-area"
@@ -12,6 +12,7 @@ import {ClipboardList} from "@/components/animate-ui/icons/clipboard-list";
 import {CheckCheck} from "@/components/animate-ui/icons/check-check";
 import {UsersRound} from "@/components/animate-ui/icons/users-round";
 import {ClipboardCheck} from "@/components/animate-ui/icons/clipboard-check";
+import {useTranslation} from "@/lib/i18n";
 
 interface DashboardSidebarProps {
     userType: "Student" | "Company"
@@ -31,6 +32,7 @@ export function DashboardSidebar({
                                      companyName,
                                      setActiveTab,
                                  }: DashboardSidebarProps) {
+    const { t } = useTranslation();
 
     const sidebarContent = (
         <div className="flex h-full flex-col border-r text-foreground">
@@ -45,10 +47,10 @@ export function DashboardSidebar({
                     />
                     <div>
                         <h2 className="font-semibold">
-                            {userType === "Company" ? companyName ?? "Loading..." : "Student"}
+                            {userType === "Company" ? companyName ?? t('common.loading') : t('dashboard.student')}
                         </h2>
                         <p className="text-xs text-foreground">
-                            {userType === "Company" ? "Company Dashboard" : "Student Dashboard"}
+                            {userType === "Company" ? t('dashboard.companyDashboard') : t('dashboard.studentDashboard')}
                         </p>
                     </div>
                 </div>
@@ -60,11 +62,6 @@ export function DashboardSidebar({
             </div>
 
             <div className="px-3 py-2">
-                {/*<div className="relative">*/}
-                {/*    <Search className="absolute left-3 top-3 h-4 w-4 text-foreground"/>*/}
-                {/*    <Input type="search" placeholder="Search..."*/}
-                {/*           className="w-full rounded-2xl bg-muted pl-9 pr-4 py-2"/>*/}
-                {/*</div>*/}
             </div>
 
             <ScrollArea className="flex-1 px-3 py-2">
@@ -76,10 +73,8 @@ export function DashboardSidebar({
                             className="flex w-full cursor-pointer items-center justify-between rounded-2xl px-3 py-2 text-sm hover:bg-muted transition-colors"
                         >
                             <div className="flex items-center gap-2">
-
                                 <ChartColumnIncreasing/>
-
-                                <span>Home</span>
+                                <span>{t('navigation.home')}</span>
                             </div>
                         </button>
                     </AnimateIcon>
@@ -93,7 +88,7 @@ export function DashboardSidebar({
                             >
                                 <div className="flex items-center gap-2">
                                     <ClipboardList/>
-                                    <span>Portfolio</span>
+                                    <span>{t('navigation.portfolio')}</span>
                                 </div>
                             </button>
                         </AnimateIcon>
@@ -108,36 +103,24 @@ export function DashboardSidebar({
                             >
                                 <div className="flex items-center gap-2">
                                     <UsersRound />
-                                    <span>Leaderboard</span>
+                                    <span>{t('navigation.leaderboard')}</span>
                                 </div>
                             </button>
                         </AnimateIcon>
                     )}
 
                     {/* Applied - Always visible */}
-                <AnimateIcon animateOnHover>
-                    <button
-                        onClick={() => setActiveTab("files")}
-                        className="flex w-full cursor-pointer items-center justify-between rounded-2xl px-3 py-2 text-sm hover:bg-muted transition-colors"
-                    >
-                        <div className="flex items-center gap-2">
-                            <CheckCheck/>
-                            <span>Applied</span>
-                        </div>
-                    </button>
-                </AnimateIcon >
-                    {/* Assignments - Always visible */}
-                    {/* <AnimateIcon animateOnHover>
+                    <AnimateIcon animateOnHover>
                         <button
-                            onClick={() => setActiveTab("projects")}
+                            onClick={() => setActiveTab("files")}
                             className="flex w-full cursor-pointer items-center justify-between rounded-2xl px-3 py-2 text-sm hover:bg-muted transition-colors"
                         >
                             <div className="flex items-center gap-2">
-                                <Layers/>
-                                <span>Assignments</span>
+                                <CheckCheck/>
+                                <span>{t('navigation.applied')}</span>
                             </div>
                         </button>
-                    </AnimateIcon > */}
+                    </AnimateIcon>
 
                     {/* My Experience - Always visible */}
                     <AnimateIcon animateOnHover>
@@ -147,10 +130,51 @@ export function DashboardSidebar({
                         >
                             <div className="flex items-center gap-2">
                                 <ClipboardCheck/>
-                                <span>My Experience</span>
+                                <span>{t('navigation.myExperience')}</span>
                             </div>
                         </button>
-                    </AnimateIcon >
+                    </AnimateIcon>
+
+                    {/* Saved - Only for Students */}
+                    {userType === "Student" && (
+                        <AnimateIcon animateOnHover>
+                            <button
+                                onClick={() => setActiveTab("saved")}
+                                className="flex w-full cursor-pointer items-center justify-between rounded-2xl px-3 py-2 text-sm hover:bg-muted transition-colors"
+                            >
+                                <div className="flex items-center gap-2">
+                                    <Bookmark className="h-5 w-5"/>
+                                    <span>{t('navigation.saved')}</span>
+                                </div>
+                            </button>
+                        </AnimateIcon>
+                    )}
+
+                    {/* Messages - Always visible */}
+                    <AnimateIcon animateOnHover>
+                        <button
+                            onClick={() => setActiveTab("messages")}
+                            className="flex w-full cursor-pointer items-center justify-between rounded-2xl px-3 py-2 text-sm hover:bg-muted transition-colors"
+                        >
+                            <div className="flex items-center gap-2">
+                                <MessageSquare className="h-5 w-5"/>
+                                <span>{t('navigation.messages')}</span>
+                            </div>
+                        </button>
+                    </AnimateIcon>
+
+                    {/* Interviews - Always visible */}
+                    <AnimateIcon animateOnHover>
+                        <button
+                            onClick={() => setActiveTab("interviews")}
+                            className="flex w-full cursor-pointer items-center justify-between rounded-2xl px-3 py-2 text-sm hover:bg-muted transition-colors"
+                        >
+                            <div className="flex items-center gap-2">
+                                <Calendar className="h-5 w-5"/>
+                                <span>{t('navigation.interviews')}</span>
+                            </div>
+                        </button>
+                    </AnimateIcon>
                 </div>
             </ScrollArea>
 
@@ -159,7 +183,7 @@ export function DashboardSidebar({
                     <button
                         className="flex w-full text-foreground items-center gap-3 rounded-2xl px-3 py-2 text-sm font-medium hover:bg-muted">
                         <Settings className="h-5 w-5"/>
-                        <span>Settings</span>
+                        <span>{t('navigation.settings')}</span>
                     </button>
                     <SignedIn>
                         <div className="flex items-center justify-start gap-3 sm:gap-4 ml-2">
@@ -175,7 +199,7 @@ export function DashboardSidebar({
                                     },
                                 }}
                             />
-                            <div className="text-foreground text-sm font-semibold">User</div>
+                            <div className="text-foreground text-sm font-semibold">{t('dashboard.user')}</div>
                         </div>
                     </SignedIn>
                 </div>

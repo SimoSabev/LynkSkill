@@ -1,5 +1,6 @@
 import { ClerkProvider } from '@clerk/nextjs'
 import type { AppProps } from 'next/app'
+import { I18nProvider } from '@/lib/i18n'
 
 export default function App({ Component, pageProps }: AppProps) {
   return (
@@ -7,7 +8,9 @@ export default function App({ Component, pageProps }: AppProps) {
       signInFallbackRedirectUrl="/dashboard"
       signUpFallbackRedirectUrl="/onboarding"
     >
-      <Component {...pageProps} />
+      <I18nProvider>
+        <Component {...pageProps} />
+      </I18nProvider>
     </ClerkProvider>
   )
 }

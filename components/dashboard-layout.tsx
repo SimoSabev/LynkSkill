@@ -28,6 +28,7 @@ import { MessagesTabContent } from "@/components/messages-tab-content"
 import { InterviewsTabContent } from "@/components/interviews-tab-content"
 import { MascotScene } from "@/components/MascotScene"
 import { useDashboard } from "@/lib/dashboard-context"
+import { useTranslation } from "@/lib/i18n"
 
 interface DashboardLayoutProps {
     userType: "Student" | "Company"
@@ -35,6 +36,7 @@ interface DashboardLayoutProps {
 }
 
 export function DashboardLayout({ userType }: DashboardLayoutProps) {
+    const { t } = useTranslation()
     const [activeTab, setActiveTab] = useState("home")
     const [sidebarOpen, setSidebarOpen] = useState(true)
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -268,8 +270,7 @@ export function DashboardLayout({ userType }: DashboardLayoutProps) {
                                     >
                                         <Home className="h-4 w-4 transition-all duration-300 group-data-[state=active]:scale-110 group-data-[state=active]:drop-shadow-[0_0_8px_rgba(147,51,234,0.8)] group-hover:drop-shadow-[0_0_6px_rgba(147,51,234,0.6)]" />
                                         <span className="relative">
-                                            Home
-                                            {/*<span className="absolute inset-0 blur-sm opacity-0 group-data-[state=active]:opacity-100 bg-gradient-to-r from-purple-400 to-blue-400 transition-opacity duration-300" />*/}
+                                            {t('navigation.home')}
                                         </span>
                                     </TabsTrigger>
 
@@ -279,7 +280,7 @@ export function DashboardLayout({ userType }: DashboardLayoutProps) {
                                             className="group cursor-pointer relative flex items-center gap-2.5 px-5 py-2.5 rounded-xl font-medium text-sm transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500/20 data-[state=active]:to-blue-500/20 data-[state=active]:text-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/30 data-[state=inactive]:text-muted-foreground hover:text-foreground hover:bg-purple-500/10 hover:scale-105 data-[state=active]:scale-105"
                                         >
                                             <Briefcase className="h-4 w-4 transition-all duration-300 group-data-[state=active]:scale-110 group-data-[state=active]:drop-shadow-[0_0_8px_rgba(147,51,234,0.8)] group-hover:drop-shadow-[0_0_6px_rgba(147,51,234,0.6)]" />
-                                            <span>Portfolio</span>
+                                            <span>{t('navigation.portfolio')}</span>
                                         </TabsTrigger>
                                     ) : (
                                         <TabsTrigger
@@ -287,7 +288,7 @@ export function DashboardLayout({ userType }: DashboardLayoutProps) {
                                             className="group cursor-pointer relative flex items-center gap-2.5 px-5 py-2.5 rounded-xl font-medium text-sm transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500/20 data-[state=active]:to-blue-500/20 data-[state=active]:text-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/30 data-[state=inactive]:text-muted-foreground hover:text-foreground hover:bg-purple-500/10 hover:scale-105 data-[state=active]:scale-105"
                                         >
                                             <Trophy className="h-4 w-4 transition-all duration-300 group-data-[state=active]:scale-110 group-data-[state=active]:drop-shadow-[0_0_8px_rgba(147,51,234,0.8)] group-hover:drop-shadow-[0_0_6px_rgba(147,51,234,0.6)]" />
-                                            <span>Leaderboard</span>
+                                            <span>{t('navigation.leaderboard')}</span>
                                         </TabsTrigger>
                                     )}
 
@@ -296,7 +297,7 @@ export function DashboardLayout({ userType }: DashboardLayoutProps) {
                                         className="group cursor-pointer relative flex items-center gap-2.5 px-5 py-2.5 rounded-xl font-medium text-sm transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500/20 data-[state=active]:to-blue-500/20 data-[state=active]:text-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/30 data-[state=inactive]:text-muted-foreground hover:text-foreground hover:bg-purple-500/10 hover:scale-105 data-[state=active]:scale-105"
                                     >
                                         <FileText className="h-4 w-4 transition-all duration-300 group-data-[state=active]:scale-110 group-data-[state=active]:drop-shadow-[0_0_8px_rgba(147,51,234,0.8)] group-hover:drop-shadow-[0_0_6px_rgba(147,51,234,0.6)]" />
-                                        <span>Applied</span>
+                                        <span>{t('navigation.applied')}</span>
                                     </TabsTrigger>
 
                                     {/* <TabsTrigger
@@ -312,7 +313,7 @@ export function DashboardLayout({ userType }: DashboardLayoutProps) {
                                         className="group cursor-pointer relative flex items-center gap-2.5 px-5 py-2.5 rounded-xl font-medium text-sm transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500/20 data-[state=active]:to-blue-500/20 data-[state=active]:text-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/30 data-[state=inactive]:text-muted-foreground hover:text-foreground hover:bg-purple-500/10 hover:scale-105 data-[state=active]:scale-105"
                                     >
                                         <Award className="h-4 w-4 transition-all duration-300 group-data-[state=active]:scale-110 group-data-[state=active]:drop-shadow-[0_0_8px_rgba(147,51,234,0.8)] group-hover:drop-shadow-[0_0_6px_rgba(147,51,234,0.6)]" />
-                                        <span>My Experience</span>
+                                        <span>{t('navigation.myExperience')}</span>
                                     </TabsTrigger>
 
                                     {userType === "Student" && (
@@ -321,7 +322,7 @@ export function DashboardLayout({ userType }: DashboardLayoutProps) {
                                             className="group cursor-pointer relative flex items-center gap-2.5 px-5 py-2.5 rounded-xl font-medium text-sm transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500/20 data-[state=active]:to-yellow-500/20 data-[state=active]:text-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-amber-500/30 data-[state=inactive]:text-muted-foreground hover:text-foreground hover:bg-amber-500/10 hover:scale-105 data-[state=active]:scale-105"
                                         >
                                             <Bookmark className="h-4 w-4 transition-all duration-300 group-data-[state=active]:scale-110 group-data-[state=active]:drop-shadow-[0_0_8px_rgba(245,158,11,0.8)] group-hover:drop-shadow-[0_0_6px_rgba(245,158,11,0.6)]" />
-                                            <span>Saved</span>
+                                            <span>{t('navigation.saved')}</span>
                                         </TabsTrigger>
                                     )}
 
@@ -330,7 +331,7 @@ export function DashboardLayout({ userType }: DashboardLayoutProps) {
                                         className="group cursor-pointer relative flex items-center gap-2.5 px-5 py-2.5 rounded-xl font-medium text-sm transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500/20 data-[state=active]:to-purple-500/20 data-[state=active]:text-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-indigo-500/30 data-[state=inactive]:text-muted-foreground hover:text-foreground hover:bg-indigo-500/10 hover:scale-105 data-[state=active]:scale-105"
                                     >
                                         <MessageSquare className="h-4 w-4 transition-all duration-300 group-data-[state=active]:scale-110 group-data-[state=active]:drop-shadow-[0_0_8px_rgba(99,102,241,0.8)] group-hover:drop-shadow-[0_0_6px_rgba(99,102,241,0.6)]" />
-                                        <span>Messages</span>
+                                        <span>{t('navigation.messages')}</span>
                                     </TabsTrigger>
 
                                     <TabsTrigger
@@ -338,7 +339,7 @@ export function DashboardLayout({ userType }: DashboardLayoutProps) {
                                         className="group cursor-pointer relative flex items-center gap-2.5 px-5 py-2.5 rounded-xl font-medium text-sm transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500/20 data-[state=active]:to-cyan-500/20 data-[state=active]:text-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/30 data-[state=inactive]:text-muted-foreground hover:text-foreground hover:bg-blue-500/10 hover:scale-105 data-[state=active]:scale-105"
                                     >
                                         <CalendarDays className="h-4 w-4 transition-all duration-300 group-data-[state=active]:scale-110 group-data-[state=active]:drop-shadow-[0_0_8px_rgba(59,130,246,0.8)] group-hover:drop-shadow-[0_0_6px_rgba(59,130,246,0.6)]" />
-                                        <span>Interviews</span>
+                                        <span>{t('navigation.interviews')}</span>
                                     </TabsTrigger>
                                 </TabsList>
                             </motion.div>
@@ -374,7 +375,7 @@ export function DashboardLayout({ userType }: DashboardLayoutProps) {
                                             className="group relative flex flex-col items-center justify-center gap-1 px-3 py-2.5 rounded-xl font-semibold text-[10px] leading-tight transition-all duration-300 data-[state=active]:bg-gradient-to-br data-[state=active]:from-purple-500/20 data-[state=active]:to-blue-500/20 data-[state=active]:text-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/30 data-[state=inactive]:text-muted-foreground flex-1 min-w-0 active:scale-95 hover:bg-purple-500/10"
                                         >
                                             <Home className="h-5 w-5 flex-shrink-0 transition-all duration-300 group-data-[state=active]:scale-110 group-data-[state=active]:drop-shadow-[0_0_8px_rgba(147,51,234,0.8)]" />
-                                            <span className="whitespace-nowrap text-center">Home</span>
+                                            <span className="whitespace-nowrap text-center">{t('navigation.home')}</span>
                                         </TabsTrigger>
 
                                         {userType === "Student" ? (
@@ -383,7 +384,7 @@ export function DashboardLayout({ userType }: DashboardLayoutProps) {
                                                 className="group relative flex flex-col items-center justify-center gap-1 px-3 py-2.5 rounded-xl font-semibold text-[10px] leading-tight transition-all duration-300 data-[state=active]:bg-gradient-to-br data-[state=active]:from-purple-500/20 data-[state=active]:to-blue-500/20 data-[state=active]:text-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/30 data-[state=inactive]:text-muted-foreground flex-1 min-w-0 active:scale-95 hover:bg-purple-500/10"
                                             >
                                                 <Briefcase className="h-5 w-5 flex-shrink-0 transition-all duration-300 group-data-[state=active]:scale-110 group-data-[state=active]:drop-shadow-[0_0_8px_rgba(147,51,234,0.8)]" />
-                                                <span className="whitespace-nowrap text-center">Portfolio</span>
+                                                <span className="whitespace-nowrap text-center">{t('navigation.portfolio')}</span>
                                             </TabsTrigger>
                                         ) : (
                                             <TabsTrigger
@@ -391,7 +392,7 @@ export function DashboardLayout({ userType }: DashboardLayoutProps) {
                                                 className="group relative flex flex-col items-center justify-center gap-1 px-2.5 py-2.5 rounded-xl font-semibold text-[10px] leading-tight transition-all duration-300 data-[state=active]:bg-gradient-to-br data-[state=active]:from-purple-500/20 data-[state=active]:to-blue-500/20 data-[state=active]:text-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/30 data-[state=inactive]:text-muted-foreground flex-1 min-w-0 active:scale-95 hover:bg-purple-500/10"
                                             >
                                                 <Trophy className="h-5 w-5 flex-shrink-0 transition-all duration-300 group-data-[state=active]:scale-110 group-data-[state=active]:drop-shadow-[0_0_8px_rgba(147,51,234,0.8)]" />
-                                                <span className="whitespace-nowrap text-center">Board</span>
+                                                <span className="whitespace-nowrap text-center">{t('navigation.leaderboard')}</span>
                                             </TabsTrigger>
                                         )}
 
@@ -400,23 +401,15 @@ export function DashboardLayout({ userType }: DashboardLayoutProps) {
                                             className="group relative flex flex-col items-center justify-center gap-1 px-3 py-2.5 rounded-xl font-semibold text-[10px] leading-tight transition-all duration-300 data-[state=active]:bg-gradient-to-br data-[state=active]:from-purple-500/20 data-[state=active]:to-blue-500/20 data-[state=active]:text-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/30 data-[state=inactive]:text-muted-foreground flex-1 min-w-0 active:scale-95 hover:bg-purple-500/10"
                                         >
                                             <FileText className="h-5 w-5 flex-shrink-0 transition-all duration-300 group-data-[state=active]:scale-110 group-data-[state=active]:drop-shadow-[0_0_8px_rgba(147,51,234,0.8)]" />
-                                            <span className="whitespace-nowrap text-center">Applied</span>
+                                            <span className="whitespace-nowrap text-center">{t('navigation.applied')}</span>
                                         </TabsTrigger>
-
-                                        {/* <TabsTrigger
-                                            value="projects"
-                                            className="group relative flex flex-col items-center justify-center gap-1 px-3 py-2.5 rounded-xl font-semibold text-[10px] leading-tight transition-all duration-300 data-[state=active]:bg-gradient-to-br data-[state=active]:from-purple-500/20 data-[state=active]:to-blue-500/20 data-[state=active]:text-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/30 data-[state=inactive]:text-muted-foreground flex-1 min-w-0 active:scale-95 hover:bg-purple-500/10"
-                                        >
-                                            <ClipboardList className="h-5 w-5 flex-shrink-0 transition-all duration-300 group-data-[state=active]:scale-110 group-data-[state=active]:drop-shadow-[0_0_8px_rgba(147,51,234,0.8)]" />
-                                            <span className="whitespace-nowrap text-center">Tasks</span>
-                                        </TabsTrigger> */}
 
                                         <TabsTrigger
                                             value="learn"
                                             className="group relative flex flex-col items-center justify-center gap-1 px-2.5 py-2.5 rounded-xl font-semibold text-[10px] leading-tight transition-all duration-300 data-[state=active]:bg-gradient-to-br data-[state=active]:from-purple-500/20 data-[state=active]:to-blue-500/20 data-[state=active]:text-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/30 data-[state=inactive]:text-muted-foreground flex-1 min-w-0 active:scale-95 hover:bg-purple-500/10"
                                         >
                                             <Award className="h-5 w-5 flex-shrink-0 transition-all duration-300 group-data-[state=active]:scale-110 group-data-[state=active]:drop-shadow-[0_0_8px_rgba(147,51,234,0.8)]" />
-                                            <span className="whitespace-nowrap text-center">Journey</span>
+                                            <span className="whitespace-nowrap text-center">{t('navigation.myExperience')}</span>
                                         </TabsTrigger>
 
                                         {userType === "Student" && (
@@ -425,7 +418,7 @@ export function DashboardLayout({ userType }: DashboardLayoutProps) {
                                                 className="group relative flex flex-col items-center justify-center gap-1 px-2.5 py-2.5 rounded-xl font-semibold text-[10px] leading-tight transition-all duration-300 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-500/20 data-[state=active]:to-yellow-500/20 data-[state=active]:text-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-amber-500/30 data-[state=inactive]:text-muted-foreground flex-1 min-w-0 active:scale-95 hover:bg-amber-500/10"
                                             >
                                                 <Bookmark className="h-5 w-5 flex-shrink-0 transition-all duration-300 group-data-[state=active]:scale-110 group-data-[state=active]:drop-shadow-[0_0_8px_rgba(245,158,11,0.8)]" />
-                                                <span className="whitespace-nowrap text-center">Saved</span>
+                                                <span className="whitespace-nowrap text-center">{t('navigation.saved')}</span>
                                             </TabsTrigger>
                                         )}
 
@@ -434,7 +427,7 @@ export function DashboardLayout({ userType }: DashboardLayoutProps) {
                                             className="group relative flex flex-col items-center justify-center gap-1 px-2.5 py-2.5 rounded-xl font-semibold text-[10px] leading-tight transition-all duration-300 data-[state=active]:bg-gradient-to-br data-[state=active]:from-indigo-500/20 data-[state=active]:to-purple-500/20 data-[state=active]:text-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-indigo-500/30 data-[state=inactive]:text-muted-foreground flex-1 min-w-0 active:scale-95 hover:bg-indigo-500/10"
                                         >
                                             <MessageSquare className="h-5 w-5 flex-shrink-0 transition-all duration-300 group-data-[state=active]:scale-110 group-data-[state=active]:drop-shadow-[0_0_8px_rgba(99,102,241,0.8)]" />
-                                            <span className="whitespace-nowrap text-center">Chat</span>
+                                            <span className="whitespace-nowrap text-center">{t('navigation.messages')}</span>
                                         </TabsTrigger>
 
                                         <TabsTrigger
@@ -442,7 +435,7 @@ export function DashboardLayout({ userType }: DashboardLayoutProps) {
                                             className="group relative flex flex-col items-center justify-center gap-1 px-2.5 py-2.5 rounded-xl font-semibold text-[10px] leading-tight transition-all duration-300 data-[state=active]:bg-gradient-to-br data-[state=active]:from-blue-500/20 data-[state=active]:to-cyan-500/20 data-[state=active]:text-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/30 data-[state=inactive]:text-muted-foreground flex-1 min-w-0 active:scale-95 hover:bg-blue-500/10"
                                         >
                                             <CalendarDays className="h-5 w-5 flex-shrink-0 transition-all duration-300 group-data-[state=active]:scale-110 group-data-[state=active]:drop-shadow-[0_0_8px_rgba(59,130,246,0.8)]" />
-                                            <span className="whitespace-nowrap text-center">Calls</span>
+                                            <span className="whitespace-nowrap text-center">{t('navigation.interviews')}</span>
                                         </TabsTrigger>
                                     </TabsList>
                                 </motion.div>

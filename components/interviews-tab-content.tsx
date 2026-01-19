@@ -25,6 +25,7 @@ import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
 import { format, isPast, isToday, isTomorrow, differenceInHours } from "date-fns"
 import { cn } from "@/lib/utils"
+import { useTranslation } from "@/lib/i18n"
 
 interface Interview {
     id: string
@@ -55,6 +56,7 @@ interface InterviewsTabContentProps {
 }
 
 export function InterviewsTabContent({ userType }: InterviewsTabContentProps) {
+    const { t } = useTranslation()
     const [interviews, setInterviews] = useState<Interview[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [refreshing, setRefreshing] = useState(false)
@@ -154,31 +156,31 @@ export function InterviewsTabContent({ userType }: InterviewsTabContentProps) {
         switch (status) {
             case "SCHEDULED":
                 return { 
-                    label: "Scheduled", 
+                    label: t('interviews.scheduled'), 
                     color: "bg-blue-500/10 text-blue-600 border-blue-500/30",
                     icon: Calendar
                 }
             case "CONFIRMED":
                 return { 
-                    label: "Confirmed", 
+                    label: t('interviews.confirmed'), 
                     color: "bg-green-500/10 text-green-600 border-green-500/30",
                     icon: CheckCircle
                 }
             case "COMPLETED":
                 return { 
-                    label: "Completed", 
+                    label: t('common.completed'), 
                     color: "bg-gray-500/10 text-gray-600 border-gray-500/30",
                     icon: CheckCircle
                 }
             case "CANCELLED":
                 return { 
-                    label: "Cancelled", 
+                    label: t('interviews.cancelled'), 
                     color: "bg-red-500/10 text-red-600 border-red-500/30",
                     icon: XCircle
                 }
             case "RESCHEDULED":
                 return { 
-                    label: "Reschedule Requested", 
+                    label: t('interviews.rescheduled'), 
                     color: "bg-amber-500/10 text-amber-600 border-amber-500/30",
                     icon: AlertCircle
                 }
@@ -192,8 +194,8 @@ export function InterviewsTabContent({ userType }: InterviewsTabContentProps) {
     }
 
     const getTimeLabel = (date: Date) => {
-        if (isToday(date)) return "Today"
-        if (isTomorrow(date)) return "Tomorrow"
+        if (isToday(date)) return t('common.today')
+        if (isTomorrow(date)) return t('interviews.tomorrow')
         return format(date, "EEEE, MMM d")
     }
 
@@ -226,12 +228,12 @@ export function InterviewsTabContent({ userType }: InterviewsTabContentProps) {
                                 <Calendar className="h-5 w-5 md:h-7 md:w-7 text-blue-600 dark:text-blue-400" />
                             </div>
                             <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground">
-                                Interviews
+                                {t('interviews.title')}
                             </h2>
                         </div>
                         <p className="text-muted-foreground text-sm md:text-base lg:text-lg font-medium flex items-center gap-2">
                             <Sparkles className="h-4 w-4 md:h-5 md:w-5 text-blue-600 dark:text-blue-400" />
-                            {upcomingInterviews.length} upcoming interview{upcomingInterviews.length !== 1 ? "s" : ""}
+                            {upcomingInterviews.length} {t('interviews.upcomingInterviews').toLowerCase()}
                         </p>
                     </div>
 
@@ -243,7 +245,7 @@ export function InterviewsTabContent({ userType }: InterviewsTabContentProps) {
                         className="rounded-xl md:rounded-2xl px-4 md:px-6 py-2.5 md:py-3 text-sm md:text-base font-bold transition-all duration-300 hover:scale-105 shadow-md hover:shadow-lg bg-transparent"
                     >
                         <RefreshCw className={`h-4 w-4 md:h-5 md:w-5 ${refreshing ? "animate-spin" : ""} mr-2`} />
-                        {refreshing ? "Refreshing..." : "Refresh"}
+                        {refreshing ? t('common.loading') : t('common.refresh')}
                     </Button>
                 </div>
             </div>
@@ -269,11 +271,11 @@ export function InterviewsTabContent({ userType }: InterviewsTabContentProps) {
                         <div className="p-4 rounded-2xl bg-muted/50 mb-4">
                             <Calendar className="h-12 w-12 text-muted-foreground" />
                         </div>
-                        <h3 className="text-xl font-semibold text-foreground mb-2">No interviews yet</h3>
+                        <h3 className="text-xl font-semibold text-foreground mb-2">{t('interviews.noInterviews')}</h3>
                         <p className="text-muted-foreground max-w-sm">
                             {userType === "Student" 
-                                ? "When companies schedule interviews with you, they'll appear here."
-                                : "Schedule interviews with candidates from the Applications tab."}
+                                ? t('interviews.noInterviewsStudentDescription')
+                                : t('interviews.noInterviewsDescription')}
                         </p>
                     </CardContent>
                 </Card>

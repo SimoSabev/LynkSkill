@@ -19,6 +19,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { format, isToday, isYesterday } from "date-fns"
+import { useTranslation } from "@/lib/i18n"
 
 interface Conversation {
     id: string
@@ -71,6 +72,7 @@ interface MessagesTabContentProps {
 }
 
 export function MessagesTabContent({ userType }: MessagesTabContentProps) {
+    const { t } = useTranslation()
     const [conversations, setConversations] = useState<Conversation[]>([])
     const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null)
     const [messages, setMessages] = useState<Message[]>([])
@@ -210,12 +212,12 @@ export function MessagesTabContent({ userType }: MessagesTabContentProps) {
                                 <MessageSquare className="h-5 w-5 md:h-7 md:w-7 text-indigo-600 dark:text-indigo-400" />
                             </div>
                             <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground">
-                                Messages
+                                {t('messages.title')}
                             </h2>
                         </div>
                         <p className="text-muted-foreground text-sm md:text-base lg:text-lg font-medium flex items-center gap-2">
                             <Sparkles className="h-4 w-4 md:h-5 md:w-5 text-indigo-600 dark:text-indigo-400" />
-                            Communicate with {userType === "Student" ? "companies" : "students"}
+                            {t('messages.messageHint')}
                         </p>
                     </div>
 
@@ -227,7 +229,7 @@ export function MessagesTabContent({ userType }: MessagesTabContentProps) {
                         className="rounded-xl md:rounded-2xl px-4 md:px-6 py-2.5 md:py-3 text-sm md:text-base font-bold transition-all duration-300 hover:scale-105 shadow-md hover:shadow-lg bg-transparent"
                     >
                         <RefreshCw className={`h-4 w-4 md:h-5 md:w-5 ${refreshing ? "animate-spin" : ""} mr-2`} />
-                        {refreshing ? "Refreshing..." : "Refresh"}
+                        {refreshing ? t('common.loading') : t('common.refresh')}
                     </Button>
                 </div>
             </div>
@@ -242,7 +244,7 @@ export function MessagesTabContent({ userType }: MessagesTabContentProps) {
                     <div className="p-4 border-b border-border/50 bg-muted/30">
                         <h3 className="font-semibold text-foreground flex items-center gap-2">
                             <MessageSquare className="h-4 w-4" />
-                            Conversations
+                            {t('messages.conversations')}
                             {conversations.length > 0 && (
                                 <Badge variant="secondary" className="ml-auto">
                                     {conversations.length}
@@ -259,9 +261,9 @@ export function MessagesTabContent({ userType }: MessagesTabContentProps) {
                         ) : conversations.length === 0 ? (
                             <div className="flex flex-col items-center justify-center h-40 text-center p-4">
                                 <MessageSquare className="h-10 w-10 text-muted-foreground/50 mb-2" />
-                                <p className="text-muted-foreground text-sm">No conversations yet</p>
+                                <p className="text-muted-foreground text-sm">{t('messages.noConversationsYet')}</p>
                                 <p className="text-muted-foreground/70 text-xs mt-1">
-                                    Messages will appear after approval
+                                    {t('messages.noMessagesDescription')}
                                 </p>
                             </div>
                         ) : (

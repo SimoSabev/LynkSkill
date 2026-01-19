@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
 import { motion } from "framer-motion"
 import { Trophy, Award, Medal, TrendingUp, Building2, GraduationCap, Sparkles } from "lucide-react"
+import { useTranslation } from "@/lib/i18n"
 
 interface StudentRank {
     id: string
@@ -19,6 +20,7 @@ interface StudentRank {
 }
 
 export function LeaderboardTabContent() {
+    const { t } = useTranslation()
     const [students, setStudents] = useState<StudentRank[]>([])
     const [loading, setLoading] = useState(true)
 
@@ -59,9 +61,9 @@ export function LeaderboardTabContent() {
             <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
                 <div className="flex flex-col items-center justify-center py-16 text-center">
                     <Trophy className="h-16 w-16 text-muted-foreground/50 mb-4" />
-                    <h3 className="text-xl font-semibold mb-2">No Rankings Yet</h3>
+                    <h3 className="text-xl font-semibold mb-2">{t('leaderboard.noRankingsYet')}</h3>
                     <p className="text-muted-foreground max-w-md">
-                        The leaderboard will populate as students complete assignments and earn points.
+                        {t('leaderboard.noRankingsDescription')}
                     </p>
                 </div>
             </div>
@@ -119,10 +121,10 @@ export function LeaderboardTabContent() {
                         <div className="text-center space-y-2 sm:space-y-3">
                             <div className="flex items-center justify-center gap-2 mb-2">
                                 <Sparkles className="h-6 w-6 sm:h-7 sm:w-7 text-yellow-500" />
-                                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-balance">Top Performers</h2>
+                                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-balance">{t('leaderboard.topPerformers')}</h2>
                                 <Sparkles className="h-6 w-6 sm:h-7 sm:w-7 text-yellow-500" />
                             </div>
-                            <p className="text-sm sm:text-base text-muted-foreground">Celebrating our highest achievers</p>
+                            <p className="text-sm sm:text-base text-muted-foreground">{t('leaderboard.risingStars')}</p>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 items-end">
@@ -193,7 +195,7 @@ export function LeaderboardTabContent() {
                                                         <div className="flex items-center justify-between text-sm">
                               <span className="text-muted-foreground flex items-center gap-1.5 text-xs sm:text-sm">
                                 <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                                <span className="font-medium">Points</span>
+                                <span className="font-medium">{t('leaderboard.points')}</span>
                               </span>
                                                             <span className="font-bold text-base sm:text-lg">{student.totalPoints}</span>
                                                         </div>
@@ -216,7 +218,7 @@ export function LeaderboardTabContent() {
                                                     <div className="flex items-center justify-between text-sm">
                             <span className="text-muted-foreground flex items-center gap-1.5 text-xs sm:text-sm">
                               <GraduationCap className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                              <span className="font-medium">Avg Grade</span>
+                              <span className="font-medium">{t('leaderboard.avgGrade')}</span>
                             </span>
                                                         <span className="font-semibold text-sm sm:text-base">{student.avgGrade}%</span>
                                                     </div>
@@ -224,7 +226,7 @@ export function LeaderboardTabContent() {
                                                     <div className="flex items-center justify-between text-sm">
                             <span className="text-muted-foreground flex items-center gap-1.5 text-xs sm:text-sm">
                               <Building2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                              <span className="font-medium">Companies</span>
+                              <span className="font-medium">{t('leaderboard.uniqueCompanies')}</span>
                             </span>
                                                         <span className="font-semibold text-sm sm:text-base">{student.uniqueCompanies}</span>
                                                     </div>
@@ -232,7 +234,7 @@ export function LeaderboardTabContent() {
 
                                                 <div className="w-full pt-4 border-t border-border/50">
                                                     <div className="text-center space-y-1">
-                                                        <p className="text-xs text-muted-foreground font-medium">All-Round Score</p>
+                                                        <p className="text-xs text-muted-foreground font-medium">{t('leaderboard.allRoundScore')}</p>
                                                         <div className="flex items-center justify-center gap-2">
                                                             <p
                                                                 className={`${isFirst ? "text-3xl sm:text-4xl" : "text-2xl sm:text-3xl"} font-bold bg-gradient-to-r ${

@@ -35,12 +35,15 @@ import { toast } from "sonner"
 import { useDashboard } from "@/lib/dashboard-context"
 import { ScheduleInterviewModal } from "@/components/schedule-interview-modal"
 import { ReviewModal } from "@/components/review-modal"
+import { useTranslation } from "@/lib/i18n"
 
 interface ApplicationsTabContentProps {
     userType: "Student" | "Company"
 }
 
 export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps) {
+    const { t } = useTranslation()
+    
     // Use context for initial data
     const { applications: contextApplications, isLoadingApplications, mutateApplications } = useDashboard()
     
@@ -328,19 +331,19 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                                     <TrendingUp className="w-6 h-6 text-white" />
                                 </div>
                                 <h1 className="text-3xl font-bold text-white tracking-tight">
-                                    {userType === "Student" ? "My Applications" : "Received Applications"}
+                                    {userType === "Student" ? t('applications.myApplications') : t('applications.applicationsReceived')}
                                 </h1>
                             </div>
                             <p className="text-white/80 font-medium">
                                 {userType === "Student"
-                                    ? "Track your internship applications and their status"
-                                    : "Review and manage incoming applications"}
+                                    ? t('applications.noApplicationsDescription')
+                                    : t('applications.noApplicationsCompanyDescription')}
                             </p>
                         </div>
                         <div className="text-right">
                             <div className="text-3xl font-bold text-white mb-1">{applications.length}</div>
                             <div className="text-white/70 text-sm font-medium">
-                                {applications.length === 1 ? "Application" : "Applications"}
+                                {applications.length === 1 ? t('applications.title').slice(0, -1) : t('applications.title')}
                             </div>
                         </div>
                     </div>
@@ -354,7 +357,7 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                     onClick={() => setFilter("all")}
                 >
                     <Layers className="mr-2 h-4 w-4" />
-                    All Applications
+                    {t('common.all')}
                 </Button>
 
                 <Button
@@ -363,7 +366,7 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                     onClick={() => setFilter("recent")}
                 >
                     <Clock className="mr-2 h-4 w-4" />
-                    Recent
+                    {t('common.recent')}
                 </Button>
 
                 <div className="flex-1"></div>
@@ -371,7 +374,7 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                     <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Input
                         type="search"
-                        placeholder="Search applications..."
+                        placeholder={t('applications.searchApplications')}
                         className="w-full rounded-2xl pl-9 md:w-[250px] border-2 focus:border-primary transition-colors"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
@@ -385,7 +388,7 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                     className="rounded-2xl"
                 >
                     <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
-                    {refreshing ? "Refreshing..." : "Refresh"}
+                    {refreshing ? t('common.loading') : t('common.refresh')}
                 </Button>
             </div>
 

@@ -42,6 +42,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/ui/progress"
 import { Input } from "@/components/ui/input"
 import { StudentSummary } from "@/components/student-summary"
+import { useTranslation } from "@/lib/i18n"
 
 type Experience = {
   id: string
@@ -71,6 +72,7 @@ type Project = {
 }
 
 export default function ExperienceTabContent() {
+  const { t } = useTranslation()
   const { user } = useUser()
   const role = user?.publicMetadata?.role as "STUDENT" | "COMPANY" | undefined
   const [projects, setProjects] = useState<Project[]>([])
@@ -403,7 +405,7 @@ export default function ExperienceTabContent() {
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="flex items-center gap-2">
             <div className="h-4 w-4 animate-spin rounded-full border-2 border-[var(--experience-accent)]/30 border-t-[var(--experience-accent)]" />
-            <span className="text-muted-foreground">Loading...</span>
+            <span className="text-muted-foreground">{t('common.loading')}</span>
           </div>
         </div>
     )
@@ -423,19 +425,19 @@ export default function ExperienceTabContent() {
             <div className="relative z-10 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div className="space-y-2">
                 <h2 className="text-3xl font-bold">
-                  {role === "STUDENT" ? "Share Your Experience" : "Review Student Experiences"}
+                  {role === "STUDENT" ? t('experience.title') : t('experience.verifyExperience')}
                 </h2>
                 <p className="max-w-[600px] text-white/90">
                   {role === "STUDENT"
-                      ? "Upload and showcase your professional experiences, projects, and achievements with companies."
-                      : "Review and evaluate student submissions, providing valuable feedback on their professional experiences."}
+                      ? t('experience.noExperienceDescription')
+                      : t('experience.companyFeedback')}
                 </p>
                 {summary && role === "STUDENT" && <StudentSummary summary={summary} />}
               </div>
               <div className="flex items-center gap-4 text-white/80">
                 <div className="flex items-center gap-2">
                   <Sparkles className="h-5 w-5" />
-                  <span className="text-sm font-medium">{experiences.length} Experiences</span>
+                  <span className="text-sm font-medium">{experiences.length} {t('experience.title')}</span>
                 </div>
                 {role === "COMPANY" && (
                     <div className="flex items-center gap-2">

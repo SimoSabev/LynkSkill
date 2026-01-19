@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from 'next/font/google'
 import './globals.css'
 import { ThemeProvider } from "@/components/theme-provider"
 import OnboardingWrapper from "@/components/OnboardingWrapper"
+import { I18nProvider } from "@/lib/i18n"
 
 const geistSans = Geist({
     variable: '--font-geist-sans',
@@ -132,8 +133,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 enableSystem
                 disableTransitionOnChange
             >
-                <OnboardingWrapper />
-                <main>{children}</main>
+                <I18nProvider>
+                    <OnboardingWrapper />
+                    <main>{children}</main>
+                </I18nProvider>
             </ThemeProvider>
             </body>
             </html>

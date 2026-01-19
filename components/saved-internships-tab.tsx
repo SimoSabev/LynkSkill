@@ -11,6 +11,7 @@ import InternshipDetailsModal from "@/components/internship-details-modal"
 import ApplyButton from "@/components/ApplyBtn"
 import { useDashboard } from "@/lib/dashboard-context"
 import type { Internship } from "@/app/types"
+import { useTranslation } from "@/lib/i18n"
 
 interface Application {
     id: string
@@ -19,6 +20,7 @@ interface Application {
 }
 
 export function SavedInternshipsTab() {
+    const { t } = useTranslation()
     const {
         internships: allInternships,
         applications,
@@ -61,12 +63,12 @@ export function SavedInternshipsTab() {
                                 <Bookmark className="h-5 w-5 md:h-7 md:w-7 text-yellow-600 dark:text-yellow-400" />
                             </div>
                             <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground">
-                                Saved Internships
+                                {t('saved.title')}
                             </h2>
                         </div>
                         <p className="text-muted-foreground text-sm md:text-base lg:text-lg font-medium flex items-center gap-2">
                             <Sparkles className="h-4 w-4 md:h-5 md:w-5 text-yellow-600 dark:text-yellow-400" />
-                            {savedInternshipsList.length} {savedInternshipsList.length === 1 ? "internship" : "internships"} saved
+                            {savedInternshipsList.length} {t('saved.title').toLowerCase()}
                         </p>
                     </div>
 
@@ -78,7 +80,7 @@ export function SavedInternshipsTab() {
                         className="rounded-xl md:rounded-2xl px-4 md:px-6 py-2.5 md:py-3 text-sm md:text-base font-bold transition-all duration-300 hover:scale-105 shadow-md hover:shadow-lg bg-transparent"
                     >
                         <RefreshCw className={`h-4 w-4 md:h-5 md:w-5 ${refreshing ? "animate-spin" : ""} mr-2`} />
-                        {refreshing ? "Refreshing..." : "Refresh"}
+                        {refreshing ? t('common.loading') : t('common.refresh')}
                     </Button>
                 </div>
             </div>
@@ -89,8 +91,8 @@ export function SavedInternshipsTab() {
                     <div className="inline-flex items-center justify-center w-16 h-16 md:w-20 md:h-20 rounded-full bg-muted/50 mb-4 md:mb-6">
                         <Bookmark className="h-8 w-8 md:h-10 md:w-10 text-muted-foreground" />
                     </div>
-                    <p className="text-muted-foreground text-lg md:text-xl font-medium mb-2">No saved internships yet</p>
-                    <p className="text-muted-foreground text-sm">Click the bookmark icon on any internship to save it for later</p>
+                    <p className="text-muted-foreground text-lg md:text-xl font-medium mb-2">{t('saved.noSaved')}</p>
+                    <p className="text-muted-foreground text-sm">{t('saved.saveHint')}</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 gap-4 md:gap-5 lg:gap-6 sm:grid-cols-2 lg:grid-cols-3">

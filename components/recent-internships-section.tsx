@@ -12,6 +12,7 @@ import ApplyButton from "@/components/ApplyBtn"
 import { BookmarkButton } from "@/components/bookmark-button"
 import { InternshipFiltersComponent, type InternshipFilters } from "@/components/internship-filters"
 import { useDashboard } from "@/lib/dashboard-context"
+import { useTranslation } from "@/lib/i18n"
 
 interface Application {
     id: string
@@ -26,6 +27,8 @@ interface RecentAppsSectionProps {
 }
 
 export function RecentInternshipsSection({ userType, setActiveTab }: RecentAppsSectionProps) {
+    const { t } = useTranslation()
+    
     // Use centralized context - no more individual fetches
     const { 
         internships: contextInternships, 
@@ -172,12 +175,12 @@ export function RecentInternshipsSection({ userType, setActiveTab }: RecentAppsS
                                 <Briefcase className="h-5 w-5 md:h-7 md:w-7 text-purple-600 dark:text-purple-400" />
                             </div>
                             <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground">
-                                {userType === "Company" ? "My Recent Internships" : "Recent Internships"}
+                                {userType === "Company" ? t('internships.myRecentInternships') : t('internships.recentInternships')}
                             </h2>
                         </div>
                         <p className="text-muted-foreground text-sm md:text-base lg:text-lg font-medium flex items-center gap-2">
                             <Sparkles className="h-4 w-4 md:h-5 md:w-5 text-purple-600 dark:text-purple-400" />
-                            {finalInternships.length} {finalInternships.length === 1 ? "opportunity" : "opportunities"} available
+                            {finalInternships.length} {finalInternships.length === 1 ? t('internships.opportunityAvailable') : t('internships.opportunitiesAvailable')}
                         </p>
                     </div>
                 </div>
@@ -192,7 +195,7 @@ export function RecentInternshipsSection({ userType, setActiveTab }: RecentAppsS
                         onClick={() => setFilter("all")}
                     >
                         <Layers className="mr-1.5 md:mr-2 h-4 w-4 md:h-5 md:w-5" />
-                        All
+                        {t('common.all')}
                     </Button>
 
                     <Button
@@ -202,7 +205,7 @@ export function RecentInternshipsSection({ userType, setActiveTab }: RecentAppsS
                         onClick={() => setFilter("recent")}
                     >
                         <Clock className="mr-1.5 md:mr-2 h-4 w-4 md:h-5 md:w-5" />
-                        Recent
+                        {t('common.recent')}
                     </Button>
 
                     <Button
@@ -213,7 +216,7 @@ export function RecentInternshipsSection({ userType, setActiveTab }: RecentAppsS
                         className="rounded-xl md:rounded-2xl px-4 md:px-6 py-2.5 md:py-3 text-sm md:text-base font-bold transition-all duration-300 hover:scale-105 shadow-md hover:shadow-lg bg-transparent"
                     >
                         <RefreshCw className={`h-4 w-4 md:h-5 md:w-5 ${refreshing ? "animate-spin" : ""} sm:mr-2`} />
-                        <span className="hidden sm:inline">{refreshing ? "Refreshing..." : "Refresh"}</span>
+                        <span className="hidden sm:inline">{refreshing ? t('common.loading') : t('common.refresh')}</span>
                     </Button>
                 </div>
             </div>
@@ -231,7 +234,7 @@ export function RecentInternshipsSection({ userType, setActiveTab }: RecentAppsS
                     <div className="inline-flex items-center justify-center w-16 h-16 md:w-20 md:h-20 rounded-full bg-muted/50 mb-4 md:mb-6">
                         <Search className="h-8 w-8 md:h-10 md:w-10 text-muted-foreground" />
                     </div>
-                    <p className="text-muted-foreground text-lg md:text-xl font-medium">No internships found.</p>
+                    <p className="text-muted-foreground text-lg md:text-xl font-medium">{t('internships.noInternshipsFound')}</p>
                 </div>
             ) : (
                 <>
