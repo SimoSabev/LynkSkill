@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { motion } from "framer-motion"
+import { useRouter } from "next/navigation"
 import { Download, Sparkles, Users, TrendingUp, ShieldAlert, ShieldCheck, Layers } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -30,10 +31,22 @@ type GroupedExperience = {
 }
 
 interface CommunityHighlightsProps {
-    setActiveTab: (tab: string) => void
+    setActiveTab?: (tab: string) => void
+    userType?: "Student" | "Company"
 }
 
-export function CommunityHighlights({ setActiveTab }: CommunityHighlightsProps) {
+export function CommunityHighlights({ setActiveTab, userType = "Student" }: CommunityHighlightsProps) {
+    const router = useRouter()
+    
+    const handleNavigateToExperience = () => {
+        if (setActiveTab) {
+            setActiveTab("learn")
+        } else {
+            const basePath = userType === "Student" ? "/dashboard/student" : "/dashboard/company"
+            router.push(`${basePath}/experience`)
+        }
+    }
+    
     // Use centralized context - no more individual fetches
     const { recentExperiences, isLoadingExperiences } = useDashboard()
     
@@ -150,7 +163,7 @@ export function CommunityHighlights({ setActiveTab }: CommunityHighlightsProps) 
                                     whileTap={{ scale: 0.98 }}
                                 >
                                     <Card
-                                        onClick={() => setActiveTab("learn")}
+                                        onClick={handleNavigateToExperience}
                                         className="overflow-hidden rounded-3xl border border-border bg-card hover:shadow-lg hover:shadow-muted/50 transition-all duration-300 group cursor-pointer"
                                     >
                                         <div className="relative">

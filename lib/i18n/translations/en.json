@@ -58,7 +58,15 @@
     "saved": "Saved",
     "messages": "Messages",
     "interviews": "Interviews",
-    "settings": "Settings"
+    "settings": "Settings",
+    "internships": "Internships",
+    "browse": "Browse",
+    "myInternships": "My Internships",
+    "createNew": "Create New",
+    "applications": "Applications",
+    "candidates": "Candidates",
+    "help": "Help",
+    "logout": "Logout"
   },
   "dashboard": {
     "title": "LynkSkill's Dashboard",

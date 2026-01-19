@@ -2,6 +2,7 @@
 
 import { useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import { useRouter } from "next/navigation"
 import {
   Calendar,
   Briefcase,
@@ -18,13 +19,15 @@ import { useDashboard } from "@/lib/dashboard-context"
 
 interface RecentApplicationsSectionProps {
   userType: "Student" | "Company"
-  setActiveTab: (tab: string) => void   // 👈 callback from parent
+  setActiveTab?: (tab: string) => void   // 👈 optional callback from parent (legacy)
 }
 
 export function RecentApplicationsSection({
                                             userType,
                                             setActiveTab,
                                           }: RecentApplicationsSectionProps) {
+  const router = useRouter()
+  
   // Use centralized context - no more individual fetches
   const { applications: contextApplications, isLoadingApplications } = useDashboard()
 
@@ -200,7 +203,15 @@ export function RecentApplicationsSection({
                               stiffness: 400,
                             },
                           }}
-                          onClick={() => setActiveTab("files")} // 👈 switch tab on click
+                          onClick={() => {
+                            if (setActiveTab) {
+                              setActiveTab("files")
+                            } else {
+                              // Navigate to applications page
+                              const basePath = userType === "Student" ? "/dashboard/student" : "/dashboard/company"
+                              router.push(`${basePath}/internships/applied`)
+                            }
+                          }}
                           className="cursor-pointer group relative overflow-hidden bg-gradient-to-r from-card/80 to-card/60 backdrop-blur-sm rounded-xl p-4 shadow-[0_4px_20px_var(--application-shadow-light)] hover:shadow-[0_8px_30px_var(--application-shadow-medium)] border border-border/30 hover:border-primary/20 transition-all duration-300"
                       >
                         <div className="absolute inset-0 bg-gradient-to-r from-white/5 via-transparent to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>

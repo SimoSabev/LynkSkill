@@ -58,7 +58,15 @@
     "saved": "Запазени",
     "messages": "Съобщения",
     "interviews": "Интервюта",
-    "settings": "Настройки"
+    "settings": "Настройки",
+    "internships": "Стажове",
+    "browse": "Разгледай",
+    "myInternships": "Моите стажове",
+    "createNew": "Създай нов",
+    "applications": "Кандидатури",
+    "candidates": "Кандидати",
+    "help": "Помощ",
+    "logout": "Изход"
   },
   "dashboard": {
     "title": "Табло на LynkSkill",

@@ -71,7 +71,7 @@ export function DashboardHeader({
                     <ModeToggle />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent className="bg-purple-950/90 border-purple-500/30 text-foreground backdrop-blur-sm">
+                <TooltipContent>
                   {t('dashboard.toggleTheme')}
                 </TooltipContent>
               </Tooltip>

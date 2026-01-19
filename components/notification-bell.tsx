@@ -149,7 +149,7 @@ export function NotificationBell() {
                                 exit={{ scale: 0 }}
                             >
                                 <Badge 
-                                    className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-red-500 hover:bg-red-500"
+                                    className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-purple-500 hover:bg-purple-500"
                                 >
                                     {unreadCount > 9 ? "9+" : unreadCount}
                                 </Badge>

@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion"
 import { useMemo } from "react"
+import { useRouter } from "next/navigation"
 import { Clock, Building2, ArrowRight, Calendar, User, Target, CheckCircle2, AlertCircle } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
@@ -30,10 +31,22 @@ type ApiProject = {
 
 
 interface ActiveProjectsSectionProps {
-    setActiveTab: (tab: string) => void
+    setActiveTab?: (tab: string) => void
+    userType?: "Student" | "Company"
 }
 
-export function ActiveAssignmentsSection({ setActiveTab }: ActiveProjectsSectionProps) {
+export function ActiveAssignmentsSection({ setActiveTab, userType = "Student" }: ActiveProjectsSectionProps) {
+    const router = useRouter()
+    
+    const handleNavigateToProjects = () => {
+        if (setActiveTab) {
+            setActiveTab("projects")
+        } else {
+            const basePath = userType === "Student" ? "/dashboard/student" : "/dashboard/company"
+            router.push(`${basePath}/experience`)
+        }
+    }
+    
     // Use centralized context - no more individual fetches
     const { projects: contextProjects, isLoadingProjects } = useDashboard()
 
@@ -122,7 +135,7 @@ export function ActiveAssignmentsSection({ setActiveTab }: ActiveProjectsSection
                         {projects.length} assignments • {projects.filter((p) => p.status === "ONGOING").length} active
                     </p>
                 </div>
-                <Button variant="ghost" size="sm" className="hover:bg-muted group" onClick={() => setActiveTab("projects")}>
+                <Button variant="ghost" size="sm" className="hover:bg-muted group" onClick={handleNavigateToProjects}>
                     View All
                     <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
                 </Button>
@@ -179,7 +192,7 @@ export function ActiveAssignmentsSection({ setActiveTab }: ActiveProjectsSection
                                     initial={{ opacity: 0, x: -20 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     transition={{ duration: 0.3, delay: index * 0.05 }}
-                                    onClick={() => setActiveTab("projects")}
+                                    onClick={handleNavigateToProjects}
                                     className="cursor-pointer"
                                 >
                                     <Card className="hover:shadow-[var(--application-shadow-light)] transition-all duration-300 group border-l-4 border-l-[var(--experience-accent)]">
