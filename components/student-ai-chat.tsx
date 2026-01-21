@@ -15,7 +15,14 @@ import {
     ArrowRight,
     RefreshCw,
     FileText,
-    Zap
+    Zap,
+    Save,
+    History,
+    Plus,
+    Trash2,
+    MessageSquare,
+    PanelLeftOpen,
+    PanelLeftClose
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -25,6 +32,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Progress } from "@/components/ui/progress"
 import { useAIMode } from "@/lib/ai-mode-context"
 import { cn } from "@/lib/utils"
+import { toast } from "sonner"
 
 export function StudentAIChat() {
     const { 
@@ -40,11 +48,19 @@ export function StudentAIChat() {
         setChatPhase,
         clearMessages,
         sendWelcomeMessage,
-        welcomeSent
+        welcomeSent,
+        currentSessionId,
+        sessions,
+        startNewSession,
+        loadSession,
+        deleteSession
     } = useAIMode()
 
     const [inputValue, setInputValue] = useState("")
     const [isTyping, setIsTyping] = useState(false)
+    const [isSavingPortfolio, setIsSavingPortfolio] = useState(false)
+    const [portfolioSaved, setPortfolioSaved] = useState(false)
+    const [showSessionsSidebar, setShowSessionsSidebar] = useState(false)
     const messagesEndRef = useRef<HTMLDivElement>(null)
     const inputRef = useRef<HTMLInputElement>(null)
 
@@ -133,9 +149,54 @@ export function StudentAIChat() {
     }
 
     const handleStartOver = () => {
-        clearMessages()
+        startNewSession("student")
         setGeneratedPortfolio(null)
         setInternshipMatches([])
+        setPortfolioSaved(false)
+    }
+
+    const handleLoadSession = (sessionId: string) => {
+        loadSession(sessionId)
+        setShowSessionsSidebar(false)
+    }
+
+    const handleDeleteSession = (e: React.MouseEvent, sessionId: string) => {
+        e.stopPropagation()
+        deleteSession(sessionId)
+    }
+
+    const studentSessions = sessions.filter(s => s.userType === "student")
+
+    const handleSavePortfolio = async () => {
+        if (!generatedPortfolio) return
+        
+        setIsSavingPortfolio(true)
+        try {
+            const response = await fetch("/api/portfolio/ai-save", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    headline: generatedPortfolio.headline,
+                    about: generatedPortfolio.about,
+                    skills: generatedPortfolio.skills,
+                    interests: generatedPortfolio.interests
+                })
+            })
+
+            const data = await response.json()
+
+            if (data.success) {
+                setPortfolioSaved(true)
+                toast.success("Portfolio saved to your profile!")
+            } else {
+                toast.error(data.error || "Failed to save portfolio")
+            }
+        } catch (error) {
+            console.error("Error saving portfolio:", error)
+            toast.error("Failed to save portfolio")
+        } finally {
+            setIsSavingPortfolio(false)
+        }
     }
 
     const getMatchColor = (percentage: number) => {
@@ -169,14 +230,29 @@ export function StudentAIChat() {
                         </p>
                     </div>
 
-                    <Button
-                        variant="outline"
-                        onClick={handleStartOver}
-                        className="rounded-xl px-4 py-2 text-sm font-bold hover:bg-violet-500/10 border-violet-500/30 hover:border-violet-500/50 transition-all duration-300"
-                    >
-                        <RefreshCw className="h-4 w-4 mr-2" />
-                        Start Over
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowSessionsSidebar(!showSessionsSidebar)}
+                            className="rounded-xl px-3 py-2 text-sm font-bold hover:bg-violet-500/10 border-violet-500/30 hover:border-violet-500/50 transition-all duration-300"
+                        >
+                            {showSessionsSidebar ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
+                            <span className="ml-2 hidden sm:inline">Sessions</span>
+                            {studentSessions.length > 0 && (
+                                <Badge variant="secondary" className="ml-2 bg-violet-500/20 text-violet-600">
+                                    {studentSessions.length}
+                                </Badge>
+                            )}
+                        </Button>
+                        <Button
+                            variant="outline"
+                            onClick={handleStartOver}
+                            className="rounded-xl px-4 py-2 text-sm font-bold hover:bg-violet-500/10 border-violet-500/30 hover:border-violet-500/50 transition-all duration-300"
+                        >
+                            <Plus className="h-4 w-4 mr-2" />
+                            New Chat
+                        </Button>
+                    </div>
                 </div>
 
                 {/* Progress indicator */}
@@ -207,9 +283,74 @@ export function StudentAIChat() {
                 </div>
             </div>
 
-            <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-0">
-                {/* Chat Section */}
-                <div className="lg:col-span-2 flex flex-col rounded-2xl border border-violet-500/20 bg-card/50 backdrop-blur-xl overflow-hidden shadow-lg">
+            <div className="flex-1 flex gap-6 min-h-0">
+                {/* Sessions Sidebar */}
+                <AnimatePresence>
+                    {showSessionsSidebar && (
+                        <motion.div
+                            initial={{ width: 0, opacity: 0 }}
+                            animate={{ width: 280, opacity: 1 }}
+                            exit={{ width: 0, opacity: 0 }}
+                            className="flex-shrink-0 rounded-2xl border border-violet-500/20 bg-card/50 backdrop-blur-xl overflow-hidden shadow-lg"
+                        >
+                            <div className="p-4 border-b border-violet-500/20">
+                                <h3 className="font-semibold flex items-center gap-2">
+                                    <History className="h-4 w-4 text-violet-500" />
+                                    Chat Sessions
+                                </h3>
+                            </div>
+                            <ScrollArea className="h-[calc(100%-60px)]">
+                                <div className="p-2 space-y-2">
+                                    {studentSessions.length === 0 ? (
+                                        <div className="text-center py-8 text-muted-foreground text-sm">
+                                            <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                                            No previous sessions
+                                        </div>
+                                    ) : (
+                                        studentSessions.map((session) => (
+                                            <motion.div
+                                                key={session.id}
+                                                initial={{ opacity: 0, x: -20 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                className={cn(
+                                                    "p-3 rounded-xl cursor-pointer transition-all group",
+                                                    session.id === currentSessionId
+                                                        ? "bg-violet-500/20 border border-violet-500/30"
+                                                        : "hover:bg-violet-500/10 border border-transparent"
+                                                )}
+                                                onClick={() => handleLoadSession(session.id)}
+                                            >
+                                                <div className="flex items-start justify-between gap-2">
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="font-medium text-sm truncate">{session.name}</p>
+                                                        <p className="text-xs text-muted-foreground mt-1">
+                                                            {new Date(session.createdAt).toLocaleDateString()}
+                                                        </p>
+                                                        <p className="text-xs text-muted-foreground truncate mt-1">
+                                                            {session.messages.length} messages
+                                                        </p>
+                                                    </div>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        onClick={(e) => handleDeleteSession(e, session.id)}
+                                                    >
+                                                        <Trash2 className="h-3 w-3 text-red-500" />
+                                                    </Button>
+                                                </div>
+                                            </motion.div>
+                                        ))
+                                    )}
+                                </div>
+                            </ScrollArea>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-0">
+                    {/* Chat Section */}
+                    <div className="lg:col-span-2 flex flex-col rounded-2xl border border-violet-500/20 bg-card/50 backdrop-blur-xl overflow-hidden shadow-lg">
                     {/* Messages */}
                     <ScrollArea className="flex-1 p-4">
                         <div className="space-y-4">
@@ -352,6 +493,29 @@ export function StudentAIChat() {
                                             </div>
                                         </div>
                                     )}
+                                    <div className="flex gap-2 mt-2">
+                                        <Button 
+                                            variant={portfolioSaved ? "outline" : "default"}
+                                            size="sm" 
+                                            className={cn(
+                                                "flex-1 rounded-xl transition-all duration-300",
+                                                portfolioSaved 
+                                                    ? "text-green-600 dark:text-green-400 border-green-500/30 bg-green-500/10" 
+                                                    : "bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white"
+                                            )}
+                                            onClick={handleSavePortfolio}
+                                            disabled={isSavingPortfolio || portfolioSaved}
+                                        >
+                                            {isSavingPortfolio ? (
+                                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                            ) : portfolioSaved ? (
+                                                <CheckCircle2 className="h-4 w-4 mr-2" />
+                                            ) : (
+                                                <Save className="h-4 w-4 mr-2" />
+                                            )}
+                                            {portfolioSaved ? "Saved!" : "Save to Profile"}
+                                        </Button>
+                                    </div>
                                     <Button 
                                         variant="outline" 
                                         size="sm" 
@@ -432,6 +596,7 @@ export function StudentAIChat() {
                         </Card>
                     )}
                 </div>
+            </div>
             </div>
         </div>
     )

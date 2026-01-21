@@ -1,7 +1,7 @@
 "use client"
 
 import { motion, AnimatePresence } from "framer-motion"
-import { Users, Search, Filter, Loader2, User, Mail, Briefcase, FolderOpen, Calendar, X, Send, Video, MapPin, Clock, CheckCircle } from "lucide-react"
+import { Users, Search, Filter, Loader2, User, Mail, Briefcase, FolderOpen, Calendar, X, Send, Video, MapPin, Clock, CheckCircle, Sparkles, ChevronDown, ChevronUp, History, MessageSquare } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useTranslation } from "@/lib/i18n"
 import { useState, useEffect, useCallback } from "react"
 import { cn } from "@/lib/utils"
@@ -29,13 +30,36 @@ interface Candidate {
     experienceCount: number
 }
 
+interface SessionCandidate {
+    id: string
+    candidateId: string
+    name: string
+    matchPercentage: number
+    matchReasons: string[]
+    matchedSkills: string[]
+    avatar?: string
+}
+
+interface AISession {
+    sessionId: string
+    sessionName: string
+    searchQuery: string
+    requiredSkills: string[]
+    createdAt: string
+    candidates: SessionCandidate[]
+}
+
 export default function CandidatesPage() {
     const { t } = useTranslation()
     const router = useRouter()
     const [candidates, setCandidates] = useState<Candidate[]>([])
+    const [sessions, setSessions] = useState<AISession[]>([])
     const [isLoading, setIsLoading] = useState(true)
+    const [isLoadingSessions, setIsLoadingSessions] = useState(true)
     const [searchTerm, setSearchTerm] = useState("")
     const [debouncedSearch, setDebouncedSearch] = useState("")
+    const [expandedSessions, setExpandedSessions] = useState<Set<string>>(new Set())
+    const [activeTab, setActiveTab] = useState("sessions")
     
     // Modal states
     const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null)
@@ -83,9 +107,56 @@ export default function CandidatesPage() {
         }
     }, [debouncedSearch])
 
+    const fetchSessions = useCallback(async () => {
+        setIsLoadingSessions(true)
+        try {
+            const response = await fetch("/api/candidates/evaluations")
+            const data = await response.json()
+            
+            if (data.sessions) {
+                setSessions(data.sessions)
+                // Auto-expand the first session
+                if (data.sessions.length > 0) {
+                    setExpandedSessions(new Set([data.sessions[0].sessionId]))
+                }
+            }
+        } catch (error) {
+            console.error("Error fetching AI sessions:", error)
+        } finally {
+            setIsLoadingSessions(false)
+        }
+    }, [])
+
     useEffect(() => {
         fetchCandidates()
     }, [fetchCandidates])
+
+    useEffect(() => {
+        fetchSessions()
+    }, [fetchSessions])
+
+    const toggleSession = (sessionId: string) => {
+        setExpandedSessions(prev => {
+            const newSet = new Set(prev)
+            if (newSet.has(sessionId)) {
+                newSet.delete(sessionId)
+            } else {
+                newSet.add(sessionId)
+            }
+            return newSet
+        })
+    }
+
+    const formatSessionDate = (dateString: string) => {
+        const date = new Date(dateString)
+        return date.toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit"
+        })
+    }
 
     const getMatchColor = (percentage: number) => {
         if (percentage >= 80) return "from-green-500 to-emerald-500"
@@ -240,7 +311,198 @@ export default function CandidatesPage() {
                 </Button>
             </div>
 
-            {/* Candidates Grid */}
+            {/* Tabs for Sessions vs All Candidates */}
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="grid w-full grid-cols-2 mb-6 bg-violet-500/10 p-1 rounded-xl">
+                    <TabsTrigger 
+                        value="sessions" 
+                        className="rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-600 data-[state=active]:to-purple-600 data-[state=active]:text-white"
+                    >
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        AI Sessions ({sessions.length})
+                    </TabsTrigger>
+                    <TabsTrigger 
+                        value="all" 
+                        className="rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-600 data-[state=active]:to-purple-600 data-[state=active]:text-white"
+                    >
+                        <Users className="h-4 w-4 mr-2" />
+                        All Candidates ({candidates.length})
+                    </TabsTrigger>
+                </TabsList>
+
+                {/* AI Sessions Tab */}
+                <TabsContent value="sessions" className="space-y-4">
+                    {isLoadingSessions ? (
+                        <div className="flex items-center justify-center py-20">
+                            <Loader2 className="h-8 w-8 animate-spin text-violet-500" />
+                        </div>
+                    ) : sessions.length === 0 ? (
+                        <Card className="border-dashed border-2 border-violet-500/20">
+                            <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+                                <div className="p-4 rounded-2xl bg-violet-500/10 mb-4">
+                                    <Sparkles className="h-10 w-10 text-violet-500" />
+                                </div>
+                                <h3 className="text-lg font-semibold mb-2">No AI search sessions yet</h3>
+                                <p className="text-muted-foreground max-w-md">
+                                    Use the AI assistant to search for candidates. Each search session will be saved here with all matching candidates.
+                                </p>
+                                <Button 
+                                    className="mt-4 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600"
+                                    onClick={() => router.push("/dashboard/company?ai=true")}
+                                >
+                                    <MessageSquare className="h-4 w-4 mr-2" />
+                                    Open AI Assistant
+                                </Button>
+                            </CardContent>
+                        </Card>
+                    ) : (
+                        <div className="space-y-4">
+                            {sessions.map((session, sessionIndex) => (
+                                <motion.div
+                                    key={session.sessionId}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: sessionIndex * 0.1 }}
+                                >
+                                    <Card className="border-border/50 overflow-hidden">
+                                        {/* Session Header */}
+                                        <div 
+                                            className="p-4 cursor-pointer hover:bg-violet-500/5 transition-colors"
+                                            onClick={() => toggleSession(session.sessionId)}
+                                        >
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="p-2 rounded-xl bg-gradient-to-br from-violet-500/20 to-purple-500/20">
+                                                        <Sparkles className="h-5 w-5 text-violet-500" />
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="font-semibold">{session.sessionName}</h3>
+                                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                                            <History className="h-3 w-3" />
+                                                            {formatSessionDate(session.createdAt)}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <Badge variant="outline" className="border-violet-500/30 bg-violet-500/10">
+                                                        {session.candidates.length} candidate{session.candidates.length !== 1 ? "s" : ""}
+                                                    </Badge>
+                                                    {expandedSessions.has(session.sessionId) ? (
+                                                        <ChevronUp className="h-5 w-5 text-muted-foreground" />
+                                                    ) : (
+                                                        <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                                                    )}
+                                                </div>
+                                            </div>
+                                            
+                                            {/* Search Query & Skills */}
+                                            {session.searchQuery && (
+                                                <p className="mt-2 text-sm text-muted-foreground italic">
+                                                    &quot;{session.searchQuery}&quot;
+                                                </p>
+                                            )}
+                                            {session.requiredSkills.length > 0 && (
+                                                <div className="flex flex-wrap gap-1 mt-2">
+                                                    {session.requiredSkills.slice(0, 6).map((skill) => (
+                                                        <Badge key={skill} variant="outline" className="text-xs border-violet-500/30">
+                                                            {skill}
+                                                        </Badge>
+                                                    ))}
+                                                    {session.requiredSkills.length > 6 && (
+                                                        <Badge variant="outline" className="text-xs">
+                                                            +{session.requiredSkills.length - 6} more
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Session Candidates (Expanded) */}
+                                        <AnimatePresence>
+                                            {expandedSessions.has(session.sessionId) && (
+                                                <motion.div
+                                                    initial={{ height: 0, opacity: 0 }}
+                                                    animate={{ height: "auto", opacity: 1 }}
+                                                    exit={{ height: 0, opacity: 0 }}
+                                                    className="overflow-hidden border-t border-border/50"
+                                                >
+                                                    <div className="p-4 bg-violet-500/5">
+                                                        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                                                            {session.candidates
+                                                                .sort((a, b) => b.matchPercentage - a.matchPercentage)
+                                                                .map((candidate) => (
+                                                                <Card 
+                                                                    key={candidate.id} 
+                                                                    className="border-border/50 hover:border-violet-500/30 transition-all hover:shadow-md cursor-pointer"
+                                                                    onClick={() => viewProfile(candidate.candidateId)}
+                                                                >
+                                                                    <CardContent className="p-4">
+                                                                        <div className="flex items-center gap-3 mb-3">
+                                                                            <Avatar className="h-10 w-10 border-2 border-violet-500/30">
+                                                                                {candidate.avatar && <AvatarImage src={candidate.avatar} alt={candidate.name} />}
+                                                                                <AvatarFallback className="bg-gradient-to-br from-violet-500/20 to-purple-500/20 text-violet-600 font-bold">
+                                                                                    {candidate.name.charAt(0)}
+                                                                                </AvatarFallback>
+                                                                            </Avatar>
+                                                                            <div className="flex-1 min-w-0">
+                                                                                <h4 className="font-medium truncate">{candidate.name}</h4>
+                                                                                <Badge 
+                                                                                    className={cn(
+                                                                                        "text-xs text-white border-0 bg-gradient-to-r",
+                                                                                        getMatchColor(candidate.matchPercentage)
+                                                                                    )}
+                                                                                >
+                                                                                    {candidate.matchPercentage}% Match
+                                                                                </Badge>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        {/* Match Reasons */}
+                                                                        {candidate.matchReasons.length > 0 && (
+                                                                            <div className="text-xs text-muted-foreground mb-2">
+                                                                                {candidate.matchReasons.slice(0, 2).map((reason, i) => (
+                                                                                    <p key={i} className="truncate">• {reason}</p>
+                                                                                ))}
+                                                                            </div>
+                                                                        )}
+
+                                                                        {/* Matched Skills */}
+                                                                        {candidate.matchedSkills.length > 0 && (
+                                                                            <div className="flex flex-wrap gap-1">
+                                                                                {candidate.matchedSkills.slice(0, 3).map((skill) => (
+                                                                                    <Badge 
+                                                                                        key={skill} 
+                                                                                        variant="outline" 
+                                                                                        className="text-xs border-green-500/30 bg-green-500/10 text-green-600 dark:text-green-400"
+                                                                                    >
+                                                                                        ✓ {skill}
+                                                                                    </Badge>
+                                                                                ))}
+                                                                                {candidate.matchedSkills.length > 3 && (
+                                                                                    <Badge variant="outline" className="text-xs">
+                                                                                        +{candidate.matchedSkills.length - 3}
+                                                                                    </Badge>
+                                                                                )}
+                                                                            </div>
+                                                                        )}
+                                                                    </CardContent>
+                                                                </Card>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+                                    </Card>
+                                </motion.div>
+                            ))}
+                        </div>
+                    )}
+                </TabsContent>
+
+                {/* All Candidates Tab */}
+                <TabsContent value="all">
+                    {/* Candidates Grid */}
             {isLoading ? (
                 <div className="flex items-center justify-center py-20">
                     <Loader2 className="h-8 w-8 animate-spin text-violet-500" />
@@ -368,6 +630,8 @@ export default function CandidatesPage() {
                     ))}
                 </div>
             )}
+                </TabsContent>
+            </Tabs>
 
             {/* Message Modal */}
             <AnimatePresence>

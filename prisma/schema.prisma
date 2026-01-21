@@ -36,6 +36,7 @@ model User {
   conversations      Conversation[] @relation("StudentConversations")
   sentMessages       Message[]      @relation("SentMessages")
   reviews            Review[]       @relation("StudentReviews")
+  candidateEvaluations CandidateEvaluation[] @relation("CandidateEvaluations")
 
   @@index([role])
 }
@@ -59,6 +60,7 @@ model Company {
   experiences Experience[]
   conversations Conversation[]
   reviews     Review[]
+  candidateEvaluations CandidateEvaluation[]
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
@@ -351,6 +353,32 @@ model Conversation {
 
   @@index([studentId])
   @@index([companyId])
+}
+
+//
+// ---------------------
+// CANDIDATE AI EVALUATIONS
+// ---------------------
+model CandidateEvaluation {
+  id              String   @id @default(cuid())
+  candidateId     String   // The student being evaluated
+  companyId       String   // The company that ran the evaluation
+  sessionId       String   // Unique session ID for the AI chat
+  sessionName     String?  // Optional friendly name for the session
+  searchQuery     String?  // What the company searched for
+  requiredSkills  String[] // Skills that were searched
+  matchPercentage Int      // The match score
+  matchReasons    String[] // Why they matched
+  matchedSkills   String[] // Which skills matched
+  createdAt       DateTime @default(now())
+
+  candidate User    @relation("CandidateEvaluations", fields: [candidateId], references: [id], onDelete: Cascade)
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([candidateId])
+  @@index([companyId])
+  @@index([sessionId])
+  @@index([createdAt])
 }
 
 //

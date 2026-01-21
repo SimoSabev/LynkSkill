@@ -2,6 +2,90 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { auth } from "@clerk/nextjs/server"
 
+// Skill-based evaluation algorithm (same as AI mode)
+function calculateCandidateScore(student: {
+    portfolio: {
+        skills?: string[]
+        interests?: string[]
+        bio?: string | null
+        headline?: string | null
+    } | null
+    projects: { title: string; description: string }[]
+    experiences: unknown[]
+}, requiredSkills: string[] = []) {
+    let score = 0
+    const reasons: string[] = []
+    const matchedSkills: string[] = []
+
+    const studentSkillsArray = (student.portfolio?.skills || []).map((s: string) => s.toLowerCase())
+    const studentInterests = (student.portfolio?.interests || []).map((s: string) => s.toLowerCase())
+    const bio = (student.portfolio?.bio || "").toLowerCase()
+    const headline = (student.portfolio?.headline || "").toLowerCase()
+    const projectsText = student.projects?.map(p => 
+        `${p.title} ${p.description}`
+    ).join(" ").toLowerCase() || ""
+    
+    const fullText = `${bio} ${headline} ${projectsText} ${studentSkillsArray.join(" ")} ${studentInterests.join(" ")}`
+
+    // If required skills are provided, calculate match against them
+    if (requiredSkills.length > 0) {
+        for (const skill of requiredSkills) {
+            const skillLower = skill.toLowerCase()
+            
+            // Direct skill match (highest weight)
+            if (studentSkillsArray.some(s => s.includes(skillLower) || skillLower.includes(s))) {
+                score += 30
+                matchedSkills.push(skill)
+                reasons.push(`Skilled in ${skill}`)
+            }
+            // Skill in projects (high weight)
+            else if (projectsText.includes(skillLower)) {
+                score += 20
+                matchedSkills.push(skill)
+                reasons.push(`${skill} in projects`)
+            }
+            // Skill mentioned elsewhere (medium weight)
+            else if (fullText.includes(skillLower)) {
+                score += 15
+                matchedSkills.push(skill)
+                reasons.push(`Experience with ${skill}`)
+            }
+        }
+    } else {
+        // No required skills - evaluate based on profile completeness
+        if (student.portfolio?.bio && student.portfolio.bio.length > 50) {
+            score += 15
+            reasons.push("Detailed portfolio")
+        }
+        if (student.portfolio?.headline) {
+            score += 10
+            reasons.push("Professional headline")
+        }
+        if (studentSkillsArray.length > 0) {
+            score += Math.min(studentSkillsArray.length * 5, 25)
+            reasons.push(`${studentSkillsArray.length} skills listed`)
+        }
+    }
+
+    // Bonus for projects (shows practical experience)
+    if (student.projects && student.projects.length > 0) {
+        const projectBonus = Math.min(student.projects.length * 5, 15)
+        score += projectBonus
+        reasons.push(`${student.projects.length} project${student.projects.length > 1 ? 's' : ''}`)
+    }
+
+    // Bonus for work experience
+    if (student.experiences && student.experiences.length > 0) {
+        score += 10
+        reasons.push(`${student.experiences.length} experience${student.experiences.length > 1 ? 's' : ''}`)
+    }
+
+    // Cap at 98
+    score = Math.min(score, 98)
+
+    return { score, reasons, matchedSkills }
+}
+
 export async function GET(req: NextRequest) {
     try {
         const { userId } = await auth()
@@ -27,41 +111,16 @@ export async function GET(req: NextRequest) {
             take: 50
         })
 
-        // Map and calculate match scores
+        // Map and calculate match scores using the consistent algorithm
         const candidates = students.map(student => {
-            const studentSkillsArray = (student.portfolio?.skills || []).map((s: string) => s.toLowerCase())
-            const studentInterests = (student.portfolio?.interests || []).map((s: string) => s.toLowerCase())
-            const bio = (student.portfolio?.bio || "").toLowerCase()
-            const headline = (student.portfolio?.headline || "").toLowerCase()
             const fullName = student.profile?.name || student.portfolio?.fullName || "Student"
             
-            // Calculate a base score
-            let score = 0
-            const matchedSkills: string[] = []
-            
-            // If skills filter is provided, calculate match
-            if (skills.length > 0) {
-                for (const skill of skills) {
-                    const skillLower = skill.toLowerCase()
-                    if (studentSkillsArray.some(s => s.includes(skillLower) || skillLower.includes(s))) {
-                        score += 30
-                        matchedSkills.push(skill)
-                    } else if (bio.includes(skillLower) || headline.includes(skillLower)) {
-                        score += 15
-                        matchedSkills.push(skill)
-                    }
-                }
-            } else {
-                // No filter - give base score based on profile completeness
-                if (student.portfolio?.bio) score += 20
-                if (student.portfolio?.headline) score += 15
-                if (student.portfolio?.skills && student.portfolio.skills.length > 0) score += 25
-                if (student.projects && student.projects.length > 0) score += 20
-                if (student.experiences && student.experiences.length > 0) score += 20
-            }
-
-            // Cap at 98
-            score = Math.min(score, 98)
+            // Use the consistent evaluation algorithm
+            const { score, reasons, matchedSkills } = calculateCandidateScore({
+                portfolio: student.portfolio,
+                projects: student.projects || [],
+                experiences: student.experiences || []
+            }, skills)
 
             return {
                 id: student.id,
@@ -71,7 +130,9 @@ export async function GET(req: NextRequest) {
                 headline: student.portfolio?.headline || undefined,
                 bio: student.portfolio?.bio || undefined,
                 skills: student.portfolio?.skills || [],
+                interests: student.portfolio?.interests || [],
                 matchPercentage: score,
+                matchReasons: reasons,
                 matchedSkills,
                 projectCount: student.projects?.length || 0,
                 experienceCount: student.experiences?.length || 0

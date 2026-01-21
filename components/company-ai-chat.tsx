@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { 
     Send, 
@@ -14,7 +14,13 @@ import {
     Search,
     Zap,
     Users,
-    Mail
+    Mail,
+    History,
+    Plus,
+    Trash2,
+    MessageSquare,
+    PanelLeftOpen,
+    PanelLeftClose
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -25,6 +31,7 @@ import { Progress } from "@/components/ui/progress"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { useAIMode } from "@/lib/ai-mode-context"
 import { cn } from "@/lib/utils"
+import { toast } from "sonner"
 
 export function CompanyAIChat() {
     const { 
@@ -38,13 +45,20 @@ export function CompanyAIChat() {
         setChatPhase,
         clearMessages,
         sendWelcomeMessage,
-        welcomeSent
+        welcomeSent,
+        currentSessionId,
+        sessions,
+        startNewSession,
+        loadSession,
+        deleteSession
     } = useAIMode()
 
     const [inputValue, setInputValue] = useState("")
     const [isTyping, setIsTyping] = useState(false)
     const [isSearching, setIsSearching] = useState(false)
     const [searchStatus, setSearchStatus] = useState("")
+    const [lastSearchQuery, setLastSearchQuery] = useState("")
+    const [showSessionsSidebar, setShowSessionsSidebar] = useState(false)
     const messagesEndRef = useRef<HTMLDivElement>(null)
     const inputRef = useRef<HTMLInputElement>(null)
 
@@ -62,6 +76,39 @@ export function CompanyAIChat() {
             sendWelcomeMessage("company")
         }
     }, [welcomeSent, sendWelcomeMessage])
+
+    // Save evaluation results to database
+    const saveEvaluationResults = useCallback(async (
+        matches: Array<{ id: string; matchPercentage: number; reasons: string[]; skills: string[] }>,
+        searchQuery: string,
+        requiredSkills: string[]
+    ) => {
+        try {
+            const response = await fetch("/api/candidates/evaluations", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    sessionId: currentSessionId,
+                    sessionName: `AI Search - ${new Date().toLocaleString()}`,
+                    searchQuery,
+                    requiredSkills,
+                    candidates: matches.map(m => ({
+                        id: m.id,
+                        matchPercentage: m.matchPercentage,
+                        reasons: m.reasons,
+                        skills: m.skills
+                    }))
+                })
+            })
+
+            const data = await response.json()
+            if (data.success) {
+                console.log(`Saved ${data.evaluationsCount} evaluations for session ${currentSessionId}`)
+            }
+        } catch (error) {
+            console.error("Error saving evaluation results:", error)
+        }
+    }, [currentSessionId])
 
     // Helper function to extract and strip JSON from message
     const parseMessageForSearch = (text: string): { cleanText: string; searchCriteria: { skills: string[]; roleType: string; field: string } | null } => {
@@ -193,6 +240,7 @@ export function CompanyAIChat() {
                 if (searchCriteria) {
                     // Trigger search with UI feedback
                     onSearchTriggered(searchCriteria)
+                    setLastSearchQuery(userMessage)
                 }
 
                 // Update state based on response
@@ -204,6 +252,16 @@ export function CompanyAIChat() {
                     console.log("Setting matches:", data.matches.length)
                     setStudentMatches(data.matches)
                     setChatPhase("results") // Ensure we move to results phase
+                    
+                    // Extract skills from matches for saving
+                    const allSkills: string[] = [...new Set(data.matches.flatMap((m: { skills?: string[] }) => m.skills || []))] as string[]
+                    
+                    // Save evaluation results to database
+                    saveEvaluationResults(data.matches, userMessage, allSkills)
+                    
+                    toast.success(`Found ${data.matches.length} candidates!`, {
+                        description: "Results saved to candidate history"
+                    })
                     
                     // Add results message after a short delay
                     setTimeout(() => {
@@ -227,9 +285,22 @@ export function CompanyAIChat() {
     }
 
     const handleStartOver = () => {
-        clearMessages()
+        startNewSession("company")
         setStudentMatches([])
+        setLastSearchQuery("")
     }
+
+    const handleLoadSession = (sessionId: string) => {
+        loadSession(sessionId)
+        setShowSessionsSidebar(false)
+    }
+
+    const handleDeleteSession = (e: React.MouseEvent, sessionId: string) => {
+        e.stopPropagation()
+        deleteSession(sessionId)
+    }
+
+    const companySessions = sessions.filter(s => s.userType === "company")
 
     const getMatchColor = (percentage: number) => {
         if (percentage >= 80) return "from-green-500 to-emerald-500"
@@ -263,14 +334,29 @@ export function CompanyAIChat() {
                         </p>
                     </div>
 
-                    <Button
-                        variant="outline"
-                        onClick={handleStartOver}
-                        className="rounded-xl px-4 py-2 text-sm font-bold hover:bg-violet-500/10 border-violet-500/30 hover:border-violet-500/50 transition-all duration-300"
-                    >
-                        <RefreshCw className="h-4 w-4 mr-2" />
-                        Start Over
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => setShowSessionsSidebar(!showSessionsSidebar)}
+                            className="rounded-xl px-3 py-2 text-sm font-bold hover:bg-violet-500/10 border-violet-500/30 hover:border-violet-500/50 transition-all duration-300"
+                        >
+                            {showSessionsSidebar ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
+                            <span className="ml-2 hidden sm:inline">Sessions</span>
+                            {companySessions.length > 0 && (
+                                <Badge variant="secondary" className="ml-2 bg-violet-500/20 text-violet-600">
+                                    {companySessions.length}
+                                </Badge>
+                            )}
+                        </Button>
+                        <Button
+                            variant="outline"
+                            onClick={handleStartOver}
+                            className="rounded-xl px-4 py-2 text-sm font-bold hover:bg-violet-500/10 border-violet-500/30 hover:border-violet-500/50 transition-all duration-300"
+                        >
+                            <Plus className="h-4 w-4 mr-2" />
+                            New Chat
+                        </Button>
+                    </div>
                 </div>
 
                 {/* Progress indicator */}
@@ -297,9 +383,74 @@ export function CompanyAIChat() {
                 </div>
             </div>
 
-            <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-0">
-                {/* Chat Section */}
-                <div className="lg:col-span-2 flex flex-col rounded-2xl border border-violet-500/20 bg-card/50 backdrop-blur-xl overflow-hidden shadow-lg">
+            <div className="flex-1 flex gap-6 min-h-0">
+                {/* Sessions Sidebar */}
+                <AnimatePresence>
+                    {showSessionsSidebar && (
+                        <motion.div
+                            initial={{ width: 0, opacity: 0 }}
+                            animate={{ width: 280, opacity: 1 }}
+                            exit={{ width: 0, opacity: 0 }}
+                            className="flex-shrink-0 rounded-2xl border border-violet-500/20 bg-card/50 backdrop-blur-xl overflow-hidden shadow-lg"
+                        >
+                            <div className="p-4 border-b border-violet-500/20">
+                                <h3 className="font-semibold flex items-center gap-2">
+                                    <History className="h-4 w-4 text-violet-500" />
+                                    Chat Sessions
+                                </h3>
+                            </div>
+                            <ScrollArea className="h-[calc(100%-60px)]">
+                                <div className="p-2 space-y-2">
+                                    {companySessions.length === 0 ? (
+                                        <div className="text-center py-8 text-muted-foreground text-sm">
+                                            <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                                            No previous sessions
+                                        </div>
+                                    ) : (
+                                        companySessions.map((session) => (
+                                            <motion.div
+                                                key={session.id}
+                                                initial={{ opacity: 0, x: -20 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                className={cn(
+                                                    "p-3 rounded-xl cursor-pointer transition-all group",
+                                                    session.id === currentSessionId
+                                                        ? "bg-violet-500/20 border border-violet-500/30"
+                                                        : "hover:bg-violet-500/10 border border-transparent"
+                                                )}
+                                                onClick={() => handleLoadSession(session.id)}
+                                            >
+                                                <div className="flex items-start justify-between gap-2">
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="font-medium text-sm truncate">{session.name}</p>
+                                                        <p className="text-xs text-muted-foreground mt-1">
+                                                            {new Date(session.createdAt).toLocaleDateString()}
+                                                        </p>
+                                                        <p className="text-xs text-muted-foreground truncate mt-1">
+                                                            {session.messages.length} messages
+                                                        </p>
+                                                    </div>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        onClick={(e) => handleDeleteSession(e, session.id)}
+                                                    >
+                                                        <Trash2 className="h-3 w-3 text-red-500" />
+                                                    </Button>
+                                                </div>
+                                            </motion.div>
+                                        ))
+                                    )}
+                                </div>
+                            </ScrollArea>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-0">
+                    {/* Chat Section */}
+                    <div className="lg:col-span-2 flex flex-col rounded-2xl border border-violet-500/20 bg-card/50 backdrop-blur-xl overflow-hidden shadow-lg">
                     {/* Messages */}
                     <ScrollArea className="flex-1 p-4">
                         <div className="space-y-4">
@@ -559,6 +710,7 @@ export function CompanyAIChat() {
                         </CardContent>
                     </Card>
                 </div>
+            </div>
             </div>
         </div>
     )
