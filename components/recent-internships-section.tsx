@@ -1,13 +1,14 @@
 "use client"
 
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 import { useState, useMemo, useCallback } from "react"
 import type { Internship } from "@/app/types"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { CardSkeleton } from "@/components/card-skeleton"
+import { toast } from "sonner"
+import { InternshipCardSkeleton } from "@/components/card-skeleton"
 import InternshipDetailsModal from "@/components/internship-details-modal"
-import { Layers, Clock, RefreshCw, Trash2, MapPin, GraduationCap, DollarSign, Timer, BookOpen, Wrench, Building2, Briefcase, CheckCircle2, XCircle, Clock3, ArrowRight, Sparkles, Calendar, Search } from 'lucide-react'
+import { InternshipManageModal } from "@/components/internship-manage-modal"
+import { Layers, Clock, RefreshCw, Trash2, MapPin, DollarSign, Building2, Briefcase, CheckCircle2, XCircle, Clock3, ArrowRight, Sparkles, Search, Eye, Zap, Settings, Calendar, AlertTriangle } from 'lucide-react'
 import ApplyButton from "@/components/ApplyBtn"
 import { BookmarkButton } from "@/components/bookmark-button"
 import { InternshipFiltersComponent, type InternshipFilters } from "@/components/internship-filters"
@@ -43,6 +44,7 @@ export function RecentInternshipsSection({ userType, setActiveTab }: RecentAppsS
     const [refreshing, setRefreshing] = useState(false)
     const [selectedInternship, setSelectedInternship] = useState<Internship | null>(null)
     const [open, setOpen] = useState(false)
+    const [manageOpen, setManageOpen] = useState(false)
     const [filters, setFilters] = useState<InternshipFilters>({
         search: "",
         location: "all",
@@ -53,11 +55,43 @@ export function RecentInternshipsSection({ userType, setActiveTab }: RecentAppsS
     })
     const [filter, setFilter] = useState<"all" | "recent">("all")
     const [displayCount, setDisplayCount] = useState(6)
+    const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
 
     // Use context data instead of local state
     const internships = contextInternships as Internship[]
     const applications = contextApplications as Application[]
     const isLoading = isLoadingInternships
+
+    // Delete internship handler with toast instead of confirm
+    const handleDeleteInternship = async (internship: Internship) => {
+        if (pendingDeleteId === internship.id) {
+            // Second click - actually delete
+            try {
+                const res = await fetch(`/api/internship/delete?id=${internship.id}`, { method: "DELETE" })
+                const data = await res.json()
+                if (data.error) {
+                    toast.error(data.error)
+                    return
+                }
+                toast.success(`"${internship.title}" deleted successfully`)
+                window.dispatchEvent(new CustomEvent("internshipDeleted", { detail: internship.id }))
+                mutateInternships()
+            } catch (err) {
+                console.error("Delete internship error:", err)
+                toast.error("Failed to delete internship")
+            } finally {
+                setPendingDeleteId(null)
+            }
+        } else {
+            // First click - show confirmation toast
+            setPendingDeleteId(internship.id)
+            toast.warning(`Click delete again to confirm removing "${internship.title}"`, {
+                duration: 3000,
+                onDismiss: () => setPendingDeleteId(null),
+                onAutoClose: () => setPendingDeleteId(null),
+            })
+        }
+    }
 
     // Extract unique locations from internships
     const uniqueLocations = useMemo(() => {
@@ -99,15 +133,23 @@ export function RecentInternshipsSection({ userType, setActiveTab }: RecentAppsS
 
     // Apply all filters
     const filteredInternships = useMemo(() => {
+        // Helper function to get skills as lowercase string
+        const getSkillsString = (skills: string | string[] | undefined | null): string => {
+            if (!skills) return ""
+            if (Array.isArray(skills)) return skills.join(',').toLowerCase()
+            return skills.toLowerCase()
+        }
+
         return internships.filter((internship) => {
             // Search filter
             if (filters.search) {
                 const searchLower = filters.search.toLowerCase()
+                const skillsString = getSkillsString(internship.skills)
                 const matchesSearch = 
                     internship.title.toLowerCase().includes(searchLower) ||
                     internship.description.toLowerCase().includes(searchLower) ||
                     internship.location?.toLowerCase().includes(searchLower) ||
-                    internship.skills?.toLowerCase().includes(searchLower)
+                    skillsString.includes(searchLower)
                 if (!matchesSearch) return false
             }
 
@@ -136,7 +178,7 @@ export function RecentInternshipsSection({ userType, setActiveTab }: RecentAppsS
 
             // Skills filter
             if (filters.skills.length > 0) {
-                const internshipSkills = internship.skills?.toLowerCase() || ""
+                const internshipSkills = getSkillsString(internship.skills)
                 const hasMatchingSkill = filters.skills.some(skill => 
                     internshipSkills.includes(skill.toLowerCase())
                 )
@@ -148,80 +190,93 @@ export function RecentInternshipsSection({ userType, setActiveTab }: RecentAppsS
     }, [internships, filters])
 
     const now = Date.now()
+    
+    // Filter out expired internships for students (they shouldn't see them)
+    // Companies can still see their expired internships with an indicator
+    // Internships expire the day AFTER the end date (e.g., ends 22nd = expires on 23rd)
+    const nonExpiredInternships = useMemo(() => {
+        if (userType === "Company") return filteredInternships // Companies see all their internships
+        return filteredInternships.filter((internship) => {
+            if (!internship.applicationEnd) return true // No end date = always visible
+            const endDate = new Date(internship.applicationEnd)
+            // Set to end of the end date day (23:59:59) so it expires the next day
+            endDate.setHours(23, 59, 59, 999)
+            return endDate.getTime() >= now // Only show if not expired
+        })
+    }, [filteredInternships, userType, now])
+    
     const finalInternships =
         filter === "recent"
-            ? filteredInternships.filter((internship) => {
+            ? nonExpiredInternships.filter((internship) => {
                 const createdAt = new Date(internship.createdAt).getTime()
                 const diffDays = (now - createdAt) / (1000 * 60 * 60 * 24)
                 return diffDays <= 5
             })
-            : filteredInternships
+            : nonExpiredInternships
 
     const displayedInternships = finalInternships.slice(0, displayCount)
     // hasMore can be used for "Load More" functionality
     const _hasMore = displayCount < finalInternships.length
 
     return (
-        <section className="space-y-6 md:space-y-8">
-            <div className="relative overflow-hidden rounded-2xl md:rounded-3xl p-6 md:p-8 lg:p-10 backdrop-blur-sm shadow-xl md:shadow-2xl bg-gradient-to-br from-purple-500/10 via-blue-500/10 to-blue-600/5 border border-border/50">
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 via-blue-500/5 to-blue-600/10" />
-                <div className="absolute -top-24 -right-24 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl" />
-                <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl" />
-
-                <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-6">
-                    <div className="space-y-2 md:space-y-3">
-                        <div className="flex items-center gap-2 md:gap-3">
-                            <div className="p-2 md:p-3 rounded-xl md:rounded-2xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 backdrop-blur-sm shadow-lg">
-                                <Briefcase className="h-5 w-5 md:h-7 md:w-7 text-purple-600 dark:text-purple-400" />
+        <section className="space-y-6">
+            {/* Neon Gradient Header Section */}
+            <div className="relative overflow-hidden rounded-2xl p-6 md:p-8 bg-gradient-to-br from-purple-600/10 via-blue-600/10 to-cyan-500/10 border border-purple-500/20 shadow-lg">
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 via-blue-500/5 to-cyan-500/5" />
+                <div className="absolute -top-24 -right-24 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl" />
+                <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl" />
+                
+                <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="space-y-2">
+                        <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
+                            <div className="p-2.5 rounded-xl bg-gradient-to-br from-purple-500 to-blue-500 shadow-lg shadow-purple-500/25">
+                                <Briefcase className="h-6 w-6 text-white" />
                             </div>
-                            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground">
-                                {userType === "Company" ? t('internships.myRecentInternships') : t('internships.recentInternships')}
-                            </h2>
-                        </div>
-                        <p className="text-muted-foreground text-sm md:text-base lg:text-lg font-medium flex items-center gap-2">
-                            <Sparkles className="h-4 w-4 md:h-5 md:w-5 text-purple-600 dark:text-purple-400" />
+                            {userType === "Company" ? t('internships.myRecentInternships') : t('internships.recentInternships')}
+                        </h2>
+                        <p className="text-sm md:text-base text-muted-foreground flex items-center gap-2">
+                            <Sparkles className="h-4 w-4 text-purple-500" />
                             {finalInternships.length} {finalInternships.length === 1 ? t('internships.opportunityAvailable') : t('internships.opportunitiesAvailable')}
                         </p>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <div className="flex items-center rounded-xl border border-purple-500/20 bg-background/80 backdrop-blur-sm p-1 shadow-lg">
+                            <Button
+                                variant={filter === "all" ? "default" : "ghost"}
+                                size="sm"
+                                className={`rounded-lg px-4 text-sm font-medium transition-all ${filter === "all" ? "bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-lg" : ""}`}
+                                onClick={() => setFilter("all")}
+                            >
+                                <Layers className="mr-1.5 h-4 w-4" />
+                                {t('common.all')}
+                            </Button>
+                            <Button
+                                variant={filter === "recent" ? "default" : "ghost"}
+                                size="sm"
+                                className={`rounded-lg px-4 text-sm font-medium transition-all ${filter === "recent" ? "bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-lg" : ""}`}
+                                onClick={() => setFilter("recent")}
+                            >
+                                <Zap className="mr-1.5 h-4 w-4" />
+                                {t('common.recent')}
+                            </Button>
+                        </div>
+
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={handleRefresh}
+                            disabled={refreshing || isLoading}
+                            className="rounded-xl border-purple-500/20 hover:border-purple-500/40 hover:bg-purple-500/10"
+                        >
+                            <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+                            <span className="sr-only sm:not-sr-only sm:ml-2">{refreshing ? t('common.loading') : t('common.refresh')}</span>
+                        </Button>
                     </div>
                 </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 md:gap-4">
-                <div className="flex gap-2 md:gap-3">
-                    <Button
-                        variant={filter === "all" ? "default" : "outline"}
-                        size="lg"
-                        className="flex-1 sm:flex-none rounded-xl md:rounded-2xl px-4 md:px-6 py-2.5 md:py-3 text-sm md:text-base font-bold transition-all duration-300 hover:scale-105 shadow-md hover:shadow-lg"
-                        onClick={() => setFilter("all")}
-                    >
-                        <Layers className="mr-1.5 md:mr-2 h-4 w-4 md:h-5 md:w-5" />
-                        {t('common.all')}
-                    </Button>
-
-                    <Button
-                        variant={filter === "recent" ? "default" : "outline"}
-                        size="lg"
-                        className="flex-1 sm:flex-none rounded-xl md:rounded-2xl px-4 md:px-6 py-2.5 md:py-3 text-sm md:text-base font-bold transition-all duration-300 hover:scale-105 shadow-md hover:shadow-lg"
-                        onClick={() => setFilter("recent")}
-                    >
-                        <Clock className="mr-1.5 md:mr-2 h-4 w-4 md:h-5 md:w-5" />
-                        {t('common.recent')}
-                    </Button>
-
-                    <Button
-                        size="lg"
-                        variant="outline"
-                        onClick={handleRefresh}
-                        disabled={refreshing || isLoading}
-                        className="rounded-xl md:rounded-2xl px-4 md:px-6 py-2.5 md:py-3 text-sm md:text-base font-bold transition-all duration-300 hover:scale-105 shadow-md hover:shadow-lg bg-transparent"
-                    >
-                        <RefreshCw className={`h-4 w-4 md:h-5 md:w-5 ${refreshing ? "animate-spin" : ""} sm:mr-2`} />
-                        <span className="hidden sm:inline">{refreshing ? t('common.loading') : t('common.refresh')}</span>
-                    </Button>
-                </div>
-            </div>
-
-            {/* Advanced Filters */}
+            {/* Filters */}
             <InternshipFiltersComponent
                 filters={filters}
                 onFiltersChange={handleFiltersChange}
@@ -230,316 +285,319 @@ export function RecentInternshipsSection({ userType, setActiveTab }: RecentAppsS
             />
 
             {finalInternships.length === 0 && !isLoading ? (
-                <div className="text-center py-16 md:py-20">
-                    <div className="inline-flex items-center justify-center w-16 h-16 md:w-20 md:h-20 rounded-full bg-muted/50 mb-4 md:mb-6">
-                        <Search className="h-8 w-8 md:h-10 md:w-10 text-muted-foreground" />
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                    <div className="rounded-full bg-muted/50 p-4 mb-4">
+                        <Search className="h-8 w-8 text-muted-foreground" />
                     </div>
-                    <p className="text-muted-foreground text-lg md:text-xl font-medium">{t('internships.noInternshipsFound')}</p>
+                    <h3 className="font-semibold text-lg mb-1">{t('internships.noInternshipsFound')}</h3>
+                    <p className="text-sm text-muted-foreground max-w-sm">
+                        Try adjusting your filters or check back later for new opportunities
+                    </p>
                 </div>
             ) : (
                 <>
-                    <div className="grid grid-cols-1 gap-4 md:gap-5 lg:gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                        {isLoading
-                            ? Array.from({ length: 8 }).map((_, i) => <CardSkeleton key={i} />)
-                            : displayedInternships.map((item) => {
-                                const app = applications.find((a) => a.internshipId === item.id)
+                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                        <AnimatePresence mode="popLayout">
+                            {isLoading
+                                ? Array.from({ length: 6 }).map((_, i) => <InternshipCardSkeleton key={i} />)
+                                : displayedInternships.map((item, index) => {
+                                    const app = applications.find((a) => a.internshipId === item.id)
+                                    const endDate = item.applicationEnd ? new Date(item.applicationEnd) : null
+                                    const startTime = item.applicationStart ? new Date(item.applicationStart).getTime() : null
+                                    const currentTime = Date.now()
+                                    
+                                    // Get end time - set to end of day so it expires the NEXT day
+                                    let endTime: number | null = null
+                                    if (endDate) {
+                                        const endOfDay = new Date(endDate)
+                                        endOfDay.setHours(23, 59, 59, 999)
+                                        endTime = endOfDay.getTime()
+                                    }
+                                    
+                                    // Check if internship is expired (the day after end date)
+                                    const isExpired = endTime ? currentTime > endTime : false
+                                    
+                                    // Calculate days left (can be negative if expired)
+                                    const daysLeft = endTime 
+                                        ? Math.ceil((endTime - currentTime) / (1000 * 60 * 60 * 24))
+                                        : null
+                                    
+                                    // Calculate progress percentage for the date range
+                                    let progressPercent = 0
+                                    if (startTime && endTime) {
+                                        const totalDuration = endTime - startTime
+                                        const elapsed = currentTime - startTime
+                                        progressPercent = Math.min(100, Math.max(0, (elapsed / totalDuration) * 100))
+                                        if (isExpired) progressPercent = 100
+                                    }
+                                    
+                                    // Handle skills - could be string or array
+                                    const skillsArray = Array.isArray(item.skills) 
+                                        ? item.skills.filter(Boolean)
+                                        : typeof item.skills === 'string' 
+                                            ? item.skills.split(',').map(s => s.trim()).filter(Boolean) 
+                                            : []
 
-                                return (
-                                    <motion.div
-                                        key={item.id}
-                                        initial={{ opacity: 0, y: 20 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ duration: 0.4 }}
-                                        whileHover={{
-                                            scale: 1.02,
-                                            y: -4,
-                                            transition: { duration: 0.3, ease: "easeOut" },
-                                        }}
-                                        whileTap={{ scale: 0.98 }}
-                                        className="group"
-                                    >
-                                        <Card className="relative flex flex-col overflow-hidden rounded-2xl md:rounded-3xl border-2 border-border hover:border-purple-500/50 transition-all duration-500 h-full bg-gradient-to-br from-card via-card to-card/95 shadow-lg hover:shadow-2xl backdrop-blur-sm">
-                                            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-blue-500/5 to-blue-600/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                                            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-600 via-blue-500 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-
-                                            <CardHeader className="pb-3 md:pb-4 pt-4 md:pt-5 px-4 md:px-6 relative z-10">
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex h-10 w-10 md:h-12 md:w-12 items-center justify-center rounded-xl md:rounded-2xl bg-gradient-to-br from-purple-600 to-blue-600 shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
-                                                        {userType === "Company" ? (
-                                                            <Building2 className="h-5 w-5 md:h-6 md:w-6 text-white" />
-                                                        ) : (
-                                                            <Briefcase className="h-5 w-5 md:h-6 md:w-6 text-white" />
-                                                        )}
-                                                    </div>
-                                                    {userType === "Company" && (
-                                                        <motion.button
-                                                            whileHover={{ scale: 1.15 }}
-                                                            whileTap={{ scale: 0.9 }}
-                                                            onClick={async () => {
-                                                                const confirmDelete = window.confirm("Are you sure you want to delete this internship?");
-                                                                if (!confirmDelete) return;
-                                                        
-                                                                try {
-                                                                    const res = await fetch(`/api/internship/delete?id=${item.id}`, {
-                                                                        method: "DELETE"
-                                                                    });
-                                                        
-                                                                    const data = await res.json();
-                                                                    if (data.error) throw new Error(data.error);
-                                                        
-                                                                    // Refresh UI
-                                                                    window.dispatchEvent(
-                                                                        new CustomEvent("internshipDeleted", {
-                                                                            detail: item.id,
-                                                                        })
-                                                                    );
-                                                                } catch (err) {
-                                                                    console.error("Delete internship error:", err);
-                                                                }
-                                                            }}
-                                                            className="p-1.5 md:p-2 rounded-lg md:rounded-xl cursor-pointer bg-destructive/10 hover:bg-destructive/20 transition-all duration-200 shadow-md hover:shadow-lg"
-                                                        >
-                                                            <Trash2 className="w-3.5 h-3.5 md:w-4 md:h-4 text-destructive" />
-                                                        </motion.button>
-                                                    )}
-                                                    {userType === "Student" && (
-                                                        <BookmarkButton
-                                                            internshipId={item.id}
-                                                            isSaved={savedInternshipIds.has(item.id)}
-                                                            onToggle={() => mutateSavedInternships()}
-                                                            className="bg-muted/50 hover:bg-muted"
-                                                        />
-                                                    )}
-                                                </div>
-                                            </CardHeader>
-
-                                            <CardContent className="flex-1 flex flex-col w-full relative z-10 px-4 md:px-6 pb-3 md:pb-4 space-y-3 md:space-y-4">
-                                                {/* Title & Company Group */}
-                                                <div className="space-y-1.5 md:space-y-2">
-                                                    <CardTitle className="text-lg md:text-xl font-bold text-foreground group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors leading-tight">
-                                                        {item.title}
-                                                    </CardTitle>
-
-                                                    {item.company && (
-                                                        <div className="flex items-center gap-1.5 md:gap-2 text-xs md:text-sm text-muted-foreground">
-                                                            <Building2 className="h-3.5 w-3.5 md:h-4 md:w-4 text-purple-600 dark:text-purple-400 flex-shrink-0" />
-                                                            <span className="font-medium truncate">{item.company.name}</span>
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                {/* Description - more compact */}
-                                                <CardDescription className="text-xs md:text-sm text-muted-foreground leading-relaxed line-clamp-2">
-                                                    {item.description}
-                                                </CardDescription>
-
-                                                <div className="space-y-1.5 md:space-y-2 text-xs md:text-sm">
-                                                    {item.location && (
-                                                        <div className="flex items-center gap-1.5 md:gap-2 text-muted-foreground">
-                                                            <MapPin className="h-3.5 w-3.5 md:h-4 md:w-4 text-purple-600 dark:text-purple-400 flex-shrink-0" />
-                                                            <span className="truncate">{item.location}</span>
-                                                        </div>
-                                                    )}
-
-                                                    {item.duration && (
-                                                        <div className="flex items-center gap-1.5 md:gap-2 text-muted-foreground">
-                                                            <Timer className="h-3.5 w-3.5 md:h-4 md:w-4 text-purple-600 dark:text-purple-400 flex-shrink-0" />
-                                                            <span>{item.duration}</span>
-                                                        </div>
-                                                    )}
-
-                                                    {item.paid && (
-                                                        <div className="flex items-center gap-1.5 md:gap-2 text-green-600 dark:text-green-400 font-semibold">
-                                                            <DollarSign className="h-3.5 w-3.5 md:h-4 md:w-4 flex-shrink-0" />
-                                                            <span>${item.salary ?? "Negotiable"}</span>
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                {(item.qualifications || item.grade || item.skills) && (
-                                                    <div className="space-y-1.5 md:space-y-2 text-xs text-muted-foreground border-t border-border/50 pt-2.5 md:pt-3">
-                                                        {item.qualifications && (
-                                                            <div className="flex items-start gap-1.5 md:gap-2">
-                                                                <GraduationCap className="h-3 w-3 md:h-3.5 md:w-3.5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-                                                                <span className="line-clamp-2">{item.qualifications}</span>
-                                                            </div>
-                                                        )}
-
-                                                        {item.grade && (
-                                                            <div className="flex items-center gap-1.5 md:gap-2">
-                                                                <BookOpen className="h-3 w-3 md:h-3.5 md:w-3.5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-                                                                <span>Grade {item.grade}</span>
-                                                            </div>
-                                                        )}
-
-                                                        {item.skills && (
-                                                            <div className="flex items-start gap-1.5 md:gap-2">
-                                                                <Wrench className="h-3 w-3 md:h-3.5 md:w-3.5 text-purple-600 dark:text-purple-400 flex-shrink-0 mt-0.5" />
-                                                                <span className="line-clamp-2">{item.skills}</span>
-                                                            </div>
-                                                        )}
+                                    return (
+                                        <motion.div
+                                            key={item.id}
+                                            initial={{ opacity: 0, y: 20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, scale: 0.95 }}
+                                            transition={{ delay: index * 0.05 }}
+                                            className="group"
+                                        >
+                                            {/* Clean Card Design - Less Flashy */}
+                                            <div className={`relative h-full bg-card dark:bg-slate-900/50 rounded-2xl border transition-all duration-300 overflow-hidden ${
+                                                isExpired 
+                                                    ? "border-red-500/40 opacity-75" 
+                                                    : "border-border hover:border-purple-500/40 hover:shadow-lg"
+                                            }`}>
+                                                {/* Expired overlay for company view */}
+                                                {isExpired && userType === "Company" && (
+                                                    <div className="absolute top-3 right-3 z-20 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-500/90 text-white text-xs font-semibold shadow-lg">
+                                                        <AlertTriangle className="h-3 w-3" />
+                                                        Expired
                                                     </div>
                                                 )}
+                                                {/* Subtle gradient overlay on hover */}
+                                                <div className={`absolute inset-0 transition-opacity duration-300 ${
+                                                    isExpired 
+                                                        ? "bg-gradient-to-br from-red-500/5 via-transparent to-red-500/5 opacity-100" 
+                                                        : "bg-gradient-to-br from-purple-500/5 via-transparent to-blue-500/5 opacity-0 group-hover:opacity-100"
+                                                }`} />
 
-                                                {/* Application Progress */}
-                                                {item.applicationStart && item.applicationEnd && (() => {
-                                                    const start = new Date(item.applicationStart).getTime()
-                                                    const end = new Date(item.applicationEnd).getTime()
-                                                    const now = Date.now()
-                                                    const progress = Math.min(100, Math.max(0, ((now - start) / (end - start)) * 100))
-
-                                                    return (
-                                                        <div className="space-y-1.5 md:space-y-2 pt-2 border-t border-border/50">
-                                                            <div className="flex items-center gap-1.5 md:gap-2 text-xs text-muted-foreground">
-                                                                <Calendar className="h-3 w-3 md:h-3.5 md:w-3.5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-                                                                <span className="font-medium text-[10px] md:text-xs">
-                                                                    {new Date(item.applicationStart).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                                                                    {" – "}
-                                                                    {new Date(item.applicationEnd).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                                                                </span>
+                                                <div className="relative z-10 p-6 space-y-4">
+                                                    {/* Header with company and actions */}
+                                                    <div className="flex items-start justify-between gap-4">
+                                                        <div className="flex items-center gap-4 min-w-0">
+                                                            <div className="shrink-0 h-14 w-14 rounded-xl bg-gradient-to-br from-purple-500/80 to-blue-500/80 flex items-center justify-center shadow-md group-hover:scale-105 transition-transform duration-300">
+                                                                <Building2 className="h-7 w-7 text-white" />
                                                             </div>
-                                                            <div className="w-full h-1.5 md:h-2 bg-muted rounded-full overflow-hidden">
-                                                                <div
-                                                                    className={`h-full transition-all ${
-                                                                        progress < 70
-                                                                            ? "bg-blue-500"
-                                                                            : progress < 100
-                                                                                ? "bg-yellow-500"
-                                                                                : "bg-red-500"
-                                                                    }`}
-                                                                    style={{ width: `${progress}%` }}
-                                                                />
+                                                            <div className="min-w-0 space-y-1">
+                                                                <h3 className="font-bold text-lg text-foreground group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors duration-200">
+                                                                    {item.title}
+                                                                </h3>
+                                                                {item.company && (
+                                                                    <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+                                                                        <Briefcase className="h-3.5 w-3.5" />
+                                                                        {item.company.name}
+                                                                    </p>
+                                                                )}
                                                             </div>
                                                         </div>
-                                                    )
-                                                })()}
-                                            </CardContent>
 
-                                            <CardFooter className="w-full flex flex-col gap-2 p-3 md:p-4 relative z-10 border-t border-border/50">
-                                                {userType === "Student" ? (
-                                                    <>
-                                                        {app ? (
-                                                            <Button
-                                                                disabled
-                                                                size="lg"
-                                                                className="w-full rounded-xl py-4 md:py-5 text-sm md:text-base font-bold shadow-lg cursor-not-allowed"
-                                                                variant={
-                                                                    app.status === "APPROVED"
-                                                                        ? "default"
-                                                                        : app.status === "REJECTED"
-                                                                            ? "destructive"
-                                                                            : "outline"
-                                                                }
-                                                            >
-                                                                {app.status === "PENDING" && (
-                                                                    <>
-                                                                        <Clock3 className="mr-2 h-4 w-4" />
-                                                                        Applied
-                                                                    </>
-                                                                )}
-                                                                {app.status === "APPROVED" && (
-                                                                    <>
-                                                                        <CheckCircle2 className="mr-2 h-4 w-4" />
-                                                                        Approved
-                                                                    </>
-                                                                )}
-                                                                {app.status === "REJECTED" && (
-                                                                    <>
-                                                                        <XCircle className="mr-2 h-4 w-4" />
-                                                                        Rejected
-                                                                    </>
-                                                                )}
-                                                            </Button>
-                                                        ) : (
-                                                            <div className="w-full flex flex-col gap-2">
+                                                        <div className="flex items-center gap-2 shrink-0">
+                                                            {userType === "Student" && (
+                                                                <BookmarkButton
+                                                                    internshipId={item.id}
+                                                                    isSaved={savedInternshipIds.has(item.id)}
+                                                                    onToggle={() => mutateSavedInternships()}
+                                                                    className="h-10 w-10 rounded-lg hover:bg-muted transition-colors"
+                                                                />
+                                                            )}
+                                                            {userType === "Company" && (
+                                                                <button
+                                                                    onClick={() => handleDeleteInternship(item)}
+                                                                    className={`h-10 w-10 rounded-lg flex items-center justify-center transition-colors ${
+                                                                        pendingDeleteId === item.id 
+                                                                            ? "text-red-500 bg-red-500/20 animate-pulse" 
+                                                                            : "text-muted-foreground hover:text-red-500 hover:bg-red-500/10"
+                                                                    }`}
+                                                                >
+                                                                    <Trash2 className="h-4 w-4" />
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Description */}
+                                                    <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+                                                        {item.description}
+                                                    </p>
+
+                                                    {/* Date Range Indicator with Progress Bar */}
+                                                    {(item.applicationStart || item.applicationEnd) && (
+                                                        <div className={`rounded-lg border overflow-hidden ${
+                                                            isExpired 
+                                                                ? "bg-red-500/10 border-red-500/30" 
+                                                                : "bg-gradient-to-r from-purple-500/10 to-blue-500/10 border-purple-500/20"
+                                                        }`}>
+                                                            <div className="flex items-center gap-2 px-3 py-2">
+                                                                <Calendar className={`h-4 w-4 shrink-0 ${isExpired ? "text-red-500" : "text-purple-500"}`} />
+                                                                <span className="text-xs font-medium text-foreground">
+                                                                    {item.applicationStart 
+                                                                        ? new Date(item.applicationStart).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                                                                        : "Now"
+                                                                    }
+                                                                </span>
+                                                                <ArrowRight className="h-3 w-3 text-muted-foreground shrink-0" />
+                                                                <span className={`text-xs font-medium ${isExpired ? "text-red-500" : "text-foreground"}`}>
+                                                                    {item.applicationEnd 
+                                                                        ? new Date(item.applicationEnd).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+                                                                        : "Open"
+                                                                    }
+                                                                </span>
+                                                                {isExpired ? (
+                                                                    <span className="ml-auto text-[10px] font-semibold text-red-500 flex items-center gap-1">
+                                                                        <AlertTriangle className="h-3 w-3" />
+                                                                        Closed
+                                                                    </span>
+                                                                ) : daysLeft !== null && daysLeft <= 3 && daysLeft > 0 ? (
+                                                                    <span className="ml-auto text-[10px] font-semibold text-amber-500 flex items-center gap-1">
+                                                                        <Clock className="h-3 w-3" />
+                                                                        {daysLeft}d left
+                                                                    </span>
+                                                                ) : daysLeft !== null && daysLeft > 3 ? (
+                                                                    <span className="ml-auto text-[10px] font-medium text-muted-foreground">
+                                                                        {daysLeft}d left
+                                                                    </span>
+                                                                ) : null}
+                                                            </div>
+                                                            {/* Progress Bar */}
+                                                            {startTime && endTime && (
+                                                                <div className="h-1.5 w-full bg-muted/30">
+                                                                    <div 
+                                                                        className={`h-full transition-all duration-500 ${
+                                                                            isExpired 
+                                                                                ? "bg-red-500" 
+                                                                                : progressPercent >= 80 
+                                                                                    ? "bg-gradient-to-r from-amber-500 to-orange-500" 
+                                                                                    : "bg-gradient-to-r from-purple-500 to-blue-500"
+                                                                        }`}
+                                                                        style={{ width: `${progressPercent}%` }}
+                                                                    />
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+
+                                                    {/* Info Grid - Key details at a glance */}
+                                                    <div className="grid grid-cols-3 gap-2">
+                                                        <div className="p-2.5 rounded-lg bg-muted/50 text-center">
+                                                            <MapPin className="h-4 w-4 text-purple-500 mx-auto mb-1" />
+                                                            <p className="text-xs font-medium text-foreground truncate">{item.location || "Remote"}</p>
+                                                            <p className="text-[10px] text-muted-foreground">Location</p>
+                                                        </div>
+                                                        <div className="p-2.5 rounded-lg bg-muted/50 text-center">
+                                                            <DollarSign className="h-4 w-4 text-blue-500 mx-auto mb-1" />
+                                                            <p className="text-xs font-medium text-foreground">{item.paid ? `$${item.salary || "Paid"}` : "Unpaid"}</p>
+                                                            <p className="text-[10px] text-muted-foreground">Salary</p>
+                                                        </div>
+                                                        <div className={`p-2.5 rounded-lg text-center ${isExpired ? "bg-red-500/10" : "bg-muted/50"}`}>
+                                                            <Clock className={`h-4 w-4 mx-auto mb-1 ${isExpired ? "text-red-500" : "text-emerald-500"}`} />
+                                                            <p className={`text-xs font-medium ${isExpired ? "text-red-500" : "text-foreground"}`}>
+                                                                {isExpired ? "Expired" : daysLeft !== null ? `${daysLeft}d` : "Open"}
+                                                            </p>
+                                                            <p className="text-[10px] text-muted-foreground">{isExpired ? "Closed" : "Time Left"}</p>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Skills Tags */}
+                                                    {skillsArray.length > 0 && (
+                                                        <div className="flex flex-wrap gap-1.5 pt-1">
+                                                            {skillsArray.slice(0, 4).map((skill, i) => (
+                                                                <span
+                                                                    key={i}
+                                                                    className="px-2 py-1 text-xs font-medium rounded-md bg-muted text-muted-foreground"
+                                                                >
+                                                                    {skill}
+                                                                </span>
+                                                            ))}
+                                                            {skillsArray.length > 4 && (
+                                                                <span className="px-2 py-1 text-xs font-medium rounded-md bg-muted text-muted-foreground">
+                                                                    +{skillsArray.length - 4}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Footer Actions */}
+                                                <div className="relative z-10 px-6 pb-6 pt-3 flex gap-2 border-t border-border">
+                                                    {userType === "Student" ? (
+                                                        <>
+                                                            {app ? (
+                                                                <div className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold ${
+                                                                    app.status === "APPROVED" ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30" :
+                                                                    app.status === "REJECTED" ? "bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/30" :
+                                                                    "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30"
+                                                                }`}>
+                                                                    {app.status === "PENDING" && <><Clock3 className="h-4 w-4" />Applied</>}
+                                                                    {app.status === "APPROVED" && <><CheckCircle2 className="h-4 w-4" />Approved</>}
+                                                                    {app.status === "REJECTED" && <><XCircle className="h-4 w-4" />Not Selected</>}
+                                                                </div>
+                                                            ) : (
                                                                 <ApplyButton
                                                                     internshipId={item.id}
                                                                     goToPortfolioTab={() => setActiveTab?.("apps")}
-                                                                    onApplied={() => {
-                                                                        // Revalidate applications via SWR
-                                                                        mutateApplications()
-                                                                    }}
+                                                                    onApplied={() => mutateApplications()}
                                                                 />
+                                                            )}
+                                                            <Button
+                                                                size="default"
+                                                                variant="outline"
+                                                                className="shrink-0 h-11 w-11 p-0 rounded-xl hover:bg-muted transition-colors"
+                                                                onClick={() => {
+                                                                    setSelectedInternship(item)
+                                                                    setOpen(true)
+                                                                }}
+                                                            >
+                                                                <Eye className="h-5 w-5 text-muted-foreground" />
+                                                            </Button>
+                                                        </>
+                                                    ) : (
+                                                        <Button
+                                                            size="default"
+                                                            className="flex-1 gap-2 h-11 rounded-xl bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white font-medium transition-all shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40"
+                                                            onClick={() => {
+                                                                setSelectedInternship(item)
+                                                                setManageOpen(true)
+                                                            }}
+                                                        >
+                                                            <Settings className="h-4 w-4" />
+                                                            Manage
+                                                            <ArrowRight className="h-4 w-4 ml-auto" />
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            </div>
 
-                                                                <Button
-                                                                    size="lg"
-                                                                    variant="outline"
-                                                                    className="flex-1 rounded-xl py-4 md:py-5 text-sm md:text-base font-bold transition-all duration-300 hover:scale-[1.02] shadow-md hover:shadow-lg border-2 hover:border-purple-500 group bg-transparent"
-                                                                    onClick={() => {
-                                                                        setSelectedInternship(item)
-                                                                        setOpen(true)
-                                                                    }}
-                                                                >
-                                                                    Details
-                                                                    <ArrowRight className="ml-2 h-3.5 w-3.5 md:h-4 md:w-4 group-hover:translate-x-1 transition-transform" />
-                                                                </Button>
-                                                            </div>
-                                                        )}
-                                                    </>
-                                                ) : (
-                                                    <Button
-                                                        size="lg"
-                                                        className="w-full rounded-xl py-4 md:py-5 text-sm md:text-base font-bold bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] group"
-                                                        onClick={() => {
-                                                            setSelectedInternship(item)
-                                                            setOpen(true)
-                                                        }}
-                                                    >
-                                                        Manage
-                                                        <ArrowRight className="ml-2 h-3.5 w-3.5 md:h-4 md:w-4 group-hover:translate-x-1 transition-transform" />
-                                                    </Button>
-                                                )}
-                                            </CardFooter>
-                                        </Card>
-
-                                        <InternshipDetailsModal
-                                            open={open}
-                                            onClose={() => setOpen(false)}
-                                            internshipId={selectedInternship?.id || null}
-                                        />
-                                    </motion.div>
-                                )
-                            })}
+                                            {/* Details Modal for Students */}
+                                            <InternshipDetailsModal
+                                                open={open && selectedInternship?.id === item.id}
+                                                onClose={() => setOpen(false)}
+                                                internshipId={selectedInternship?.id || null}
+                                            />
+                                        </motion.div>
+                                    )
+                                })}
+                        </AnimatePresence>
                     </div>
 
-                    {!isLoading && finalInternships.length > 4 && (
-                        <div className="flex flex-col sm:flex-row justify-center gap-3 md:gap-4 pt-4 md:pt-6">
-                            {displayCount < finalInternships.length ? (
-                                <>
-                                    <Button
-                                        size="lg"
-                                        variant="outline"
-                                        onClick={() => setDisplayCount((prev) => prev + 4)}
-                                        className="rounded-xl md:rounded-2xl px-6 md:px-8 py-4 md:py-6 text-sm md:text-base font-bold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border-2 hover:border-purple-500 bg-transparent group"
-                                    >
-                                        See More
-                                        <ArrowRight className="ml-2 h-4 w-4 md:h-5 md:w-5 group-hover:translate-x-1 transition-transform" />
-                                    </Button>
-
-                                    <Button
-                                        size="lg"
-                                        onClick={() => setDisplayCount(finalInternships.length)}
-                                        className="rounded-xl md:rounded-2xl px-6 md:px-8 py-4 md:py-6 text-sm md:text-base font-bold shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white group"
-                                    >
-                                        See All ({finalInternships.length})
-                                        <Sparkles className="ml-2 h-4 w-4 md:h-5 md:w-5 group-hover:rotate-12 transition-transform" />
-                                    </Button>
-                                </>
-                            ) : (
-                                <Button
-                                    size="lg"
-                                    variant="outline"
-                                    onClick={() => setDisplayCount(4)}
-                                    className="rounded-xl md:rounded-2xl px-6 md:px-8 py-4 md:py-6 text-sm md:text-base font-bold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border-2 hover:border-purple-500 bg-transparent group"
-                                >
-                                    Show Less
-                                    <ArrowRight className="ml-2 h-4 w-4 md:h-5 md:w-5 group-hover:-translate-x-1 transition-transform rotate-180" />
-                                </Button>
-                            )}
+                    {!isLoading && finalInternships.length > displayCount && (
+                        <div className="flex justify-center pt-6">
+                            <Button
+                                variant="outline"
+                                onClick={() => setDisplayCount((prev) => prev + 6)}
+                                className="gap-2 rounded-xl px-6 py-5 border-purple-500/30 hover:border-purple-500/50 hover:bg-purple-500/10 shadow-lg"
+                            >
+                                <Sparkles className="h-4 w-4 text-purple-500" />
+                                Load More
+                                <ArrowRight className="h-4 w-4" />
+                            </Button>
                         </div>
                     )}
                 </>
             )}
+
+            {/* Manage Modal for Companies */}
+            <InternshipManageModal
+                open={manageOpen}
+                onClose={() => setManageOpen(false)}
+                internship={selectedInternship}
+                onUpdate={() => mutateInternships()}
+            />
         </section>
     )
 }

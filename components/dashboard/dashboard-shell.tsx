@@ -21,30 +21,22 @@ import { useSettings } from "@/lib/settings-context"
 import { cn } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
 
-// Page transition variants
+// Page transition variants - optimized for speed
 const pageVariants = {
     initial: {
         opacity: 0,
-        y: 8,
-        scale: 0.99,
     },
     animate: {
         opacity: 1,
-        y: 0,
-        scale: 1,
     },
     exit: {
         opacity: 0,
-        y: -8,
-        scale: 0.99,
     },
 }
 
 const pageTransition = {
-    type: "spring" as const,
-    stiffness: 300,
-    damping: 30,
-    mass: 0.8,
+    duration: 0.15,
+    ease: "easeOut" as const,
 }
 
 interface DashboardShellProps {

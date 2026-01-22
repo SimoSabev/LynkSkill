@@ -127,12 +127,12 @@ export function CommunityHighlights({ setActiveTab, userType = "Student" }: Comm
                 {loading ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         {Array.from({ length: 4 }).map((_, i) => (
-                            <Card key={i} className="overflow-hidden rounded-3xl">
-                                <div className="aspect-square bg-muted animate-pulse" />
-                                <CardContent className="p-4 space-y-2">
-                                    <div className="h-4 w-16 bg-muted rounded animate-pulse" />
-                                    <div className="h-6 w-24 bg-muted rounded animate-pulse" />
-                                    <div className="h-8 w-full bg-muted rounded-xl animate-pulse" />
+                            <Card key={i} className="overflow-hidden rounded-3xl border-border/50">
+                                <div className="aspect-square bg-muted/40 relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent" />
+                                <CardContent className="p-4 space-y-3">
+                                    <div className="h-5 w-20 bg-muted/50 rounded-md relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent" />
+                                    <div className="h-4 w-28 bg-muted/40 rounded-md relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent" />
+                                    <div className="h-10 w-full bg-muted/30 rounded-xl relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent" />
                                 </CardContent>
                             </Card>
                         ))}

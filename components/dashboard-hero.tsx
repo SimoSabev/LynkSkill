@@ -1,30 +1,14 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { useEffect, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { HeroSkeleton } from "@/components/hero-skeleton"
 
 interface DashboardHeroProps {
   userType: "Student" | "Company"
 }
 
 export function DashboardHero({ userType: _userType }: DashboardHeroProps) {
-  const [isLoading, setIsLoading] = useState(true)
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false)
-    }, 1500)
-
-    return () => clearTimeout(timer)
-  }, [])
-
-  if (isLoading) {
-    return <HeroSkeleton />
-  }
-
   return (
     <section>
       <motion.div

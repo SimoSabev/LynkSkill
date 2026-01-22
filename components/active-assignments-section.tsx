@@ -1,15 +1,17 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Clock, Building2, ArrowRight, Calendar, User, Target, CheckCircle2, AlertCircle } from "lucide-react"
+import { Clock, Building2, ArrowRight, Calendar, User, Target, CheckCircle2, AlertCircle, FileText, Eye, Upload, BarChart3, Sparkles } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { useDashboard } from "@/lib/dashboard-context"
+import { AssignmentSubmitModal } from "@/components/assignment-submit-modal"
+import { CompanyAssignmentProgressModal } from "@/components/company-assignment-progress-modal"
 
 type ApiProject = {
     id: string
@@ -23,6 +25,7 @@ type ApiProject = {
     status: "ONGOING" | "COMPLETED" | "PENDING"
     createdAt: string
     assignment?: {
+        id?: string
         title: string
         description: string
         dueDate: string
@@ -37,6 +40,9 @@ interface ActiveProjectsSectionProps {
 
 export function ActiveAssignmentsSection({ setActiveTab, userType = "Student" }: ActiveProjectsSectionProps) {
     const router = useRouter()
+    const [selectedAssignmentId, setSelectedAssignmentId] = useState<string | null>(null)
+    const [submitModalOpen, setSubmitModalOpen] = useState(false)
+    const [progressModalOpen, setProgressModalOpen] = useState(false)
     
     const handleNavigateToProjects = () => {
         if (setActiveTab) {
@@ -127,39 +133,62 @@ export function ActiveAssignmentsSection({ setActiveTab, userType = "Student" }:
 
     return (
         <section className="space-y-4">
-            {/* Banner stays unchanged */}
-            <div className="flex items-center justify-between">
-                <div>
-                    <h2 className="text-xl font-semibold text-foreground">Active Assignments</h2>
-                    <p className="text-sm text-muted-foreground">
-                        {projects.length} assignments • {projects.filter((p) => p.status === "ONGOING").length} active
-                    </p>
+            {/* Enhanced Header with Gradient */}
+            <div className="relative overflow-hidden rounded-xl p-4 bg-gradient-to-br from-purple-600/10 via-blue-600/10 to-transparent border border-purple-500/20">
+                <div className="absolute -top-16 -right-16 w-32 h-32 bg-purple-500/10 rounded-full blur-2xl" />
+                <div className="relative flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-xl bg-gradient-to-br from-purple-500 to-blue-500 shadow-lg shadow-purple-500/20">
+                            <FileText className="h-5 w-5 text-white" />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
+                                Active Assignments
+                                <Sparkles className="h-4 w-4 text-purple-500" />
+                            </h2>
+                            <p className="text-sm text-muted-foreground">
+                                {projects.length} assignments • {projects.filter((p) => p.status === "ONGOING").length} active
+                            </p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        {userType === "Company" && (
+                            <Button 
+                                size="sm" 
+                                className="bg-gradient-to-r from-purple-500 to-blue-500 text-white hover:opacity-90"
+                                onClick={() => setProgressModalOpen(true)}
+                            >
+                                <BarChart3 className="mr-2 h-4 w-4" />
+                                Progress Dashboard
+                            </Button>
+                        )}
+                        <Button variant="ghost" size="sm" className="hover:bg-muted group" onClick={handleNavigateToProjects}>
+                            View All
+                            <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                        </Button>
+                    </div>
                 </div>
-                <Button variant="ghost" size="sm" className="hover:bg-muted group" onClick={handleNavigateToProjects}>
-                    View All
-                    <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                </Button>
             </div>
 
             {isLoading ? (
                 <div className="space-y-4">
                     {Array.from({ length: 3 }).map((_, i) => (
-                        <Card key={i} className="p-5">
+                        <Card key={i} className="p-5 border-border/50 border-l-4 border-l-muted">
                             <div className="space-y-4">
                                 <div className="flex items-start gap-4">
-                                    <div className="h-12 w-12 bg-muted rounded-xl animate-pulse" />
+                                    <div className="h-12 w-12 bg-muted/50 rounded-xl relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent" />
                                     <div className="flex-1 space-y-3">
                                         <div className="flex items-center justify-between">
-                                            <div className="h-5 w-48 bg-muted rounded animate-pulse" />
-                                            <div className="h-6 w-20 bg-muted rounded-full animate-pulse" />
+                                            <div className="h-5 w-52 bg-muted/50 rounded-md relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent" />
+                                            <div className="h-6 w-20 bg-muted/40 rounded-full relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent" />
                                         </div>
-                                        <div className="h-4 w-32 bg-muted rounded animate-pulse" />
+                                        <div className="h-4 w-36 bg-muted/40 rounded-md relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent" />
                                         <div className="space-y-2">
-                                            <div className="h-3 w-full bg-muted rounded animate-pulse" />
+                                            <div className="h-2.5 w-full bg-muted/30 rounded-full relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent" />
                                             <div className="flex gap-4">
-                                                <div className="h-3 w-16 bg-muted rounded animate-pulse" />
-                                                <div className="h-3 w-20 bg-muted rounded animate-pulse" />
-                                                <div className="h-3 w-24 bg-muted rounded animate-pulse" />
+                                                <div className="h-3 w-16 bg-muted/30 rounded-md relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent" />
+                                                <div className="h-3 w-20 bg-muted/30 rounded-md relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent" />
+                                                <div className="h-3 w-24 bg-muted/30 rounded-md relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent" />
                                             </div>
                                         </div>
                                     </div>
@@ -192,16 +221,17 @@ export function ActiveAssignmentsSection({ setActiveTab, userType = "Student" }:
                                     initial={{ opacity: 0, x: -20 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     transition={{ duration: 0.3, delay: index * 0.05 }}
-                                    onClick={handleNavigateToProjects}
                                     className="cursor-pointer"
                                 >
-                                    <Card className="hover:shadow-[var(--application-shadow-light)] transition-all duration-300 group border-l-4 border-l-[var(--experience-accent)]">
+                                    <Card className="hover:shadow-lg transition-all duration-300 group border border-border hover:border-purple-500/40 rounded-xl overflow-hidden">
+                                        {/* Top accent bar */}
+                                        <div className="h-1 bg-gradient-to-r from-purple-500/60 via-blue-500/60 to-purple-500/60" />
                                         <CardContent className="p-4">
                                             <div className="space-y-4">
                                                 {/* Header Section */}
                                                 <div className="flex items-start gap-4">
-                                                    <Avatar className="h-12 w-12 ring-2 ring-[var(--experience-accent)]/20">
-                                                        <AvatarFallback className="bg-gradient-to-br from-[var(--experience-accent)] to-[var(--experience-accent)]/80 text-white font-semibold">
+                                                    <Avatar className="h-12 w-12 ring-2 ring-purple-500/20">
+                                                        <AvatarFallback className="bg-gradient-to-br from-purple-500 to-blue-500 text-white font-semibold">
                                                             {proj.internship.company?.name?.charAt(0) || "?"}
                                                         </AvatarFallback>
                                                     </Avatar>
@@ -209,18 +239,9 @@ export function ActiveAssignmentsSection({ setActiveTab, userType = "Student" }:
                                                     <div className="flex-1 min-w-0">
                                                         <div className="flex items-start justify-between mb-2">
                                                             <div>
-                                                                <h4 className="font-semibold text-base group-hover:text-[var(--experience-accent)] transition-colors leading-tight">
+                                                                <h4 className="font-semibold text-base group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors leading-tight">
                                                                     {proj.internship.title}
                                                                 </h4>
-                                                                {proj.assignment && (
-                                                                    <div className="mt-2 text-sm text-muted-foreground space-y-1">
-                                                                        <p className="font-medium text-foreground">Assignment: {proj.assignment.title}</p>
-                                                                        <p>{proj.assignment.description}</p>
-                                                                        <p className="text-xs italic">
-                                                                            Due: {new Date(proj.assignment.dueDate).toLocaleDateString("en-US")}
-                                                                        </p>
-                                                                    </div>
-                                                                )}
                                                                 <p className="text-sm text-muted-foreground font-medium">
                                                                     {proj.internship.company?.name || "Unknown Company"}
                                                                 </p>
@@ -235,8 +256,61 @@ export function ActiveAssignmentsSection({ setActiveTab, userType = "Student" }:
                                                             </Badge>
                                                         </div>
 
+                                                        {/* Assignment Info - Enhanced */}
+                                                        {proj.assignment && (
+                                                            <div className="mt-3 p-3 rounded-lg bg-gradient-to-br from-purple-500/5 via-blue-500/5 to-transparent border border-purple-500/20">
+                                                                <div className="flex items-start justify-between gap-3">
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <p className="font-medium text-sm text-foreground flex items-center gap-2">
+                                                                            <FileText className="h-4 w-4 text-purple-500" />
+                                                                            {proj.assignment.title}
+                                                                        </p>
+                                                                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                                                            {proj.assignment.description}
+                                                                        </p>
+                                                                        <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                                                                            <Clock className="h-3 w-3" />
+                                                                            Due: {new Date(proj.assignment.dueDate).toLocaleDateString("en-US", {
+                                                                                month: "short",
+                                                                                day: "numeric",
+                                                                                year: "numeric"
+                                                                            })}
+                                                                        </p>
+                                                                    </div>
+                                                                    {userType === "Student" && proj.assignment.id && (
+                                                                        <Button
+                                                                            size="sm"
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation()
+                                                                                setSelectedAssignmentId(proj.assignment?.id || null)
+                                                                                setSubmitModalOpen(true)
+                                                                            }}
+                                                                            className="shrink-0 bg-gradient-to-r from-purple-500 to-blue-500 text-white hover:opacity-90"
+                                                                        >
+                                                                            <Upload className="mr-1.5 h-3.5 w-3.5" />
+                                                                            Submit
+                                                                        </Button>
+                                                                    )}
+                                                                    {userType === "Company" && (
+                                                                        <Button
+                                                                            size="sm"
+                                                                            variant="outline"
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation()
+                                                                                setProgressModalOpen(true)
+                                                                            }}
+                                                                            className="shrink-0 border-purple-500/30 hover:bg-purple-500/10"
+                                                                        >
+                                                                            <Eye className="mr-1.5 h-3.5 w-3.5" />
+                                                                            View
+                                                                        </Button>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        )}
+
                                                         {/* Student Info */}
-                                                        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+                                                        <div className="flex items-center gap-2 text-sm text-muted-foreground mt-3">
                                                             <User className="h-4 w-4" />
                                                             <span>{proj.student?.name || "Unknown Student"}</span>
                                                             <span className="text-muted-foreground/60">•</span>
@@ -245,14 +319,14 @@ export function ActiveAssignmentsSection({ setActiveTab, userType = "Student" }:
                                                         </div>
 
                                                         {/* Progress Section */}
-                                                        <div className="space-y-3">
+                                                        <div className="space-y-3 mt-3">
                                                             <div className="flex items-center justify-between">
                                                                 <div className="flex items-center gap-2">
-                                                                    <Target className="h-4 w-4 text-[var(--experience-accent)]" />
+                                                                    <Target className="h-4 w-4 text-purple-500" />
                                                                     <span className="text-sm font-medium">Progress</span>
                                                                 </div>
                                                                 {details.totalDays ? (
-                                                                    <span className="text-sm font-semibold text-[var(--experience-accent)]">
+                                                                    <span className="text-sm font-semibold text-purple-600 dark:text-purple-400">
                                                                         {details.progress}%
                                                                     </span>
                                                                 ) : (
@@ -291,7 +365,7 @@ export function ActiveAssignmentsSection({ setActiveTab, userType = "Student" }:
                                                                             )}
                                                                         </div>
                                                                         {proj.status === "COMPLETED" && (
-                                                                            <span className="text-[var(--application-approved)] font-medium">
+                                                                            <span className="text-emerald-500 font-medium">
                                                                                 Completed in {details.daysSinceStart} days
                                                                               </span>
                                                                         )}
@@ -313,6 +387,25 @@ export function ActiveAssignmentsSection({ setActiveTab, userType = "Student" }:
                         })}
                 </div>
             )}
+
+            {/* Student Assignment Submit Modal */}
+            <AssignmentSubmitModal
+                open={submitModalOpen}
+                onClose={() => {
+                    setSubmitModalOpen(false)
+                    setSelectedAssignmentId(null)
+                }}
+                assignmentId={selectedAssignmentId}
+                onSubmitted={() => {
+                    // Could trigger a refresh here if needed
+                }}
+            />
+
+            {/* Company Progress Dashboard Modal */}
+            <CompanyAssignmentProgressModal
+                open={progressModalOpen}
+                onClose={() => setProgressModalOpen(false)}
+            />
         </section>
     )
 }

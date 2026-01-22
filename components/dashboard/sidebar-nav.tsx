@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
-import { motion, AnimatePresence } from "framer-motion"
+import { AnimatePresence, motion } from "framer-motion"
 import {
     Settings,
     X,
@@ -235,37 +235,29 @@ export function SidebarNav({
                         </button>
                     </CollapsibleTrigger>
                     <CollapsibleContent className="pl-4 mt-1 space-y-1">
-                        <AnimatePresence>
-                            {item.children?.map((child) => (
-                                <motion.div
-                                    key={child.href}
-                                    initial={{ opacity: 0, height: 0 }}
-                                    animate={{ opacity: 1, height: "auto" }}
-                                    exit={{ opacity: 0, height: 0 }}
-                                >
-                                    <button
-                                        onClick={() => {
-                                            navigateTo(child.href)
-                                            if (isMobile) onClose?.()
-                                        }}
-                                        className={cn(
-                                            "flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm transition-all duration-200",
-                                            "hover:bg-gradient-to-r hover:from-purple-500/10 hover:to-blue-500/10",
-                                            isActive(child.href)
-                                                ? "bg-gradient-to-r from-purple-500/10 to-blue-500/10 text-purple-600 dark:text-purple-400 font-medium"
-                                                : "text-muted-foreground hover:text-foreground"
-                                        )}
-                                    >
-                                        <span className={cn(
-                                            isActive(child.href) && "text-purple-600 dark:text-purple-400"
-                                        )}>
-                                            {child.icon}
-                                        </span>
-                                        <span>{child.label}</span>
-                                    </button>
-                                </motion.div>
-                            ))}
-                        </AnimatePresence>
+                        {item.children?.map((child) => (
+                            <button
+                                key={child.href}
+                                onClick={() => {
+                                    navigateTo(child.href)
+                                    if (isMobile) onClose?.()
+                                }}
+                                className={cn(
+                                    "flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm transition-colors",
+                                    "hover:bg-gradient-to-r hover:from-purple-500/10 hover:to-blue-500/10",
+                                    isActive(child.href)
+                                        ? "bg-gradient-to-r from-purple-500/10 to-blue-500/10 text-purple-600 dark:text-purple-400 font-medium"
+                                        : "text-muted-foreground hover:text-foreground"
+                                )}
+                            >
+                                <span className={cn(
+                                    isActive(child.href) && "text-purple-600 dark:text-purple-400"
+                                )}>
+                                    {child.icon}
+                                </span>
+                                <span>{child.label}</span>
+                            </button>
+                        ))}
                     </CollapsibleContent>
                 </Collapsible>
             )

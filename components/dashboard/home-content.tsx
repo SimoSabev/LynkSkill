@@ -12,13 +12,20 @@ interface HomeContentProps {
 
 export function HomeContent({ userType }: HomeContentProps) {
     return (
-        <div className="space-y-8">
+        <div className="space-y-8 pb-8">
+            {/* Hero section with welcome message */}
             <DashboardHero userType={userType} />
+            
+            {/* Main internships section - full width for better visibility */}
             <RecentInternshipsSection userType={userType} />
-            <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+            
+            {/* Secondary content in responsive grid */}
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 <RecentApplicationsSection userType={userType} />
                 <ActiveAssignmentsSection userType={userType} />
             </div>
+            
+            {/* Community section */}
             <CommunityHighlights userType={userType} />
         </div>
     )
