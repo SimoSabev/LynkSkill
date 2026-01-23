@@ -1,11 +1,178 @@
 import { type Metadata } from 'next'
 import { ClerkProvider } from '@clerk/nextjs'
+import { dark } from '@clerk/themes'
 import { Geist, Geist_Mono } from 'next/font/google'
 import './globals.css'
 import { ThemeProvider } from "@/components/theme-provider"
 import OnboardingWrapper from "@/components/OnboardingWrapper"
 import { I18nProvider } from "@/lib/i18n"
 import { AIModeProvider } from "@/lib/ai-mode-context"
+
+// Custom Clerk appearance for LynkSkill branding
+const clerkAppearance = {
+    baseTheme: dark,
+    variables: {
+        colorPrimary: '#a855f7', // Purple-500
+        colorBackground: '#0f0a1a', // Dark purple-ish background
+        colorInputBackground: '#1a1425', // Slightly lighter for inputs
+        colorInputText: '#ffffff',
+        colorText: '#ffffff',
+        colorTextSecondary: '#a1a1aa', // Muted text
+        colorDanger: '#ef4444',
+        colorSuccess: '#22c55e',
+        colorWarning: '#f59e0b',
+        colorNeutral: '#71717a',
+        borderRadius: '0.75rem', // Rounded-xl
+        fontFamily: 'var(--font-geist-sans), system-ui, sans-serif',
+        fontSize: '14px',
+        spacingUnit: '4px',
+    },
+    elements: {
+        // Card styling
+        card: {
+            backgroundColor: '#0f0a1a',
+            borderRadius: '1.5rem',
+            border: '1px solid rgba(168, 85, 247, 0.2)',
+            boxShadow: '0 25px 50px -12px rgba(168, 85, 247, 0.15)',
+        },
+        // Root box
+        rootBox: {
+            backgroundColor: 'transparent',
+        },
+        // Header
+        headerTitle: {
+            color: '#ffffff',
+            fontSize: '1.5rem',
+            fontWeight: '700',
+        },
+        headerSubtitle: {
+            color: '#a1a1aa',
+        },
+        // Social buttons
+        socialButtonsBlockButton: {
+            backgroundColor: 'rgba(168, 85, 247, 0.1)',
+            border: '1px solid rgba(168, 85, 247, 0.3)',
+            borderRadius: '0.75rem',
+            color: '#ffffff',
+            '&:hover': {
+                backgroundColor: 'rgba(168, 85, 247, 0.2)',
+                borderColor: 'rgba(168, 85, 247, 0.5)',
+            },
+        },
+        socialButtonsBlockButtonText: {
+            color: '#ffffff',
+            fontWeight: '500',
+        },
+        // Divider
+        dividerLine: {
+            backgroundColor: 'rgba(168, 85, 247, 0.2)',
+        },
+        dividerText: {
+            color: '#71717a',
+        },
+        // Form fields
+        formFieldLabel: {
+            color: '#ffffff',
+            fontWeight: '500',
+            fontSize: '0.875rem',
+        },
+        formFieldInput: {
+            backgroundColor: '#1a1425',
+            borderRadius: '0.75rem',
+            border: '2px solid rgba(168, 85, 247, 0.2)',
+            color: '#ffffff',
+            '&:focus': {
+                borderColor: '#a855f7',
+                boxShadow: '0 0 0 3px rgba(168, 85, 247, 0.1)',
+            },
+            '&::placeholder': {
+                color: '#71717a',
+            },
+        },
+        formFieldInputShowPasswordButton: {
+            color: '#71717a',
+            '&:hover': {
+                color: '#a855f7',
+            },
+        },
+        // Primary button
+        formButtonPrimary: {
+            background: 'linear-gradient(135deg, #a855f7 0%, #6366f1 100%)',
+            borderRadius: '0.75rem',
+            fontWeight: '600',
+            fontSize: '0.875rem',
+            padding: '0.75rem 1.5rem',
+            boxShadow: '0 10px 25px -5px rgba(168, 85, 247, 0.3)',
+            '&:hover': {
+                background: 'linear-gradient(135deg, #9333ea 0%, #4f46e5 100%)',
+                boxShadow: '0 15px 30px -5px rgba(168, 85, 247, 0.4)',
+            },
+            '&:active': {
+                transform: 'scale(0.98)',
+            },
+        },
+        // Footer
+        footerActionLink: {
+            color: '#a855f7',
+            fontWeight: '500',
+            '&:hover': {
+                color: '#c084fc',
+            },
+        },
+        footerActionText: {
+            color: '#a1a1aa',
+        },
+        // Identity preview
+        identityPreviewEditButton: {
+            color: '#a855f7',
+        },
+        // Alert
+        alert: {
+            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+            border: '1px solid rgba(239, 68, 68, 0.3)',
+            borderRadius: '0.75rem',
+        },
+        alertText: {
+            color: '#fca5a5',
+        },
+        // User button
+        userButtonAvatarBox: {
+            borderRadius: '0.75rem',
+        },
+        userButtonPopoverCard: {
+            backgroundColor: '#0f0a1a',
+            border: '1px solid rgba(168, 85, 247, 0.2)',
+            borderRadius: '1rem',
+        },
+        userButtonPopoverActionButton: {
+            '&:hover': {
+                backgroundColor: 'rgba(168, 85, 247, 0.1)',
+            },
+        },
+        // Modal backdrop
+        modalBackdrop: {
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            backdropFilter: 'blur(8px)',
+        },
+        // OTP Input
+        otpCodeFieldInput: {
+            backgroundColor: '#1a1425',
+            borderRadius: '0.75rem',
+            border: '2px solid rgba(168, 85, 247, 0.2)',
+            color: '#ffffff',
+            '&:focus': {
+                borderColor: '#a855f7',
+            },
+        },
+    },
+    layout: {
+        socialButtonsPlacement: 'top' as const,
+        socialButtonsVariant: 'blockButton' as const,
+        termsPageUrl: '/terms',
+        privacyPageUrl: '/privacy',
+        helpPageUrl: '/help',
+    },
+}
 
 const geistSans = Geist({
     variable: '--font-geist-sans',
@@ -125,6 +292,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ClerkProvider
             signInFallbackRedirectUrl="/dashboard"
             signUpFallbackRedirectUrl="/onboarding"
+            appearance={clerkAppearance}
         >
             <html lang="en" suppressHydrationWarning>
             <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>

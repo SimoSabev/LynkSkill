@@ -30,7 +30,8 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
-import { SignedIn, UserButton, useClerk } from "@clerk/nextjs"
+import { SignedIn, useClerk } from "@clerk/nextjs"
+import { LynkSkillUserButton } from "@/components/clerk-theme"
 import { useTranslation } from "@/lib/i18n"
 import { useAIMode } from "@/lib/ai-mode-context"
 import { useNavigation } from "@/lib/navigation-context"
@@ -409,19 +410,7 @@ export function SidebarNav({
                     <SignedIn>
                         <div className="flex items-center justify-between px-3 py-2">
                             <div className="flex items-center gap-3">
-                                <UserButton
-                                    appearance={{
-                                        elements: {
-                                            userButtonAvatarBox: "ring-2 ring-purple-500/20",
-                                            userButtonPopoverCard:
-                                                "bg-background/95 backdrop-blur-sm border border-border shadow-2xl",
-                                            userButtonPopoverActionButton:
-                                                "text-foreground hover:bg-muted transition-colors",
-                                            userButtonPopoverActionButtonText: "text-foreground",
-                                            userButtonPopoverFooter: "hidden",
-                                        },
-                                    }}
-                                />
+                                <LynkSkillUserButton />
                                 <span className="text-sm font-medium">{t('dashboard.user')}</span>
                             </div>
                             <Button

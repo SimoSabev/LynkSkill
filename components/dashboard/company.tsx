@@ -60,7 +60,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 import {ModeToggle} from "@/components/theme-toggle";
-import {SignedIn, UserButton} from "@clerk/nextjs";
+import {SignedIn} from "@clerk/nextjs";
+import {LynkSkillUserButton} from "@/components/clerk-theme";
 
 // Sample data for apps
 const apps = [
@@ -565,20 +566,7 @@ export default function CompanyDashboardPagee() {
                             </button>
                             <SignedIn>
                                 <div className="flex items-center justify-start gap-3 sm:gap-4 ml-2">
-                                    <UserButton
-                                        appearance={{
-                                            elements: {
-                                                // userButtonAvatarBox:
-                                                //     "w-8 h-8 sm:w-8 sm:h-8 ring-2 ring-purple-500/50 ring-offset-2 ring-offset-black transition-all duration-300 hover:ring-purple-400",
-                                                userButtonPopoverCard:
-                                                    "bg-gray-900/95 backdrop-blur-sm border border-gray-700 text-white shadow-2xl",
-                                                userButtonPopoverActionButton:
-                                                    "text-foreground hover:text-white hover:bg-gray-800 transition-colors",
-                                                userButtonPopoverActionButtonText: "text-foreground",
-                                                userButtonPopoverFooter: "hidden",
-                                            },
-                                        }}
-                                    />
+                                    <LynkSkillUserButton />
                                     <div className="text-foreground text-sm font-semibold">User</div>
                                 </div>
                             </SignedIn>
@@ -675,20 +663,7 @@ export default function CompanyDashboardPagee() {
                             </button>
                             <SignedIn>
                                 <div className="flex items-center justify-center lg:justify-start gap-3 sm:gap-4 ml-2">
-                                    <UserButton
-                                        appearance={{
-                                            elements: {
-                                                // userButtonAvatarBox:
-                                                //     "w-8 h-8 sm:w-8 sm:h-8 ring-2 ring-purple-500/50 ring-offset-2 ring-offset-black transition-all duration-300 hover:ring-purple-400",
-                                                userButtonPopoverCard:
-                                                    "bg-gray-900/95 backdrop-blur-sm border border-gray-700 text-white shadow-2xl",
-                                                userButtonPopoverActionButton:
-                                                    "text-foreground hover:text-white hover:bg-gray-800 transition-colors",
-                                                userButtonPopoverActionButtonText: "text-foreground",
-                                                userButtonPopoverFooter: "hidden",
-                                            },
-                                        }}
-                                    />
+                                    <LynkSkillUserButton />
                                     <div className="text-foreground text-sm font-medium">User</div>
                                 </div>
                             </SignedIn>
@@ -760,20 +735,7 @@ export default function CompanyDashboardPagee() {
 
                             <SignedIn>
                                 <div className="flex items-center justify-center lg:justify-start gap-3 sm:gap-4">
-                                    <UserButton
-                                        appearance={{
-                                            elements: {
-                                                // userButtonAvatarBox:
-                                                //     "w-10 h-10 sm:w-12 sm:h-12 ring-2 ring-purple-500/50 ring-offset-2 ring-offset-black transition-all duration-300 hover:ring-purple-400",
-                                                userButtonPopoverCard:
-                                                    "bg-gray-900/95 backdrop-blur-sm border border-gray-700 text-white shadow-2xl",
-                                                userButtonPopoverActionButton:
-                                                    "text-foreground hover:text-white hover:bg-gray-800 transition-colors",
-                                                userButtonPopoverActionButtonText: "text-foreground",
-                                                userButtonPopoverFooter: "hidden",
-                                            },
-                                        }}
-                                    />
+                                    <LynkSkillUserButton />
                                 </div>
                             </SignedIn>
                         </div>

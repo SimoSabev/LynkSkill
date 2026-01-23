@@ -5,7 +5,8 @@ import { Menu, PanelLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { ModeToggle } from "@/components/theme-toggle"
-import { SignedIn, UserButton } from "@clerk/nextjs"
+import { SignedIn } from "@clerk/nextjs"
+import { LynkSkillUserButton } from "@/components/clerk-theme"
 import { NotificationBell } from "@/components/notification-bell"
 import { LanguageSwitcher } from "@/components/language-switcher"
 import { AIModeToggle } from "@/components/ai-mode-toggle"
@@ -80,20 +81,7 @@ export function DashboardHeader({
             <SignedIn>
               <div className="flex items-center justify-center lg:justify-start gap-3 sm:gap-4 relative">
                 <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500/20 to-blue-500/20 blur-md animate-pulse" />
-                <UserButton
-                    appearance={{
-                      elements: {
-                        userButtonAvatarBox:
-                            "relative z-10 ring-2 ring-offset-background transition-all duration-300 hover:ring-purple-600 hover:ring-2 hover:shadow-[0_0_20px_rgba(168,85,247,0.6)] hover:scale-110",
-                        userButtonPopoverCard:
-                            "bg-gray-900/95 backdrop-blur-sm border border-purple-500/30 text-white shadow-2xl shadow-purple-500/20",
-                        userButtonPopoverActionButton:
-                            "text-foreground hover:text-white hover:bg-purple-500/20 transition-all duration-300",
-                        userButtonPopoverActionButtonText: "text-foreground",
-                        userButtonPopoverFooter: "hidden",
-                      },
-                    }}
-                />
+                <LynkSkillUserButton />
               </div>
             </SignedIn>
           </div>

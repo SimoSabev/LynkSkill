@@ -349,3 +349,443 @@ select:disabled,
     transform: translateX(100%);
   }
 }
+
+/* ========================================
+ * Clerk UserProfile Modal Overrides
+ * ======================================== */
+
+/* Modal container - fix layout */
+[data-clerk-modal] > div,
+.cl-modalContent {
+  max-width: 880px !important;
+  width: 95vw !important;
+  max-height: 85vh !important;
+  background: #1a1425 !important;
+  border: 1px solid rgba(168, 85, 247, 0.2) !important;
+  border-radius: 1.25rem !important;
+  overflow: hidden !important;
+}
+
+/* Main layout - horizontal flex */
+.cl-userProfile-root,
+[data-clerk-component="UserProfile"] {
+  display: flex !important;
+  flex-direction: row !important;
+  width: 100% !important;
+  min-height: 500px !important;
+  background: #1a1425 !important;
+}
+
+/* Main wrapper */
+.cl-main {
+  display: flex !important;
+  flex-direction: row !important;
+  width: 100% !important;
+  gap: 0 !important;
+}
+
+/* Left sidebar / navbar */
+.cl-navbar {
+  width: 220px !important;
+  min-width: 220px !important;
+  max-width: 220px !important;
+  flex-shrink: 0 !important;
+  background: rgba(15, 10, 26, 0.8) !important;
+  border-right: 1px solid rgba(168, 85, 247, 0.15) !important;
+  padding: 24px 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.cl-navbarButtons {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+  padding: 0 12px !important;
+}
+
+.cl-navbarButton {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 12px 16px !important;
+  border-radius: 0.75rem !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  color: #a1a1aa !important;
+  background: transparent !important;
+  transition: all 0.2s ease !important;
+  width: 100% !important;
+}
+
+.cl-navbarButton:hover {
+  background: rgba(168, 85, 247, 0.1) !important;
+  color: #ffffff !important;
+}
+
+.cl-navbarButton[data-active="true"] {
+  background: rgba(168, 85, 247, 0.15) !important;
+  color: #a855f7 !important;
+}
+
+/* Right content area */
+.cl-pageScrollBox {
+  flex: 1 !important;
+  min-width: 0 !important;
+  overflow-y: auto !important;
+  padding: 0 !important;
+  background: #1a1425 !important;
+}
+
+/* Header section */
+.cl-header {
+  padding: 28px 32px 20px !important;
+  border-bottom: 1px solid rgba(168, 85, 247, 0.15) !important;
+}
+
+.cl-headerTitle {
+  font-size: 1.5rem !important;
+  font-weight: 700 !important;
+  color: #ffffff !important;
+  margin: 0 0 6px 0 !important;
+}
+
+.cl-headerSubtitle {
+  font-size: 14px !important;
+  color: #a1a1aa !important;
+  margin: 0 !important;
+}
+
+/* Profile sections */
+.cl-profileSection {
+  padding: 24px 32px !important;
+  border-bottom: 1px solid rgba(168, 85, 247, 0.1) !important;
+}
+
+.cl-profileSectionHeader {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  margin-bottom: 20px !important;
+  gap: 16px !important;
+}
+
+.cl-profileSectionTitle,
+.cl-profileSectionTitleText {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.1em !important;
+  color: #71717a !important;
+}
+
+.cl-profileSectionContent {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 20px !important;
+}
+
+/* Profile items - horizontal layout */
+.cl-profileSectionItem {
+  display: flex !important;
+  align-items: center !important;
+  gap: 16px !important;
+  width: 100% !important;
+}
+
+.cl-profileSectionItemLabel {
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  color: #a1a1aa !important;
+  min-width: 100px !important;
+  flex-shrink: 0 !important;
+}
+
+.cl-profileSectionItemContent {
+  flex: 1 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  min-width: 0 !important;
+}
+
+/* User preview */
+.cl-userPreview {
+  display: flex !important;
+  align-items: center !important;
+  gap: 14px !important;
+  flex: 1 !important;
+}
+
+.cl-userPreviewAvatarBox {
+  width: 44px !important;
+  height: 44px !important;
+  flex-shrink: 0 !important;
+  border-radius: 50% !important;
+  overflow: hidden !important;
+  border: 2px solid rgba(168, 85, 247, 0.3) !important;
+}
+
+.cl-userPreviewTextContainer {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 3px !important;
+  flex: 1 !important;
+  min-width: 0 !important;
+}
+
+.cl-userPreviewMainIdentifier {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  color: #ffffff !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.cl-userPreviewSecondaryIdentifier {
+  font-size: 13px !important;
+  color: #71717a !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* Action buttons */
+.cl-profileSectionPrimaryButton {
+  background: linear-gradient(135deg, #a855f7 0%, #6366f1 100%) !important;
+  color: #ffffff !important;
+  border: none !important;
+  padding: 10px 18px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  border-radius: 0.625rem !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+}
+
+.cl-profileSectionPrimaryButton:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 8px 20px rgba(168, 85, 247, 0.35) !important;
+}
+
+/* Identity preview (email) */
+.cl-identityPreview {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  flex: 1 !important;
+  min-width: 0 !important;
+}
+
+.cl-identityPreviewText {
+  font-size: 14px !important;
+  color: #ffffff !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* Badges */
+.cl-badge {
+  background: rgba(168, 85, 247, 0.15) !important;
+  color: #a855f7 !important;
+  padding: 4px 10px !important;
+  border-radius: 9999px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  flex-shrink: 0 !important;
+}
+
+/* Social/connected accounts buttons */
+.cl-socialButtonsBlockButton {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 14px 16px !important;
+  background: rgba(168, 85, 247, 0.06) !important;
+  border: 1px solid rgba(168, 85, 247, 0.15) !important;
+  border-radius: 0.75rem !important;
+  width: 100% !important;
+}
+
+.cl-socialButtonsBlockButtonText {
+  font-size: 14px !important;
+  color: #ffffff !important;
+}
+
+/* Menu dropdowns */
+.cl-menuButton {
+  color: #71717a !important;
+  padding: 6px !important;
+  border-radius: 0.5rem !important;
+}
+
+.cl-menuButton:hover {
+  color: #a855f7 !important;
+  background: rgba(168, 85, 247, 0.1) !important;
+}
+
+.cl-menuList {
+  background: #1a1425 !important;
+  border: 1px solid rgba(168, 85, 247, 0.2) !important;
+  border-radius: 0.75rem !important;
+  padding: 6px !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4) !important;
+}
+
+.cl-menuItem {
+  padding: 10px 14px !important;
+  border-radius: 0.5rem !important;
+  font-size: 14px !important;
+  color: #ffffff !important;
+}
+
+.cl-menuItem:hover {
+  background: rgba(168, 85, 247, 0.1) !important;
+}
+
+/* Close button */
+.cl-modalCloseButton {
+  color: #a1a1aa !important;
+}
+
+.cl-modalCloseButton:hover {
+  color: #ffffff !important;
+}
+
+/* Card wrapper */
+.cl-card {
+  background: #1a1425 !important;
+  border: none !important;
+}
+
+/* Form elements */
+.cl-formFieldInput {
+  background: rgba(15, 10, 26, 0.6) !important;
+  border: 2px solid rgba(168, 85, 247, 0.2) !important;
+  border-radius: 0.75rem !important;
+  color: #ffffff !important;
+}
+
+.cl-formFieldInput:focus {
+  border-color: #a855f7 !important;
+}
+
+.cl-formButtonPrimary {
+  background: linear-gradient(135deg, #a855f7 0%, #6366f1 100%) !important;
+  color: #ffffff !important;
+  border-radius: 0.75rem !important;
+}
+
+/* Footer */
+.cl-footer {
+  padding: 16px 32px !important;
+  border-top: 1px solid rgba(168, 85, 247, 0.1) !important;
+  background: rgba(15, 10, 26, 0.3) !important;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .cl-modalContent,
+  [data-clerk-modal] > div {
+    max-width: 100% !important;
+    width: 100% !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    border-radius: 0 !important;
+  }
+  
+  .cl-main,
+  .cl-userProfile-root {
+    flex-direction: column !important;
+  }
+  
+  .cl-navbar {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    border-right: none !important;
+    border-bottom: 1px solid rgba(168, 85, 247, 0.15) !important;
+    padding: 16px 0 !important;
+  }
+  
+  .cl-navbarButtons {
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    padding: 0 16px !important;
+  }
+  
+  .cl-navbarButton {
+    white-space: nowrap !important;
+  }
+  
+  .cl-profileSection {
+    padding: 20px !important;
+  }
+  
+  .cl-profileSectionItem {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+  }
+  
+  .cl-profileSectionItemLabel {
+    min-width: auto !important;
+  }
+}
+
+/* Light mode overrides */
+.light .cl-modalContent,
+.light .cl-card,
+.light .cl-userProfile-root,
+.light .cl-pageScrollBox,
+.light [data-clerk-modal] > div {
+  background: #ffffff !important;
+}
+
+.light .cl-navbar {
+  background: #f8f7f9 !important;
+}
+
+.light .cl-navbarButton {
+  color: #6b7280 !important;
+}
+
+.light .cl-navbarButton:hover,
+.light .cl-navbarButton[data-active="true"] {
+  color: #a855f7 !important;
+}
+
+.light .cl-headerTitle,
+.light .cl-userPreviewMainIdentifier,
+.light .cl-identityPreviewText,
+.light .cl-socialButtonsBlockButtonText {
+  color: #242424 !important;
+}
+
+.light .cl-headerSubtitle,
+.light .cl-profileSectionItemLabel,
+.light .cl-userPreviewSecondaryIdentifier,
+.light .cl-profileSectionTitle {
+  color: #6b7280 !important;
+}
+
+.light .cl-menuList {
+  background: #ffffff !important;
+}
+
+.light .cl-menuItem {
+  color: #242424 !important;
+}
+
+.light .cl-formFieldInput {
+  background: #ffffff !important;
+  color: #242424 !important;
+}
+
+.light .cl-footer {
+  background: #f8f7f9 !important;
+}

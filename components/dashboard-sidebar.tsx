@@ -5,7 +5,8 @@ import Image from "next/image"
 import {Button} from "@/components/ui/button"
 import {ScrollArea} from "@/components/ui/scroll-area"
 import {cn} from "@/lib/utils"
-import {SignedIn, UserButton} from "@clerk/nextjs"
+import {SignedIn} from "@clerk/nextjs"
+import {LynkSkillUserButton} from "@/components/clerk-theme"
 import {AnimateIcon} from "@/components/animate-ui/icons/icon";
 import {ChartColumnIncreasing} from "@/components/animate-ui/icons/chart-column-increasing";
 import {ClipboardList} from "@/components/animate-ui/icons/clipboard-list";
@@ -187,18 +188,7 @@ export function DashboardSidebar({
                     </button>
                     <SignedIn>
                         <div className="flex items-center justify-start gap-3 sm:gap-4 ml-2">
-                            <UserButton
-                                appearance={{
-                                    elements: {
-                                        userButtonPopoverCard:
-                                            "bg-gray-900/95 backdrop-blur-sm border border-gray-700 text-white shadow-2xl",
-                                        userButtonPopoverActionButton:
-                                            "text-foreground hover:text-white hover:bg-gray-800 transition-colors",
-                                        userButtonPopoverActionButtonText: "text-foreground",
-                                        userButtonPopoverFooter: "hidden",
-                                    },
-                                }}
-                            />
+                            <LynkSkillUserButton />
                             <div className="text-foreground text-sm font-semibold">{t('dashboard.user')}</div>
                         </div>
                     </SignedIn>

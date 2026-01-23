@@ -7,7 +7,8 @@ import { Menu, PanelLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { ModeToggle } from "@/components/theme-toggle"
-import { SignedIn, UserButton } from "@clerk/nextjs"
+import { SignedIn } from "@clerk/nextjs"
+import { LynkSkillUserButton } from "@/components/clerk-theme"
 import { NotificationBell } from "@/components/notification-bell"
 import { LanguageSwitcher } from "@/components/language-switcher"
 import { SidebarNav } from "@/components/dashboard/sidebar-nav"
@@ -233,20 +234,7 @@ export function DashboardShell({ children, userType }: DashboardShellProps) {
                             <SignedIn>
                                 <div className="flex items-center relative">
                                     <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500/20 to-blue-500/20 blur-md animate-pulse" />
-                                    <UserButton
-                                        appearance={{
-                                            elements: {
-                                                userButtonAvatarBox:
-                                                    "relative z-10 ring-2 ring-purple-500/30 hover:ring-purple-500/50 transition-all",
-                                                userButtonPopoverCard:
-                                                    "bg-background/95 backdrop-blur-sm border border-border shadow-2xl",
-                                                userButtonPopoverActionButton:
-                                                    "text-foreground hover:bg-muted",
-                                                userButtonPopoverActionButtonText: "text-foreground",
-                                                userButtonPopoverFooter: "hidden",
-                                            },
-                                        }}
-                                    />
+                                    <LynkSkillUserButton />
                                 </div>
                             </SignedIn>
                         </div>
