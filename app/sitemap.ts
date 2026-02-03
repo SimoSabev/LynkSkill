@@ -9,7 +9,7 @@ interface SitemapEntry {
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.lynkskill.net'
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://lynkskill.net'
     
     // Fetch dynamic data directly from database
     const [internships, companies, projects, experiences, portfolios] = await Promise.all([
