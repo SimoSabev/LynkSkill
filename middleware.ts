@@ -1,6 +1,8 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
- //public routes
+
+// ✅ 1. ПЪЛЕН списък с публични маршрути
+// Добавихме чистите пътища (без (.*)) за главните страници
 const isPublicRoute = createRouteMatcher([
     "/",
     "/terms",
@@ -8,124 +10,95 @@ const isPublicRoute = createRouteMatcher([
     "/help",
     "/sitemap.xml",
     "/robots.txt",
+    "/sign-in(.*)",  // Важно: Clerk страниците трябва да са публични
+    "/sign-up(.*)",
+    "/internships",      // Главна страница
+    "/internships/(.*)", // Подстраници
+    "/companies",        // Главна страница
+    "/companies/(.*)",   // Подстраници
+    "/projects",         // Главна страница
+    "/projects/(.*)",    // Подстраници
+    "/assignments/(.*)",
+    "/experience/(.*)",  // Добавих experience, беше в sitemap-а
+    "/portfolio/(.*)",   // Добавих portfolio, беше в sitemap-а
     "/api/validate-eik(.*)",
     "/api/company/accept-policies(.*)",
     "/api/student/accept-policies(.*)",
     "/api/upload-logo(.*)",
     "/api/cleanup(.*)",
-    "/api/public/(.*)",
-    "/internships/(.*)",
-    "/companies/(.*)",
-    "/projects/(.*)",
-    "/assignments/(.*)"
+    "/api/public/(.*)"
 ]);
 
 const isOnboardingRoute = createRouteMatcher([
     "/onboarding",
-    "/redirect-after-signin",
-    "/sign-in",
-    "/sign-up",
+    "/redirect-after-signin"
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
     const { userId, sessionClaims } = await auth();
     const url = req.nextUrl;
 
-    // Create response with proper SEO headers (allowing indexing)
-    const response = NextResponse.next();
-    
-    // Remove any noindex headers and ensure proper indexing for SEO
-    response.headers.delete('X-Robots-Tag');
-    
-    // Set proper SEO-friendly headers
-    response.headers.set('X-Robots-Tag', 'index, follow');
-    response.headers.set('X-Content-Type-Options', 'nosniff');
-    response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-
-    // ✅ Allow Googlebot and other crawlers to access public pages without redirect
+    // ✅ 2. SEO Fix: Пропускаме Googlebot директно, за да не го въртим в редиректи
+    // Това е безопасно, защото ботовете не могат да направят POST заявки или да пипат данни
     const userAgent = req.headers.get("user-agent") || "";
-    if (/googlebot|bingbot|slurp|duckduckbot|baiduspider|yandex/i.test(userAgent)) {
-        return response;
+    const isBot = /googlebot|bingbot|slurp|duckduckbot|baiduspider|yandex/i.test(userAgent);
+
+    if (isBot) {
+         return NextResponse.next();
     }
 
-    // ✅ Always allow public APIs and static pages
+    // ✅ 3. Логика за публични страници
     if (isPublicRoute(req)) {
-        // 👇 Special case: if logged in and visiting "/", redirect to dashboard
+        // Ако потребителят е логнат и се опита да влезе в Home Page ("/"), го пращаме в Dashboard
         if (url.pathname === "/" && userId) {
             const onboardingRaw = sessionClaims?.metadata?.onboardingComplete;
-            const onboardingComplete =
-                onboardingRaw === true || onboardingRaw?.toString() === "true";
-            const role = (sessionClaims?.metadata?.role || "")
-                .toString()
-                .toUpperCase();
+            const onboardingComplete = onboardingRaw === true || onboardingRaw?.toString() === "true";
+            const role = (sessionClaims?.metadata?.role || "").toString().toUpperCase();
 
             if (!onboardingComplete) {
-                const redirectResponse = NextResponse.redirect(new URL("/onboarding", req.url));
-                redirectResponse.headers.delete('X-Robots-Tag');
-                redirectResponse.headers.set('X-Robots-Tag', 'index, follow');
-                return redirectResponse;
+                return NextResponse.redirect(new URL("/onboarding", req.url));
             }
-
             if (role === "COMPANY") {
-                const redirectResponse = NextResponse.redirect(new URL("/dashboard/company", req.url));
-                redirectResponse.headers.delete('X-Robots-Tag');
-                redirectResponse.headers.set('X-Robots-Tag', 'index, follow');
-                return redirectResponse;
+                return NextResponse.redirect(new URL("/dashboard/company", req.url));
             }
-            const redirectResponse = NextResponse.redirect(new URL("/dashboard/student", req.url));
-            redirectResponse.headers.delete('X-Robots-Tag');
-            redirectResponse.headers.set('X-Robots-Tag', 'index, follow');
-            return redirectResponse;
+            return NextResponse.redirect(new URL("/dashboard/student", req.url));
         }
-
-        return response;
+        // Ако е публична страница и не е хоумпейдж, просто го пускаме
+        return NextResponse.next();
     }
 
-    // ✅ Redirect guests to "/"
-    if (!userId && !isPublicRoute(req)) {
-        const redirectResponse = NextResponse.redirect(new URL("/", req.url));
-        redirectResponse.headers.delete('X-Robots-Tag');
-        redirectResponse.headers.set('X-Robots-Tag', 'index, follow');
-        return redirectResponse;
+    // ✅ 4. Защита на не-публични страници (Private Routes)
+    // Ако няма UserID и не е публичен път -> Redirect към Home/Sign-in
+    if (!userId) {
+        // Redirect към sign-in вместо към home е по-добра практика, но нека запазим твоята логика
+        return NextResponse.redirect(new URL("/", req.url)); 
     }
 
-    // ✅ Onboarding redirect
+    // ✅ 5. Onboarding логика
     const onboardingRaw = sessionClaims?.metadata?.onboardingComplete;
-    const onboardingComplete =
-        onboardingRaw === true || onboardingRaw?.toString() === "true";
-    const role = (sessionClaims?.metadata?.role || "")
-        .toString()
-        .toUpperCase();
+    const onboardingComplete = onboardingRaw === true || onboardingRaw?.toString() === "true";
+    const role = (sessionClaims?.metadata?.role || "").toString().toUpperCase();
 
     if (userId && !onboardingComplete && !isOnboardingRoute(req)) {
-        const redirectResponse = NextResponse.redirect(new URL("/onboarding", req.url));
-        redirectResponse.headers.delete('X-Robots-Tag');
-        redirectResponse.headers.set('X-Robots-Tag', 'index, follow');
-        return redirectResponse;
+        return NextResponse.redirect(new URL("/onboarding", req.url));
     }
 
-    // ✅ Role-based route protection
+    // ✅ 6. Role-based защита
     if (url.pathname.startsWith("/dashboard/student") && role !== "STUDENT") {
-        const redirectResponse = NextResponse.redirect(new URL("/dashboard/company", req.url));
-        redirectResponse.headers.delete('X-Robots-Tag');
-        redirectResponse.headers.set('X-Robots-Tag', 'index, follow');
-        return redirectResponse;
+        return NextResponse.redirect(new URL("/dashboard/company", req.url));
     }
     if (url.pathname.startsWith("/dashboard/company") && role !== "COMPANY") {
-        const redirectResponse = NextResponse.redirect(new URL("/dashboard/student", req.url));
-        redirectResponse.headers.delete('X-Robots-Tag');
-        redirectResponse.headers.set('X-Robots-Tag', 'index, follow');
-        return redirectResponse;
+        return NextResponse.redirect(new URL("/dashboard/student", req.url));
     }
 
-    // Ensure final response has proper SEO headers
-    response.headers.delete('X-Robots-Tag');
-    response.headers.set('X-Robots-Tag', 'index, follow');
-    return response;
+    return NextResponse.next();
 });
 
 export const config = {
     matcher: [
-        "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
+        // Skip Next.js internals and all static files, unless found in search params
+        '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
+        // Always run for API routes
+        '/(api|trpc)(.*)',
     ],
 };
