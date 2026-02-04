@@ -18,6 +18,9 @@ interface UserSettings {
     profileVisibility: "public" | "private" | "connections"
     showOnlineStatus: boolean
     allowMessages: boolean
+    
+    // Region
+    timezone: string
 }
 
 interface SettingsContextType {
@@ -40,6 +43,7 @@ const defaultSettings: UserSettings = {
     profileVisibility: "public",
     showOnlineStatus: true,
     allowMessages: true,
+    timezone: "Europe/Sofia",
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined)
@@ -51,55 +55,91 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     const [isLoading, setIsLoading] = useState(true)
     const [isSaving, setIsSaving] = useState(false)
 
-    // Load settings from localStorage on mount
+    // Load settings from API on mount, fallback to localStorage
     useEffect(() => {
-        try {
-            const stored = localStorage.getItem(STORAGE_KEY)
-            if (stored) {
-                const parsed = JSON.parse(stored)
-                setSettings(prev => ({ ...prev, ...parsed }))
+        const loadSettings = async () => {
+            try {
+                // Try to load from API first
+                const response = await fetch('/api/user/settings')
+                if (response.ok) {
+                    const data = await response.json()
+                    setSettings(prev => ({ ...prev, ...data }))
+                    // Also save to localStorage as cache
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+                } else {
+                    // Fallback to localStorage
+                    const stored = localStorage.getItem(STORAGE_KEY)
+                    if (stored) {
+                        const parsed = JSON.parse(stored)
+                        setSettings(prev => ({ ...prev, ...parsed }))
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to load settings from API:", error)
+                // Fallback to localStorage
+                try {
+                    const stored = localStorage.getItem(STORAGE_KEY)
+                    if (stored) {
+                        const parsed = JSON.parse(stored)
+                        setSettings(prev => ({ ...prev, ...parsed }))
+                    }
+                } catch (localError) {
+                    console.error("Failed to load settings from localStorage:", localError)
+                }
+            } finally {
+                setIsLoading(false)
             }
-        } catch (error) {
-            console.error("Failed to load settings:", error)
-        } finally {
-            setIsLoading(false)
         }
+        
+        loadSettings()
     }, [])
 
-    // Save settings to localStorage whenever they change
-    const saveSettings = useCallback(async (newSettings: UserSettings) => {
+    // Save settings to API and localStorage
+    const saveSettings = useCallback(async (updates: Partial<UserSettings>) => {
         setIsSaving(true)
         try {
+            // Save to localStorage immediately for responsiveness
+            const newSettings = { ...settings, ...updates }
             localStorage.setItem(STORAGE_KEY, JSON.stringify(newSettings))
-            // Simulate API call for server-side persistence
-            await new Promise(resolve => setTimeout(resolve, 300))
+            
+            // Save to API
+            const response = await fetch('/api/user/settings', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updates)
+            })
+            
+            if (!response.ok) {
+                console.error("Failed to save settings to API")
+            }
         } catch (error) {
             console.error("Failed to save settings:", error)
         } finally {
             setIsSaving(false)
         }
-    }, [])
+    }, [settings])
 
     const updateSetting = useCallback(<K extends keyof UserSettings>(key: K, value: UserSettings[K]) => {
-        setSettings(prev => {
-            const newSettings = { ...prev, [key]: value }
-            saveSettings(newSettings)
-            return newSettings
-        })
+        const updates = { [key]: value } as Partial<UserSettings>
+        setSettings(prev => ({ ...prev, ...updates }))
+        saveSettings(updates)
     }, [saveSettings])
 
     const updateSettings = useCallback((updates: Partial<UserSettings>) => {
-        setSettings(prev => {
-            const newSettings = { ...prev, ...updates }
-            saveSettings(newSettings)
-            return newSettings
-        })
+        setSettings(prev => ({ ...prev, ...updates }))
+        saveSettings(updates)
     }, [saveSettings])
 
-    const resetSettings = useCallback(() => {
+    const resetSettings = useCallback(async () => {
         setSettings(defaultSettings)
-        saveSettings(defaultSettings)
-    }, [saveSettings])
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultSettings))
+        
+        try {
+            await fetch('/api/user/settings', { method: 'PUT' })
+        } catch (error) {
+            console.error("Failed to reset settings on server:", error)
+        }
+    }, [])
 
     return (
         <SettingsContext.Provider value={{

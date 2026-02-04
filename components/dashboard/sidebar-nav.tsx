@@ -131,6 +131,11 @@ export function SidebarNav({
             href: `${basePath}/interviews`,
             icon: <Calendar className="h-5 w-5" />,
         },
+        {
+            label: t('navigation.help'),
+            href: `${basePath}/help`,
+            icon: <HelpCircle className="h-5 w-5" />,
+        },
     ]
 
     const companyNavItems: NavItem[] = [
@@ -190,6 +195,11 @@ export function SidebarNav({
             label: t('navigation.interviews'),
             href: `${basePath}/interviews`,
             icon: <Calendar className="h-5 w-5" />,
+        },
+        {
+            label: t('navigation.help'),
+            href: `${basePath}/help`,
+            icon: <HelpCircle className="h-5 w-5" />,
         },
     ]
 

@@ -87,11 +87,12 @@ model Company {
 // USER PROFILE
 // ---------------------
 model Profile {
-  id     String @id @default(cuid())
-  userId String @unique
-  name   String
-  bio    String?
-  user   User   @relation(fields: [userId], references: [id])
+  id       String  @id @default(cuid())
+  userId   String  @unique
+  name     String
+  bio      String?
+  settings Json?   // User settings (notifications, privacy, appearance, etc.)
+  user     User    @relation(fields: [userId], references: [id])
 }
 
 //
