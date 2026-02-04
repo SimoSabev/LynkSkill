@@ -137,14 +137,16 @@ export async function PATCH(
         // ======================================================
         const company = await prisma.company.findFirst({
             where: { id: updatedApplication.internship.companyId },
-            select: { name: true }
+            select: { name: true, id: true }
         })
         
         await notifyApplicationStatusChange(
             updatedApplication.studentId,
             updatedApplication.internship.title,
             company?.name || "Company",
-            status as "APPROVED" | "REJECTED"
+            status as "APPROVED" | "REJECTED",
+            updatedApplication.id,  // applicationId
+            company?.id             // companyId
         )
 
         return NextResponse.json(updatedApplication)

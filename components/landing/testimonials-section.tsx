@@ -56,13 +56,9 @@ export function TestimonialsSection() {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
                     {testimonials.map((testimonial, index) => (
-                        <motion.div
+                        <div
                             key={index}
-                            initial={{ opacity: 0, y: 30 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ duration: 0.6, delay: index * 0.1 }}
-                            className="relative p-6 md:p-8 rounded-3xl bg-card border-2 border-border hover:border-purple-500/50 transition-all duration-300 space-y-4 md:space-y-6 shadow-lg hover:shadow-2xl hover:shadow-purple-500/10"
+                            className="relative p-6 md:p-8 rounded-2xl bg-card border border-border hover:border-purple-500/30 transition-colors duration-150 space-y-4 md:space-y-6 shadow-sm"
                         >
                             <div className="flex gap-1">
                                 {[...Array(testimonial.rating)].map((_, i) => (
@@ -88,7 +84,7 @@ export function TestimonialsSection() {
                                     <div className="text-xs md:text-sm text-purple-400">{testimonial.company}</div>
                                 </div>
                             </div>
-                        </motion.div>
+                        </div>
                     ))}
                 </div>
             </div>

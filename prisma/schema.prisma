@@ -331,6 +331,7 @@ model Notification {
   title     String
   message   String
   link      String?
+  metadata  Json?    // Store additional data like applicationId, projectId, etc.
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
 

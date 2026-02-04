@@ -263,9 +263,9 @@ export function InternshipFiltersComponent({
                                         <button
                                             key={skill}
                                             onClick={() => toggleSkill(skill)}
-                                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 hover:scale-105 ${
+                                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors duration-150 ${
                                                 localFilters.skills.includes(skill)
-                                                    ? "bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-md"
+                                                    ? "bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-sm"
                                                     : "bg-background border border-border/50 text-muted-foreground hover:border-purple-500/50 hover:text-foreground"
                                             }`}
                                         >
@@ -326,52 +326,38 @@ export function InternshipFiltersComponent({
                         <span className="text-xs text-muted-foreground font-medium mr-1">Active:</span>
                         
                         {filters.location !== "all" && (
-                            <motion.div
-                                initial={{ scale: 0.8, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                exit={{ scale: 0.8, opacity: 0 }}
-                                className="group"
-                            >
+                            <div className="group">
                                 <button
                                     onClick={() => onFiltersChange({ ...filters, location: "all" })}
-                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-gradient-to-r from-purple-500/20 to-blue-500/20 text-purple-700 dark:text-purple-300 border border-purple-500/30 hover:border-purple-500/50 hover:from-purple-500/30 hover:to-blue-500/30 transition-all duration-200 shadow-sm hover:shadow-md group-hover:scale-105"
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/30 hover:border-purple-500/50 transition-colors duration-150"
                                 >
                                     <MapPin className="h-3 w-3" />
                                     <span className="capitalize">{filters.location}</span>
-                                    <X className="h-3 w-3 ml-0.5 opacity-60 group-hover:opacity-100 transition-opacity" />
+                                    <X className="h-3 w-3 ml-0.5 opacity-60 group-hover:opacity-100" />
                                 </button>
-                            </motion.div>
+                            </div>
                         )}
                         
                         {filters.paid !== "all" && (
-                            <motion.div
-                                initial={{ scale: 0.8, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                exit={{ scale: 0.8, opacity: 0 }}
-                                className="group"
-                            >
+                            <div className="group">
                                 <button
                                     onClick={() => onFiltersChange({ ...filters, paid: "all" })}
-                                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all duration-200 shadow-sm hover:shadow-md group-hover:scale-105 ${
+                                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors duration-150 ${
                                         filters.paid === "paid" 
-                                            ? "bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-700 dark:text-green-300 border-green-500/30 hover:border-green-500/50 hover:from-green-500/30 hover:to-emerald-500/30"
-                                            : "bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30 hover:border-amber-500/50 hover:from-amber-500/30 hover:to-orange-500/30"
+                                            ? "bg-green-500/10 text-green-700 dark:text-green-300 border-green-500/30 hover:border-green-500/50"
+                                            : "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30 hover:border-amber-500/50"
                                     }`}
                                 >
                                     <DollarSign className="h-3 w-3" />
                                     <span>{filters.paid === "paid" ? "Paid" : "Unpaid"}</span>
-                                    <X className="h-3 w-3 ml-0.5 opacity-60 group-hover:opacity-100 transition-opacity" />
+                                    <X className="h-3 w-3 ml-0.5 opacity-60 group-hover:opacity-100" />
                                 </button>
-                            </motion.div>
+                            </div>
                         )}
                         
-                        {filters.skills.map((skill, index) => (
-                            <motion.div
+                        {filters.skills.map((skill) => (
+                            <div
                                 key={skill}
-                                initial={{ scale: 0.8, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                exit={{ scale: 0.8, opacity: 0 }}
-                                transition={{ delay: index * 0.05 }}
                                 className="group"
                             >
                                 <button
@@ -379,13 +365,13 @@ export function InternshipFiltersComponent({
                                         ...filters, 
                                         skills: filters.skills.filter(s => s !== skill) 
                                     })}
-                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-gradient-to-r from-blue-500/20 to-cyan-500/20 text-blue-700 dark:text-blue-300 border border-blue-500/30 hover:border-blue-500/50 hover:from-blue-500/30 hover:to-cyan-500/30 transition-all duration-200 shadow-sm hover:shadow-md group-hover:scale-105"
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/30 hover:border-blue-500/50 transition-colors duration-150"
                                 >
                                     <Sparkles className="h-3 w-3" />
                                     <span>{skill}</span>
-                                    <X className="h-3 w-3 ml-0.5 opacity-60 group-hover:opacity-100 transition-opacity" />
+                                    <X className="h-3 w-3 ml-0.5 opacity-60 group-hover:opacity-100" />
                                 </button>
-                            </motion.div>
+                            </div>
                         ))}
                     </motion.div>
                 )}

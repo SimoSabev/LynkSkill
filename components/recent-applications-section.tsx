@@ -1,7 +1,6 @@
 "use client"
 
 import { useMemo } from "react"
-import { motion } from "framer-motion"
 import { useRouter } from "next/navigation"
 import {
   Calendar,
@@ -70,62 +69,53 @@ export function RecentApplicationsSection({
 
   if (isLoading) {
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-            className="relative overflow-hidden bg-gradient-to-br from-[var(--application-card-gradient-from)] to-[var(--application-card-gradient-to)] rounded-2xl p-6 shadow-[0_8px_30px_var(--application-shadow-light)] border border-border/50"
+        <div
+            className="relative overflow-hidden bg-card rounded-2xl p-6 border border-border shadow-sm"
         >
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-xl backdrop-blur-sm">
+              <div className="p-2 bg-primary/10 rounded-xl">
                 <TrendingUp className="w-5 h-5 text-primary/50" />
               </div>
               <div className="space-y-1">
-                <div className="h-5 w-40 bg-muted/40 rounded-md relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent" />
-                <div className="h-3 w-28 bg-muted/30 rounded-md relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent" />
+                <div className="h-5 w-40 bg-muted/40 rounded-md" />
+                <div className="h-3 w-28 bg-muted/30 rounded-md" />
               </div>
             </div>
-            <div className="h-8 w-12 bg-muted/40 rounded-lg relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent" />
+            <div className="h-8 w-12 bg-muted/40 rounded-lg" />
           </div>
 
           {/* Skeleton cards */}
           <div className="space-y-3">
             {[...Array(3)].map((_, i) => (
-                <motion.div
+                <div
                     key={i}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.1 }}
-                    className="relative overflow-hidden bg-gradient-to-r from-muted/30 to-muted/10 rounded-xl p-4 border border-border/30"
+                    className="relative overflow-hidden bg-muted/20 rounded-xl p-4 border border-border/30"
                 >
                   <div className="space-y-3">
                     <div className="flex items-start justify-between">
                       <div className="flex-1 space-y-2">
-                        <div className="h-5 w-3/4 bg-muted/50 rounded-md relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent" />
-                        <div className="h-4 w-1/2 bg-muted/40 rounded-md relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent" />
+                        <div className="h-5 w-3/4 bg-muted/50 rounded-md" />
+                        <div className="h-4 w-1/2 bg-muted/40 rounded-md" />
                       </div>
-                      <div className="h-7 w-20 bg-muted/50 rounded-full relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent" />
+                      <div className="h-7 w-20 bg-muted/50 rounded-full" />
                     </div>
                     <div className="flex justify-between items-center pt-1">
-                      <div className="h-4 w-28 bg-muted/30 rounded-md relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent" />
-                      <div className="h-9 w-24 bg-muted/40 rounded-xl relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/20 before:to-transparent" />
+                      <div className="h-4 w-28 bg-muted/30 rounded-md" />
+                      <div className="h-9 w-24 bg-muted/40 rounded-xl" />
                     </div>
                   </div>
-                </motion.div>
+                </div>
             ))}
           </div>
-        </motion.div>
+        </div>
     )
   }
 
   return (
-      <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="relative overflow-hidden bg-gradient-to-br from-[var(--application-card-gradient-from)] to-[var(--application-card-gradient-to)] rounded-2xl p-6 shadow-[0_8px_30px_var(--application-shadow-light)] hover:shadow-[0_20px_50px_var(--application-shadow-medium)] transition-all duration-300"
+      <div
+          className="relative overflow-hidden bg-card rounded-2xl p-6 border border-border shadow-sm"
       >
         {/* Header */}
         <div className="relative mb-6">
@@ -161,11 +151,11 @@ export function RecentApplicationsSection({
 
         {/* Empty state */}
         {applications.length === 0 ? (
-            <motion.div
+            <div
                 className="text-center py-8"
             >
               <div className="relative mb-4">
-                <div className="bg-gradient-to-br from-muted/50 to-muted/30 rounded-full w-16 h-16 flex items-center justify-center mx-auto shadow-lg">
+                <div className="bg-muted/40 rounded-full w-16 h-16 flex items-center justify-center mx-auto">
                   <Briefcase className="w-8 h-8 text-muted-foreground" />
                 </div>
                 <div className="absolute -top-1 -right-1 bg-primary/20 rounded-full p-1">
@@ -175,7 +165,7 @@ export function RecentApplicationsSection({
               <p className="text-muted-foreground font-medium">
                 No recent applications
               </p>
-            </motion.div>
+            </div>
         ) : (
             <div className="space-y-3">
                 {applications.map((app) => {
@@ -193,10 +183,8 @@ export function RecentApplicationsSection({
                               router.push(`${basePath}/internships/applied`)
                             }
                           }}
-                          className="cursor-pointer group relative overflow-hidden bg-gradient-to-r from-card/80 to-card/60 backdrop-blur-sm rounded-xl p-4 shadow-[0_4px_20px_var(--application-shadow-light)] hover:shadow-[0_8px_30px_var(--application-shadow-medium)] border border-border/30 hover:border-primary/20 hover:-translate-y-0.5 transition-all duration-150"
+                          className="cursor-pointer group relative overflow-hidden bg-card rounded-xl p-4 shadow-sm hover:shadow-md border border-border/50 hover:border-primary/20 transition-colors duration-150"
                       >
-                        <div className="absolute inset-0 bg-gradient-to-r from-white/5 via-transparent to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-150"></div>
-
                         <div className="relative z-10">
                           <div className="flex items-start justify-between mb-3">
                             <div className="flex-1 space-y-2">
@@ -264,6 +252,6 @@ export function RecentApplicationsSection({
                 })}
             </div>
         )}
-      </motion.div>
+      </div>
   )
 }

@@ -681,7 +681,7 @@ export function DesignaliCreative() {
       </div>
 
       {/* Main Content */}
-      <div className={cn("min-h-screen transition-all duration-300 ease-in-out", sidebarOpen ? "md:pl-64" : "md:pl-0")}>
+      <div className={cn("min-h-screen transition-[padding] duration-150 ease-in-out", sidebarOpen ? "md:pl-64" : "md:pl-0")}>
         <header className="sticky top-0 z-10 flex h-16 items-center gap-3 border-b bg-background/95 px-4 backdrop-blur">
           <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setMobileMenuOpen(true)}>
             <Menu className="h-5 w-5" />
@@ -834,8 +834,8 @@ export function DesignaliCreative() {
                       {apps
                         .filter((app) => app.recent)
                         .map((app) => (
-                          <motion.div key={app.name} whileHover={{ scale: 1.02, y: -5 }} whileTap={{ scale: 0.98 }}>
-                            <Card className="overflow-hidden rounded-3xl border-2 hover:border-primary/50 transition-all duration-300">
+                          <div key={app.name}>
+                            <Card className="overflow-hidden rounded-3xl border-2 hover:border-primary/50 transition-colors duration-150">
                               <CardHeader className="pb-2">
                                 <div className="flex items-center justify-between">
                                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted">
@@ -856,7 +856,7 @@ export function DesignaliCreative() {
                                 </Button>
                               </CardFooter>
                             </Card>
-                          </motion.div>
+                          </div>
                         ))}
                     </div>
                   </section>
@@ -1333,7 +1333,7 @@ export function DesignaliCreative() {
                         </motion.div>
                       ))}
                       <motion.div whileHover={{ scale: 1.02, y: -5 }} whileTap={{ scale: 0.98 }}>
-                        <Card className="flex h-full flex-col items-center justify-center rounded-3xl border border-dashed p-8 hover:border-primary/50 transition-all duration-300">
+                        <Card className="flex h-full flex-col items-center justify-center rounded-3xl border border-dashed p-8 hover:border-primary/50 transition-colors duration-150">
                           <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-muted">
                             <Plus className="h-6 w-6" />
                           </div>

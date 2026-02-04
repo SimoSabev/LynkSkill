@@ -16,14 +16,12 @@ import { useRouter } from 'next/navigation'
 interface ApplyButtonProps {
     internshipId: string
     onApplied?: () => void
-    goToPortfolioTab?: () => void
 }
 
-export default function ApplyButton({ internshipId, onApplied, goToPortfolioTab }: ApplyButtonProps) {
+export default function ApplyButton({ internshipId, onApplied }: ApplyButtonProps) {
     const [isApplying, setIsApplying] = useState(false)
     const [showIncompleteModal, setShowIncompleteModal] = useState(false)
-    // Router available for future navigation needs
-    useRouter()
+    const router = useRouter()
 
     const handleApply = async () => {
         setIsApplying(true)
@@ -81,7 +79,7 @@ export default function ApplyButton({ internshipId, onApplied, goToPortfolioTab 
                 onClick={handleApply}
                 disabled={isApplying}
                 size="lg"
-                className="flex-1 w-full rounded-xl sm:rounded-2xl font-semibold sm:font-bold text-sm sm:text-base bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white shadow-lg hover:shadow-xl sm:shadow-xl sm:hover:shadow-2xl transition-all duration-300 hover:scale-[1.02] sm:hover:scale-105 py-2.5 sm:py-3"
+                className="flex-1 w-full rounded-xl sm:rounded-2xl font-semibold sm:font-bold text-sm sm:text-base bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white shadow-md transition-colors duration-150 py-2.5 sm:py-3"
             >
                 {isApplying ? (
                     <>
@@ -121,7 +119,7 @@ export default function ApplyButton({ internshipId, onApplied, goToPortfolioTab 
                         <Button
                             onClick={() => {
                                 setShowIncompleteModal(false)
-                                goToPortfolioTab?.()
+                                router.push('/dashboard/student/portfolio')
                             }}
                             className="w-full sm:w-auto rounded-lg sm:rounded-xl bg-gradient-to-r text-foreground from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 py-2.5 sm:py-2"
                         >

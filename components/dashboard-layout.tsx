@@ -117,19 +117,6 @@ export function DashboardLayout({ userType }: DashboardLayoutProps) {
     if (isInitialLoading) {
         return (
             <div className="relative min-h-screen overflow-hidden bg-background">
-                {/* Animated gradient background */}
-                <motion.div
-                    className="absolute inset-0 -z-10 opacity-20"
-                    animate={{
-                        background: [
-                            "radial-gradient(circle at 50% 50%, rgba(120, 41, 190, 0.5) 0%, rgba(53, 71, 125, 0.5) 50%, rgba(0, 0, 0, 0) 100%)",
-                            "radial-gradient(circle at 30% 70%, rgba(233, 30, 99, 0.5) 0%, rgba(81, 45, 168, 0.5) 50%, rgba(0, 0, 0, 0) 100%)",
-                            "radial-gradient(circle at 70% 30%, rgba(76, 175, 80, 0.5) 0%, rgba(32, 119, 188, 0.5) 50%, rgba(0, 0, 0, 0) 100%)",
-                            "radial-gradient(circle at 50% 50%, rgba(120, 41, 190, 0.5) 0%, rgba(53, 71, 125, 0.5) 50%, rgba(0, 0, 0, 0) 100%)",
-                        ],
-                    }}
-                    transition={{ duration: 30, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
-                />
 
                 {/* Sidebar Skeleton */}
                 <div className="fixed inset-y-0 left-0 z-30 hidden w-64 transform border-r bg-background md:block">
@@ -203,18 +190,6 @@ export function DashboardLayout({ userType }: DashboardLayoutProps) {
 
     return (
         <div className="relative min-h-screen overflow-hidden bg-background">
-            <motion.div
-                className="fixed inset-0 -z-10 opacity-20 pointer-events-none"
-                animate={{
-                    background: [
-                        "radial-gradient(circle at 50% 50%, rgba(120, 41, 190, 0.4) 0%, rgba(53, 71, 125, 0.3) 50%, rgba(0, 0, 0, 0) 100%)",
-                        "radial-gradient(circle at 30% 70%, rgba(233, 30, 99, 0.4) 0%, rgba(81, 45, 168, 0.3) 50%, rgba(0, 0, 0, 0) 100%)",
-                        "radial-gradient(circle at 70% 30%, rgba(76, 175, 80, 0.4) 0%, rgba(32, 119, 188, 0.3) 50%, rgba(0, 0, 0, 0) 100%)",
-                        "radial-gradient(circle at 50% 50%, rgba(120, 41, 190, 0.4) 0%, rgba(53, 71, 125, 0.3) 50%, rgba(0, 0, 0, 0) 100%)",
-                    ],
-                }}
-                transition={{ duration: 25, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
-            />
 
             {/* Sidebar - Mobile */}
             <DashboardSidebar
@@ -255,25 +230,12 @@ export function DashboardLayout({ userType }: DashboardLayoutProps) {
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ duration: 0.5 }}
                             >
-                                <TabsList className="relative h-auto gap-2 backdrop-blur-xl border border-purple-500/20 p-1.5 rounded-2xl shadow-lg overflow-hidden bg-gradient-to-r from-purple-500/10 via-blue-500/10 to-purple-500/10">
-                                    {/* Animated gradient background */}
-                                    <motion.div
-                                        className="absolute inset-0 opacity-30"
-                                        animate={{
-                                            background: [
-                                                "linear-gradient(90deg, rgba(147, 51, 234, 0.2) 0%, rgba(59, 130, 246, 0.2) 50%, rgba(147, 51, 234, 0.2) 100%)",
-                                                "linear-gradient(90deg, rgba(59, 130, 246, 0.2) 0%, rgba(147, 51, 234, 0.2) 50%, rgba(59, 130, 246, 0.2) 100%)",
-                                                "linear-gradient(90deg, rgba(147, 51, 234, 0.2) 0%, rgba(59, 130, 246, 0.2) 50%, rgba(147, 51, 234, 0.2) 100%)",
-                                            ],
-                                        }}
-                                        transition={{ duration: 4, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
-                                    />
-
+                                <TabsList className="relative h-auto gap-1 border border-border/50 p-1 rounded-xl bg-muted/50">
                                     <TabsTrigger
                                         value="home"
-                                        className="group cursor-pointer relative flex items-center gap-2.5 px-6 py-2.5 rounded-xl font-medium text-sm transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500/20 data-[state=active]:to-blue-500/20 data-[state=active]:text-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/30 data-[state=inactive]:text-muted-foreground hover:text-foreground hover:bg-purple-500/10 hover:scale-105 data-[state=active]:scale-105"
+                                        className="cursor-pointer flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-colors duration-150 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=inactive]:text-muted-foreground hover:text-foreground hover:bg-background/50"
                                     >
-                                        <Home className="h-4 w-4 transition-all duration-300 group-data-[state=active]:scale-110 group-data-[state=active]:drop-shadow-[0_0_8px_rgba(147,51,234,0.8)] group-hover:drop-shadow-[0_0_6px_rgba(147,51,234,0.6)]" />
+                                        <Home className="h-4 w-4" />
                                         <span className="relative">
                                             {t('navigation.home')}
                                         </span>
@@ -282,26 +244,26 @@ export function DashboardLayout({ userType }: DashboardLayoutProps) {
                                     {userType === "Student" ? (
                                         <TabsTrigger
                                             value="apps"
-                                            className="group cursor-pointer relative flex items-center gap-2.5 px-5 py-2.5 rounded-xl font-medium text-sm transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500/20 data-[state=active]:to-blue-500/20 data-[state=active]:text-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/30 data-[state=inactive]:text-muted-foreground hover:text-foreground hover:bg-purple-500/10 hover:scale-105 data-[state=active]:scale-105"
+                                            className="cursor-pointer flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-colors duration-150 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=inactive]:text-muted-foreground hover:text-foreground hover:bg-background/50"
                                         >
-                                            <Briefcase className="h-4 w-4 transition-all duration-300 group-data-[state=active]:scale-110 group-data-[state=active]:drop-shadow-[0_0_8px_rgba(147,51,234,0.8)] group-hover:drop-shadow-[0_0_6px_rgba(147,51,234,0.6)]" />
+                                            <Briefcase className="h-4 w-4" />
                                             <span>{t('navigation.portfolio')}</span>
                                         </TabsTrigger>
                                     ) : (
                                         <TabsTrigger
                                             value="leaderboard"
-                                            className="group cursor-pointer relative flex items-center gap-2.5 px-5 py-2.5 rounded-xl font-medium text-sm transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500/20 data-[state=active]:to-blue-500/20 data-[state=active]:text-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/30 data-[state=inactive]:text-muted-foreground hover:text-foreground hover:bg-purple-500/10 hover:scale-105 data-[state=active]:scale-105"
+                                            className="cursor-pointer flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-colors duration-150 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=inactive]:text-muted-foreground hover:text-foreground hover:bg-background/50"
                                         >
-                                            <Trophy className="h-4 w-4 transition-all duration-300 group-data-[state=active]:scale-110 group-data-[state=active]:drop-shadow-[0_0_8px_rgba(147,51,234,0.8)] group-hover:drop-shadow-[0_0_6px_rgba(147,51,234,0.6)]" />
+                                            <Trophy className="h-4 w-4" />
                                             <span>{t('navigation.leaderboard')}</span>
                                         </TabsTrigger>
                                     )}
 
                                     <TabsTrigger
                                         value="files"
-                                        className="group cursor-pointer relative flex items-center gap-2.5 px-5 py-2.5 rounded-xl font-medium text-sm transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500/20 data-[state=active]:to-blue-500/20 data-[state=active]:text-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/30 data-[state=inactive]:text-muted-foreground hover:text-foreground hover:bg-purple-500/10 hover:scale-105 data-[state=active]:scale-105"
+                                        className="cursor-pointer flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-colors duration-150 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=inactive]:text-muted-foreground hover:text-foreground hover:bg-background/50"
                                     >
-                                        <FileText className="h-4 w-4 transition-all duration-300 group-data-[state=active]:scale-110 group-data-[state=active]:drop-shadow-[0_0_8px_rgba(147,51,234,0.8)] group-hover:drop-shadow-[0_0_6px_rgba(147,51,234,0.6)]" />
+                                        <FileText className="h-4 w-4" />
                                         <span>{t('navigation.applied')}</span>
                                     </TabsTrigger>
 
@@ -315,144 +277,128 @@ export function DashboardLayout({ userType }: DashboardLayoutProps) {
 
                                     <TabsTrigger
                                         value="learn"
-                                        className="group cursor-pointer relative flex items-center gap-2.5 px-5 py-2.5 rounded-xl font-medium text-sm transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500/20 data-[state=active]:to-blue-500/20 data-[state=active]:text-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/30 data-[state=inactive]:text-muted-foreground hover:text-foreground hover:bg-purple-500/10 hover:scale-105 data-[state=active]:scale-105"
+                                        className="cursor-pointer flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-colors duration-150 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=inactive]:text-muted-foreground hover:text-foreground hover:bg-background/50"
                                     >
-                                        <Award className="h-4 w-4 transition-all duration-300 group-data-[state=active]:scale-110 group-data-[state=active]:drop-shadow-[0_0_8px_rgba(147,51,234,0.8)] group-hover:drop-shadow-[0_0_6px_rgba(147,51,234,0.6)]" />
+                                        <Award className="h-4 w-4" />
                                         <span>{t('navigation.myExperience')}</span>
                                     </TabsTrigger>
 
                                     {userType === "Student" && (
                                         <TabsTrigger
                                             value="saved"
-                                            className="group cursor-pointer relative flex items-center gap-2.5 px-5 py-2.5 rounded-xl font-medium text-sm transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-500/20 data-[state=active]:to-yellow-500/20 data-[state=active]:text-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-amber-500/30 data-[state=inactive]:text-muted-foreground hover:text-foreground hover:bg-amber-500/10 hover:scale-105 data-[state=active]:scale-105"
+                                            className="cursor-pointer flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-colors duration-150 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=inactive]:text-muted-foreground hover:text-foreground hover:bg-background/50"
                                         >
-                                            <Bookmark className="h-4 w-4 transition-all duration-300 group-data-[state=active]:scale-110 group-data-[state=active]:drop-shadow-[0_0_8px_rgba(245,158,11,0.8)] group-hover:drop-shadow-[0_0_6px_rgba(245,158,11,0.6)]" />
+                                            <Bookmark className="h-4 w-4" />
                                             <span>{t('navigation.saved')}</span>
                                         </TabsTrigger>
                                     )}
 
                                     <TabsTrigger
                                         value="messages"
-                                        className="group cursor-pointer relative flex items-center gap-2.5 px-5 py-2.5 rounded-xl font-medium text-sm transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500/20 data-[state=active]:to-purple-500/20 data-[state=active]:text-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-indigo-500/30 data-[state=inactive]:text-muted-foreground hover:text-foreground hover:bg-indigo-500/10 hover:scale-105 data-[state=active]:scale-105"
+                                        className="cursor-pointer flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-colors duration-150 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=inactive]:text-muted-foreground hover:text-foreground hover:bg-background/50"
                                     >
-                                        <MessageSquare className="h-4 w-4 transition-all duration-300 group-data-[state=active]:scale-110 group-data-[state=active]:drop-shadow-[0_0_8px_rgba(99,102,241,0.8)] group-hover:drop-shadow-[0_0_6px_rgba(99,102,241,0.6)]" />
+                                        <MessageSquare className="h-4 w-4" />
                                         <span>{t('navigation.messages')}</span>
                                     </TabsTrigger>
 
                                     <TabsTrigger
                                         value="interviews"
-                                        className="group cursor-pointer relative flex items-center gap-2.5 px-5 py-2.5 rounded-xl font-medium text-sm transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500/20 data-[state=active]:to-cyan-500/20 data-[state=active]:text-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/30 data-[state=inactive]:text-muted-foreground hover:text-foreground hover:bg-blue-500/10 hover:scale-105 data-[state=active]:scale-105"
+                                        className="cursor-pointer flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-colors duration-150 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=inactive]:text-muted-foreground hover:text-foreground hover:bg-background/50"
                                     >
-                                        <CalendarDays className="h-4 w-4 transition-all duration-300 group-data-[state=active]:scale-110 group-data-[state=active]:drop-shadow-[0_0_8px_rgba(59,130,246,0.8)] group-hover:drop-shadow-[0_0_6px_rgba(59,130,246,0.6)]" />
+                                        <CalendarDays className="h-4 w-4" />
                                         <span>{t('navigation.interviews')}</span>
                                     </TabsTrigger>
                                 </TabsList>
                             </motion.div>
 
                             <div className="md:hidden w-full">
-                                <motion.div
+                                <div
                                     className="w-full overflow-x-auto scrollbar-hide"
-                                    initial={{ opacity: 0, y: -10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ duration: 0.5 }}
                                     style={{
                                         scrollbarWidth: "none",
                                         msOverflowStyle: "none",
                                         WebkitOverflowScrolling: "touch",
                                     }}
                                 >
-                                    <TabsList className="relative flex w-full min-w-full h-auto backdrop-blur-xl border border-purple-500/20 p-1.5 rounded-2xl shadow-lg overflow-visible bg-gradient-to-r from-purple-500/10 via-blue-500/10 to-purple-500/10">
-                                        {/* Animated gradient background */}
-                                        <motion.div
-                                            className="absolute inset-0 opacity-30 rounded-2xl"
-                                            animate={{
-                                                background: [
-                                                    "linear-gradient(90deg, rgba(147, 51, 234, 0.2) 0%, rgba(59, 130, 246, 0.2) 50%, rgba(147, 51, 234, 0.2) 100%)",
-                                                    "linear-gradient(90deg, rgba(59, 130, 246, 0.2) 0%, rgba(147, 51, 234, 0.2) 50%, rgba(59, 130, 246, 0.2) 100%)",
-                                                    "linear-gradient(90deg, rgba(147, 51, 234, 0.2) 0%, rgba(59, 130, 246, 0.2) 50%, rgba(147, 51, 234, 0.2) 100%)",
-                                                ],
-                                            }}
-                                            transition={{ duration: 4, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
-                                        />
-
+                                    <TabsList className="flex w-full min-w-full h-auto border border-border/50 p-1 rounded-xl bg-muted/50">
                                         <TabsTrigger
                                             value="home"
-                                            className="group relative flex flex-col items-center justify-center gap-1 px-3 py-2.5 rounded-xl font-semibold text-[10px] leading-tight transition-all duration-300 data-[state=active]:bg-gradient-to-br data-[state=active]:from-purple-500/20 data-[state=active]:to-blue-500/20 data-[state=active]:text-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/30 data-[state=inactive]:text-muted-foreground flex-1 min-w-0 active:scale-95 hover:bg-purple-500/10"
+                                            className="flex flex-col items-center justify-center gap-0.5 px-2 py-2 rounded-lg font-medium text-[10px] leading-tight transition-colors duration-150 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=inactive]:text-muted-foreground flex-1 min-w-0"
                                         >
-                                            <Home className="h-5 w-5 flex-shrink-0 transition-all duration-300 group-data-[state=active]:scale-110 group-data-[state=active]:drop-shadow-[0_0_8px_rgba(147,51,234,0.8)]" />
+                                            <Home className="h-4 w-4" />
                                             <span className="whitespace-nowrap text-center">{t('navigation.home')}</span>
                                         </TabsTrigger>
 
                                         {userType === "Student" ? (
                                             <TabsTrigger
                                                 value="apps"
-                                                className="group relative flex flex-col items-center justify-center gap-1 px-3 py-2.5 rounded-xl font-semibold text-[10px] leading-tight transition-all duration-300 data-[state=active]:bg-gradient-to-br data-[state=active]:from-purple-500/20 data-[state=active]:to-blue-500/20 data-[state=active]:text-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/30 data-[state=inactive]:text-muted-foreground flex-1 min-w-0 active:scale-95 hover:bg-purple-500/10"
+                                                className="flex flex-col items-center justify-center gap-0.5 px-2 py-2 rounded-lg font-medium text-[10px] leading-tight transition-colors duration-150 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=inactive]:text-muted-foreground flex-1 min-w-0"
                                             >
-                                                <Briefcase className="h-5 w-5 flex-shrink-0 transition-all duration-300 group-data-[state=active]:scale-110 group-data-[state=active]:drop-shadow-[0_0_8px_rgba(147,51,234,0.8)]" />
+                                                <Briefcase className="h-4 w-4" />
                                                 <span className="whitespace-nowrap text-center">{t('navigation.portfolio')}</span>
                                             </TabsTrigger>
                                         ) : (
                                             <TabsTrigger
                                                 value="leaderboard"
-                                                className="group relative flex flex-col items-center justify-center gap-1 px-2.5 py-2.5 rounded-xl font-semibold text-[10px] leading-tight transition-all duration-300 data-[state=active]:bg-gradient-to-br data-[state=active]:from-purple-500/20 data-[state=active]:to-blue-500/20 data-[state=active]:text-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/30 data-[state=inactive]:text-muted-foreground flex-1 min-w-0 active:scale-95 hover:bg-purple-500/10"
+                                                className="flex flex-col items-center justify-center gap-0.5 px-2 py-2 rounded-lg font-medium text-[10px] leading-tight transition-colors duration-150 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=inactive]:text-muted-foreground flex-1 min-w-0"
                                             >
-                                                <Trophy className="h-5 w-5 flex-shrink-0 transition-all duration-300 group-data-[state=active]:scale-110 group-data-[state=active]:drop-shadow-[0_0_8px_rgba(147,51,234,0.8)]" />
+                                                <Trophy className="h-4 w-4" />
                                                 <span className="whitespace-nowrap text-center">{t('navigation.leaderboard')}</span>
                                             </TabsTrigger>
                                         )}
 
                                         <TabsTrigger
                                             value="files"
-                                            className="group relative flex flex-col items-center justify-center gap-1 px-3 py-2.5 rounded-xl font-semibold text-[10px] leading-tight transition-all duration-300 data-[state=active]:bg-gradient-to-br data-[state=active]:from-purple-500/20 data-[state=active]:to-blue-500/20 data-[state=active]:text-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/30 data-[state=inactive]:text-muted-foreground flex-1 min-w-0 active:scale-95 hover:bg-purple-500/10"
+                                            className="flex flex-col items-center justify-center gap-0.5 px-2 py-2 rounded-lg font-medium text-[10px] leading-tight transition-colors duration-150 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=inactive]:text-muted-foreground flex-1 min-w-0"
                                         >
-                                            <FileText className="h-5 w-5 flex-shrink-0 transition-all duration-300 group-data-[state=active]:scale-110 group-data-[state=active]:drop-shadow-[0_0_8px_rgba(147,51,234,0.8)]" />
+                                            <FileText className="h-4 w-4" />
                                             <span className="whitespace-nowrap text-center">{t('navigation.applied')}</span>
                                         </TabsTrigger>
 
                                         <TabsTrigger
                                             value="learn"
-                                            className="group relative flex flex-col items-center justify-center gap-1 px-2.5 py-2.5 rounded-xl font-semibold text-[10px] leading-tight transition-all duration-300 data-[state=active]:bg-gradient-to-br data-[state=active]:from-purple-500/20 data-[state=active]:to-blue-500/20 data-[state=active]:text-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/30 data-[state=inactive]:text-muted-foreground flex-1 min-w-0 active:scale-95 hover:bg-purple-500/10"
+                                            className="flex flex-col items-center justify-center gap-0.5 px-2 py-2 rounded-lg font-medium text-[10px] leading-tight transition-colors duration-150 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=inactive]:text-muted-foreground flex-1 min-w-0"
                                         >
-                                            <Award className="h-5 w-5 flex-shrink-0 transition-all duration-300 group-data-[state=active]:scale-110 group-data-[state=active]:drop-shadow-[0_0_8px_rgba(147,51,234,0.8)]" />
+                                            <Award className="h-4 w-4" />
                                             <span className="whitespace-nowrap text-center">{t('navigation.myExperience')}</span>
                                         </TabsTrigger>
 
                                         {userType === "Student" && (
                                             <TabsTrigger
                                                 value="saved"
-                                                className="group relative flex flex-col items-center justify-center gap-1 px-2.5 py-2.5 rounded-xl font-semibold text-[10px] leading-tight transition-all duration-300 data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-500/20 data-[state=active]:to-yellow-500/20 data-[state=active]:text-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-amber-500/30 data-[state=inactive]:text-muted-foreground flex-1 min-w-0 active:scale-95 hover:bg-amber-500/10"
+                                                className="flex flex-col items-center justify-center gap-0.5 px-2 py-2 rounded-lg font-medium text-[10px] leading-tight transition-colors duration-150 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=inactive]:text-muted-foreground flex-1 min-w-0"
                                             >
-                                                <Bookmark className="h-5 w-5 flex-shrink-0 transition-all duration-300 group-data-[state=active]:scale-110 group-data-[state=active]:drop-shadow-[0_0_8px_rgba(245,158,11,0.8)]" />
+                                                <Bookmark className="h-4 w-4" />
                                                 <span className="whitespace-nowrap text-center">{t('navigation.saved')}</span>
                                             </TabsTrigger>
                                         )}
 
                                         <TabsTrigger
                                             value="messages"
-                                            className="group relative flex flex-col items-center justify-center gap-1 px-2.5 py-2.5 rounded-xl font-semibold text-[10px] leading-tight transition-all duration-300 data-[state=active]:bg-gradient-to-br data-[state=active]:from-indigo-500/20 data-[state=active]:to-purple-500/20 data-[state=active]:text-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-indigo-500/30 data-[state=inactive]:text-muted-foreground flex-1 min-w-0 active:scale-95 hover:bg-indigo-500/10"
+                                            className="flex flex-col items-center justify-center gap-0.5 px-2 py-2 rounded-lg font-medium text-[10px] leading-tight transition-colors duration-150 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=inactive]:text-muted-foreground flex-1 min-w-0"
                                         >
-                                            <MessageSquare className="h-5 w-5 flex-shrink-0 transition-all duration-300 group-data-[state=active]:scale-110 group-data-[state=active]:drop-shadow-[0_0_8px_rgba(99,102,241,0.8)]" />
+                                            <MessageSquare className="h-4 w-4" />
                                             <span className="whitespace-nowrap text-center">{t('navigation.messages')}</span>
                                         </TabsTrigger>
 
                                         <TabsTrigger
                                             value="interviews"
-                                            className="group relative flex flex-col items-center justify-center gap-1 px-2.5 py-2.5 rounded-xl font-semibold text-[10px] leading-tight transition-all duration-300 data-[state=active]:bg-gradient-to-br data-[state=active]:from-blue-500/20 data-[state=active]:to-cyan-500/20 data-[state=active]:text-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/30 data-[state=inactive]:text-muted-foreground flex-1 min-w-0 active:scale-95 hover:bg-blue-500/10"
+                                            className="flex flex-col items-center justify-center gap-0.5 px-2 py-2 rounded-lg font-medium text-[10px] leading-tight transition-colors duration-150 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=inactive]:text-muted-foreground flex-1 min-w-0"
                                         >
-                                            <CalendarDays className="h-5 w-5 flex-shrink-0 transition-all duration-300 group-data-[state=active]:scale-110 group-data-[state=active]:drop-shadow-[0_0_8px_rgba(59,130,246,0.8)]" />
+                                            <CalendarDays className="h-4 w-4" />
                                             <span className="whitespace-nowrap text-center">{t('navigation.interviews')}</span>
                                         </TabsTrigger>
                                     </TabsList>
-                                </motion.div>
+                                </div>
                             </div>
 
                             <div className="hidden lg:flex gap-2">
                                 {userType === "Company" && (
                                     <Button
-                                        className="rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 font-semibold group"
+                                        className="rounded-xl font-semibold transition-colors duration-150"
                                         onClick={() => setModalOpen(true)}
                                     >
-                                        <Plus className="mr-2 h-4 w-4 group-hover:rotate-90 transition-transform duration-300" />
+                                        <Plus className="mr-2 h-4 w-4" />
                                         New Internship
                                     </Button>
                                 )}
@@ -467,10 +413,10 @@ export function DashboardLayout({ userType }: DashboardLayoutProps) {
                             {isAIMode ? (
                                 <motion.div
                                     key="ai-mode"
-                                    initial={{ opacity: 0, scale: 0.95 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    exit={{ opacity: 0, scale: 0.95 }}
-                                    transition={{ duration: 0.3, ease: "easeOut" }}
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    transition={{ duration: 0.15 }}
                                     className="min-h-[calc(100vh-200px)]"
                                 >
                                     {userType === "Student" ? (
@@ -480,12 +426,8 @@ export function DashboardLayout({ userType }: DashboardLayoutProps) {
                                     )}
                                 </motion.div>
                             ) : (
-                                <motion.div
+                                <div
                                     key={activeTab}
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -10 }}
-                                    transition={{ duration: 0.2 }}
                                 >
                                     <TabsContent value="home" className="space-y-8 mt-0">
                                         <DashboardHero userType={userType} />
@@ -538,7 +480,7 @@ export function DashboardLayout({ userType }: DashboardLayoutProps) {
                                             <TeamTabContent />
                                         </TabsContent>
                                     )}
-                                </motion.div>
+                                </div>
                             )}
                         </AnimatePresence>
                     </Tabs>

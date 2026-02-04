@@ -339,19 +339,15 @@ export function RecentInternshipsSection({ userType, setActiveTab }: RecentAppsS
                                             : []
 
                                     return (
-                                        <motion.div
+                                        <div
                                             key={item.id}
-                                            initial={{ opacity: 0, y: 20 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            exit={{ opacity: 0, scale: 0.95 }}
-                                            transition={{ delay: index * 0.05 }}
                                             className="group"
                                         >
                                             {/* Clean Card Design - Less Flashy */}
-                                            <div className={`relative h-full bg-card dark:bg-slate-900/50 rounded-2xl border transition-all duration-300 overflow-hidden ${
+                                            <div className={`relative h-full bg-card dark:bg-slate-900/50 rounded-2xl border transition-colors duration-150 overflow-hidden ${
                                                 isExpired 
                                                     ? "border-red-500/40 opacity-75" 
-                                                    : "border-border hover:border-purple-500/40 hover:shadow-lg"
+                                                    : "border-border hover:border-purple-500/30"
                                             }`}>
                                                 {/* Expired overlay for company view */}
                                                 {isExpired && userType === "Company" && (
@@ -371,7 +367,7 @@ export function RecentInternshipsSection({ userType, setActiveTab }: RecentAppsS
                                                     {/* Header with company and actions */}
                                                     <div className="flex items-start justify-between gap-4">
                                                         <div className="flex items-center gap-4 min-w-0">
-                                                            <div className="shrink-0 h-14 w-14 rounded-xl bg-gradient-to-br from-purple-500/80 to-blue-500/80 flex items-center justify-center shadow-md group-hover:scale-105 transition-transform duration-300">
+                                                            <div className="shrink-0 h-14 w-14 rounded-xl bg-gradient-to-br from-purple-500/80 to-blue-500/80 flex items-center justify-center shadow-sm">
                                                                 <Building2 className="h-7 w-7 text-white" />
                                                             </div>
                                                             <div className="min-w-0 space-y-1">
@@ -569,7 +565,7 @@ export function RecentInternshipsSection({ userType, setActiveTab }: RecentAppsS
                                                 onClose={() => setOpen(false)}
                                                 internshipId={selectedInternship?.id || null}
                                             />
-                                        </motion.div>
+                                        </div>
                                     )
                                 })}
                         </AnimatePresence>

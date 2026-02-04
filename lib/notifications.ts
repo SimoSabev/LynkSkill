@@ -1,6 +1,6 @@
 // lib/notifications.ts
 import { prisma } from "@/lib/prisma"
-import type { NotificationType } from "@prisma/client"
+import type { NotificationType, Prisma } from "@prisma/client"
 
 interface CreateNotificationParams {
     userId: string
@@ -8,6 +8,7 @@ interface CreateNotificationParams {
     title: string
     message: string
     link?: string
+    metadata?: Prisma.JsonValue
 }
 
 /**
@@ -18,7 +19,8 @@ export async function createNotification({
     type,
     title,
     message,
-    link
+    link,
+    metadata
 }: CreateNotificationParams) {
     try {
         const notification = await prisma.notification.create({
@@ -28,6 +30,7 @@ export async function createNotification({
                 title,
                 message,
                 link,
+                metadata,
             }
         })
         return notification
@@ -44,7 +47,9 @@ export async function notifyApplicationStatusChange(
     studentId: string,
     internshipTitle: string,
     companyName: string,
-    status: "APPROVED" | "REJECTED"
+    status: "APPROVED" | "REJECTED",
+    applicationId?: string,
+    companyId?: string
 ) {
     const isApproved = status === "APPROVED"
     
@@ -53,9 +58,16 @@ export async function notifyApplicationStatusChange(
         type: isApproved ? "APPLICATION_APPROVED" : "APPLICATION_REJECTED",
         title: isApproved ? "Application Approved! 🎉" : "Application Update",
         message: isApproved 
-            ? `Congratulations! Your application for "${internshipTitle}" at ${companyName} has been approved.`
+            ? `Congratulations! Your application for "${internshipTitle}" at ${companyName} has been approved. Click to accept the offer!`
             : `Your application for "${internshipTitle}" at ${companyName} was not selected. Keep applying!`,
-        link: "/dashboard/student/internships/applied"
+        link: "/dashboard/student/internships/applied",
+        metadata: {
+            applicationId,
+            internshipTitle,
+            companyName,
+            companyId,
+            status
+        }
     })
 }
 
@@ -166,7 +178,7 @@ export async function notifyTeamInvitation(
         type: "TEAM_INVITATION",
         title: "Company Team Invitation",
         message: `You've been invited to join ${companyName} as ${roleDisplayName}`,
-        link: `/dashboard/company/invitations?token=${token}`
+        link: `/invitations?token=${token}`
     })
 }
 

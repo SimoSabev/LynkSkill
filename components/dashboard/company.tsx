@@ -673,8 +673,8 @@ export default function CompanyDashboardPagee() {
             </div>
 
             {/* Main Content */}
-            <div className={cn("min-h-screen transition-all duration-300 ease-in-out", sidebarOpen ? "md:pl-64" : "md:pl-0")}>
-                <header className="sticky top-0 z-10 flex h-16 items-center gap-3 border-b bg-background/95 px-4 backdrop-blur">
+            <div className={cn("min-h-screen transition-[padding] duration-150 ease-in-out", sidebarOpen ? "md:pl-64" : "md:pl-0")}>
+                <header className="sticky top-0 z-10 flex h-16 items-center gap-3 border-b bg-background/95 px-4 backdrop-blur-sm">
                     <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setMobileMenuOpen(true)}>
                         <Menu className="h-5 w-5 text-foreground" />
                     </Button>

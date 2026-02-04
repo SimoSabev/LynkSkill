@@ -234,7 +234,7 @@ export function StudentAIChat() {
                         <Button
                             variant="outline"
                             onClick={() => setShowSessionsSidebar(!showSessionsSidebar)}
-                            className="rounded-xl px-3 py-2 text-sm font-bold hover:bg-violet-500/10 border-violet-500/30 hover:border-violet-500/50 transition-all duration-300"
+                            className="rounded-xl px-3 py-2 text-sm font-bold hover:bg-violet-500/10 border-violet-500/30 hover:border-violet-500/50 transition-colors duration-150"
                         >
                             {showSessionsSidebar ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
                             <span className="ml-2 hidden sm:inline">Sessions</span>
@@ -247,7 +247,7 @@ export function StudentAIChat() {
                         <Button
                             variant="outline"
                             onClick={handleStartOver}
-                            className="rounded-xl px-4 py-2 text-sm font-bold hover:bg-violet-500/10 border-violet-500/30 hover:border-violet-500/50 transition-all duration-300"
+                            className="rounded-xl px-4 py-2 text-sm font-bold hover:bg-violet-500/10 border-violet-500/30 hover:border-violet-500/50 transition-colors duration-150"
                         >
                             <Plus className="h-4 w-4 mr-2" />
                             New Chat
@@ -258,16 +258,16 @@ export function StudentAIChat() {
                 {/* Progress indicator */}
                 <div className="relative z-10 mt-6">
                     <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
-                        <span className={cn("flex items-center gap-1 px-2 py-1 rounded-full transition-all duration-300", chatPhase !== "intro" && "bg-violet-500/10 text-violet-600 dark:text-violet-400")}>
+                        <span className={cn("flex items-center gap-1 px-2 py-1 rounded-full transition-colors duration-150", chatPhase !== "intro" && "bg-violet-500/10 text-violet-600 dark:text-violet-400")}>
                             <User className="h-3 w-3" /> About You
                         </span>
-                        <span className={cn("flex items-center gap-1 px-2 py-1 rounded-full transition-all duration-300", ["portfolio", "matching", "results"].includes(chatPhase) && "bg-violet-500/10 text-violet-600 dark:text-violet-400")}>
+                        <span className={cn("flex items-center gap-1 px-2 py-1 rounded-full transition-colors duration-150", ["portfolio", "matching", "results"].includes(chatPhase) && "bg-violet-500/10 text-violet-600 dark:text-violet-400")}>
                             <FileText className="h-3 w-3" /> Portfolio
                         </span>
-                        <span className={cn("flex items-center gap-1 px-2 py-1 rounded-full transition-all duration-300", ["matching", "results"].includes(chatPhase) && "bg-violet-500/10 text-violet-600 dark:text-violet-400")}>
+                        <span className={cn("flex items-center gap-1 px-2 py-1 rounded-full transition-colors duration-150", ["matching", "results"].includes(chatPhase) && "bg-violet-500/10 text-violet-600 dark:text-violet-400")}>
                             <Target className="h-3 w-3" /> Matching
                         </span>
-                        <span className={cn("flex items-center gap-1 px-2 py-1 rounded-full transition-all duration-300", chatPhase === "results" && "bg-violet-500/10 text-violet-600 dark:text-violet-400")}>
+                        <span className={cn("flex items-center gap-1 px-2 py-1 rounded-full transition-colors duration-150", chatPhase === "results" && "bg-violet-500/10 text-violet-600 dark:text-violet-400")}>
                             <CheckCircle2 className="h-3 w-3" /> Results
                         </span>
                     </div>
@@ -425,20 +425,20 @@ export function StudentAIChat() {
                     </ScrollArea>
 
                     {/* Input */}
-                    <form onSubmit={handleSubmit} className="p-4 border-t border-violet-500/10 bg-card/50 backdrop-blur-sm">
+                    <form onSubmit={handleSubmit} className="p-4 border-t border-violet-500/10 bg-card/50">
                         <div className="flex gap-3">
                             <Input
                                 ref={inputRef}
                                 value={inputValue}
                                 onChange={(e) => setInputValue(e.target.value)}
                                 placeholder="Tell me about yourself..."
-                                className="flex-1 rounded-xl border-2 border-border/50 focus:border-violet-500/50 bg-background/80 h-11 transition-all duration-300"
+                                className="flex-1 rounded-xl border-2 border-border/50 focus:border-violet-500/50 bg-background/80 h-11 transition-colors duration-150"
                                 disabled={isLoading}
                             />
                             <Button
                                 type="submit"
                                 disabled={!inputValue.trim() || isLoading}
-                                className="rounded-xl px-5 h-11 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 shadow-lg shadow-violet-500/20 transition-all duration-300"
+                                className="rounded-xl px-5 h-11 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 shadow-sm transition-colors duration-150"
                             >
                                 {isLoading ? (
                                     <Loader2 className="h-5 w-5 animate-spin" />
@@ -498,7 +498,7 @@ export function StudentAIChat() {
                                             variant={portfolioSaved ? "outline" : "default"}
                                             size="sm" 
                                             className={cn(
-                                                "flex-1 rounded-xl transition-all duration-300",
+                                                "flex-1 rounded-xl transition-colors duration-150",
                                                 portfolioSaved 
                                                     ? "text-green-600 dark:text-green-400 border-green-500/30 bg-green-500/10" 
                                                     : "bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white"
@@ -519,7 +519,7 @@ export function StudentAIChat() {
                                     <Button 
                                         variant="outline" 
                                         size="sm" 
-                                        className="w-full mt-2 rounded-xl text-violet-600 dark:text-violet-400 border-violet-500/30 hover:bg-violet-500/10 hover:border-violet-500/50 transition-all duration-300"
+                                        className="w-full mt-2 rounded-xl text-violet-600 dark:text-violet-400 border-violet-500/30 hover:bg-violet-500/10 hover:border-violet-500/50 transition-colors duration-150"
                                     >
                                         View Full Portfolio
                                         <ArrowRight className="h-4 w-4 ml-2" />

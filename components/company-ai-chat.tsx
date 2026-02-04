@@ -338,7 +338,7 @@ export function CompanyAIChat() {
                         <Button
                             variant="outline"
                             onClick={() => setShowSessionsSidebar(!showSessionsSidebar)}
-                            className="rounded-xl px-3 py-2 text-sm font-bold hover:bg-violet-500/10 border-violet-500/30 hover:border-violet-500/50 transition-all duration-300"
+                            className="rounded-xl px-3 py-2 text-sm font-bold hover:bg-violet-500/10 border-violet-500/30 hover:border-violet-500/50 transition-colors duration-150"
                         >
                             {showSessionsSidebar ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
                             <span className="ml-2 hidden sm:inline">Sessions</span>
@@ -351,7 +351,7 @@ export function CompanyAIChat() {
                         <Button
                             variant="outline"
                             onClick={handleStartOver}
-                            className="rounded-xl px-4 py-2 text-sm font-bold hover:bg-violet-500/10 border-violet-500/30 hover:border-violet-500/50 transition-all duration-300"
+                            className="rounded-xl px-4 py-2 text-sm font-bold hover:bg-violet-500/10 border-violet-500/30 hover:border-violet-500/50 transition-colors duration-150"
                         >
                             <Plus className="h-4 w-4 mr-2" />
                             New Chat
@@ -362,13 +362,13 @@ export function CompanyAIChat() {
                 {/* Progress indicator */}
                 <div className="relative z-10 mt-6">
                     <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
-                        <span className={cn("flex items-center gap-1 px-2 py-1 rounded-full transition-all duration-300", chatPhase !== "intro" && "bg-violet-500/10 text-violet-600 dark:text-violet-400")}>
+                        <span className={cn("flex items-center gap-1 px-2 py-1 rounded-full transition-colors duration-150", chatPhase !== "intro" && "bg-violet-500/10 text-violet-600 dark:text-violet-400")}>
                             <Building2 className="h-3 w-3" /> Your Needs
                         </span>
-                        <span className={cn("flex items-center gap-1 px-2 py-1 rounded-full transition-all duration-300", ["matching", "results"].includes(chatPhase) && "bg-violet-500/10 text-violet-600 dark:text-violet-400")}>
+                        <span className={cn("flex items-center gap-1 px-2 py-1 rounded-full transition-colors duration-150", ["matching", "results"].includes(chatPhase) && "bg-violet-500/10 text-violet-600 dark:text-violet-400")}>
                             <Search className="h-3 w-3" /> Searching
                         </span>
-                        <span className={cn("flex items-center gap-1 px-2 py-1 rounded-full transition-all duration-300", chatPhase === "results" && "bg-violet-500/10 text-violet-600 dark:text-violet-400")}>
+                        <span className={cn("flex items-center gap-1 px-2 py-1 rounded-full transition-colors duration-150", chatPhase === "results" && "bg-violet-500/10 text-violet-600 dark:text-violet-400")}>
                             <Users className="h-3 w-3" /> Candidates
                         </span>
                     </div>
@@ -568,13 +568,13 @@ export function CompanyAIChat() {
                                 value={inputValue}
                                 onChange={(e) => setInputValue(e.target.value)}
                                 placeholder="Describe the talent you're looking for..."
-                                className="flex-1 rounded-xl border-2 border-border/50 focus:border-violet-500/50 bg-background/80 h-11 transition-all duration-300"
+                                className="flex-1 rounded-xl border-2 border-border/50 focus:border-violet-500/50 bg-background/80 h-11 transition-colors duration-150"
                                 disabled={isLoading}
                             />
                             <Button
                                 type="submit"
                                 disabled={!inputValue.trim() || isLoading}
-                                className="rounded-xl px-5 h-11 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 shadow-lg shadow-violet-500/20 transition-all duration-300"
+                                className="rounded-xl px-5 h-11 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 shadow-sm transition-colors duration-150"
                             >
                                 {isLoading ? (
                                     <Loader2 className="h-5 w-5 animate-spin" />
@@ -648,7 +648,7 @@ export function CompanyAIChat() {
                                                         ))}
                                                     </div>
 
-                                                    <div className="flex gap-2 mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                                    <div className="flex gap-2 mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
                                                         <Button size="sm" variant="ghost" className="h-7 text-xs rounded-lg hover:bg-violet-500/10 hover:text-violet-600">
                                                             <User className="h-3 w-3 mr-1" />
                                                             Profile
@@ -700,7 +700,7 @@ export function CompanyAIChat() {
                                     key={i}
                                     variant="ghost"
                                     size="sm"
-                                    className="w-full justify-start text-xs h-8 rounded-lg hover:bg-violet-500/10 hover:text-violet-600 text-left transition-all duration-300"
+                                    className="w-full justify-start text-xs h-8 rounded-lg hover:bg-violet-500/10 hover:text-violet-600 text-left transition-colors duration-150"
                                     onClick={() => setInputValue(suggestion)}
                                 >
                                     <Sparkles className="h-3 w-3 mr-2 text-violet-500" />

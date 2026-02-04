@@ -16,7 +16,7 @@ export async function GET() {
 
         const user = await prisma.user.findUnique({
             where: { clerkId: userId },
-            select: { id: true }
+            select: { id: true, role: true }
         })
 
         if (!user) {
@@ -33,8 +33,29 @@ export async function GET() {
                 title: true,
                 message: true,
                 link: true,
+                metadata: true,
                 read: true,
                 createdAt: true,
+            }
+        })
+
+        // Transform notifications to include metadata fields at top level for easy access
+        const transformedNotifications = notifications.map((notification) => {
+            const meta = notification.metadata as Record<string, unknown> | null
+            return {
+                id: notification.id,
+                type: notification.type,
+                title: notification.title,
+                message: notification.message,
+                link: notification.link,
+                read: notification.read,
+                createdAt: notification.createdAt,
+                // Extract from metadata if available
+                applicationId: meta?.applicationId as string | undefined,
+                internshipTitle: meta?.internshipTitle as string | undefined,
+                companyName: meta?.companyName as string | undefined,
+                companyId: meta?.companyId as string | undefined,
+                projectId: meta?.projectId as string | undefined,
             }
         })
 
@@ -44,7 +65,7 @@ export async function GET() {
         })
 
         return NextResponse.json({ 
-            notifications, 
+            notifications: transformedNotifications, 
             unreadCount 
         })
     } catch (error) {

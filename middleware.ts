@@ -34,6 +34,11 @@ const isOnboardingRoute = createRouteMatcher([
     "/redirect-after-signin"
 ]);
 
+// Routes that require auth but no specific role (accessible to all authenticated users)
+const isRoleAgnosticRoute = createRouteMatcher([
+    "/invitations(.*)",
+]);
+
 export default clerkMiddleware(async (auth, req) => {
     const { userId, sessionClaims } = await auth();
     const url = req.nextUrl;
@@ -81,6 +86,11 @@ export default clerkMiddleware(async (auth, req) => {
 
     if (userId && !onboardingComplete && !isOnboardingRoute(req)) {
         return NextResponse.redirect(new URL("/onboarding", req.url));
+    }
+
+    // ✅ 5.5. Allow role-agnostic routes (like invitations) for all authenticated users
+    if (isRoleAgnosticRoute(req)) {
+        return NextResponse.next();
     }
 
     // ✅ 6. Role-based защита

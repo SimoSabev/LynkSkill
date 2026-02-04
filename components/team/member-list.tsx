@@ -59,9 +59,10 @@ interface MemberListProps {
   members: Member[]
   companyId: string
   onUpdate: () => void
+  canManageMembers?: boolean
 }
 
-export function MemberList({ members, companyId: _companyId, onUpdate }: MemberListProps) {
+export function MemberList({ members, companyId: _companyId, onUpdate, canManageMembers = false }: MemberListProps) {
   const [removeMember, setRemoveMember] = React.useState<Member | null>(null)
   const [editMember, setEditMember] = React.useState<Member | null>(null)
   const [loading, setLoading] = React.useState(false)
@@ -150,7 +151,7 @@ export function MemberList({ members, companyId: _companyId, onUpdate }: MemberL
                     </Badge>
                   )}
 
-                  {member.defaultRole !== "OWNER" && (
+                  {canManageMembers && member.defaultRole !== "OWNER" && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon">

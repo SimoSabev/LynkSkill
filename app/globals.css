@@ -315,14 +315,13 @@ select:disabled,
   .project-card-enhanced {
     background: linear-gradient(135deg, var(--internship-card-gradient-from), var(--internship-card-gradient-to));
     border-color: var(--internship-card-border);
-    box-shadow: 0 4px 12px var(--internship-card-shadow);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px var(--internship-card-shadow);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
   }
 
   .project-card-enhanced:hover {
     border-color: var(--internship-card-border-hover);
-    box-shadow: 0 20px 40px var(--internship-card-shadow-hover);
-    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 4px 16px var(--internship-card-shadow-hover);
   }
 
   .project-card-enhanced:hover .project-card-content {

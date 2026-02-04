@@ -106,7 +106,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           type: "TEAM_INVITATION",
           title: "Company Team Invitation (Resent)",
           message: `Reminder: You've been invited to join ${invitation.company.name} as ${invitation.role}`,
-          link: `/dashboard/company/invitations?token=${newToken}`,
+          link: `/invitations?token=${newToken}`,
         },
       })
     }

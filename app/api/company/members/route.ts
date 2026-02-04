@@ -302,7 +302,7 @@ export async function POST(request: NextRequest) {
           type: "TEAM_INVITATION",
           title: "Company Team Invitation",
           message: `You've been invited to join ${invitation.company.name} as ${role || "Viewer"}`,
-          link: `/dashboard/company/invitations?token=${token}`,
+          link: `/invitations?token=${token}`,
         },
       })
     }

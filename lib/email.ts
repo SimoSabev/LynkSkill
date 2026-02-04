@@ -27,7 +27,7 @@ export async function sendInvitationEmail({
   token,
   expiresAt,
 }: SendInvitationEmailParams) {
-  const inviteLink = `${baseUrl}/dashboard/company/invitations?token=${token}`
+  const inviteLink = `${baseUrl}/invitations?token=${token}`
   const expiresFormatted = expiresAt.toLocaleDateString("en-US", {
     weekday: "long",
     year: "numeric",

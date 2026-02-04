@@ -13,6 +13,7 @@ import {
   Crown,
   AlertCircle,
   RefreshCw,
+  Eye,
 } from "lucide-react"
 import { InviteMemberModal } from "@/components/team/invite-member-modal"
 import { MemberList } from "@/components/team/member-list"
@@ -45,13 +46,42 @@ interface MembersData {
   companyId: string
 }
 
+interface UserPermissions {
+  membership: {
+    id: string
+    companyId: string
+    defaultRole: string | null
+    customRole: {
+      id: string
+      name: string
+      color: string | null
+    } | null
+  }
+  permissions: string[]
+  isOwner: boolean
+  isAdmin: boolean
+}
+
 export default function TeamPage() {
   const [members, setMembers] = React.useState<Member[]>([])
   const [companyId, setCompanyId] = React.useState<string | null>(null)
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
   const [inviteModalOpen, setInviteModalOpen] = React.useState(false)
-  const [_currentUserRole, setCurrentUserRole] = React.useState<string | null>(null)
+  const [userPermissions, setUserPermissions] = React.useState<UserPermissions | null>(null)
+
+  // Fetch current user's permissions
+  const fetchPermissions = React.useCallback(async () => {
+    try {
+      const res = await fetch("/api/company/me/permissions")
+      if (res.ok) {
+        const data = await res.json()
+        setUserPermissions(data)
+      }
+    } catch (err) {
+      console.error("Failed to fetch permissions:", err)
+    }
+  }, [])
 
   const fetchMembers = React.useCallback(async () => {
     try {
@@ -64,12 +94,6 @@ export default function TeamPage() {
       const data: MembersData = await res.json()
       setMembers(data.members)
       setCompanyId(data.companyId)
-
-      // Find current user's role (first OWNER or the user making the request)
-      const owner = data.members.find(m => m.defaultRole === "OWNER")
-      if (owner) {
-        setCurrentUserRole(owner.defaultRole)
-      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred")
     } finally {
@@ -79,7 +103,8 @@ export default function TeamPage() {
 
   React.useEffect(() => {
     fetchMembers()
-  }, [fetchMembers])
+    fetchPermissions()
+  }, [fetchMembers, fetchPermissions])
 
   const handleInviteSuccess = () => {
     setInviteModalOpen(false)
@@ -89,6 +114,11 @@ export default function TeamPage() {
   const handleMemberUpdate = () => {
     fetchMembers()
   }
+
+  // Check permissions for UI visibility
+  const canInviteMembers = userPermissions?.permissions?.includes("INVITE_MEMBERS") ?? false
+  const canManageRoles = userPermissions?.permissions?.includes("CHANGE_ROLES") ?? false
+  const isOwner = userPermissions?.isOwner ?? false
 
   if (loading) {
     return <TeamPageSkeleton />
@@ -120,7 +150,10 @@ export default function TeamPage() {
   const activeMembers = members.filter(m => m.status === "ACTIVE")
   const pendingMembers = members.filter(m => m.status === "PENDING")
   const ownerMember = members.find(m => m.defaultRole === "OWNER")
-  const isOwner = ownerMember?.defaultRole === "OWNER"
+
+  // Get current user's role for display
+  const currentUserRole = userPermissions?.membership?.defaultRole || 
+    userPermissions?.membership?.customRole?.name || "Member"
 
   return (
     <div className="container mx-auto py-6 px-4 space-y-6">
@@ -132,13 +165,24 @@ export default function TeamPage() {
             Team Management
           </h1>
           <p className="text-muted-foreground mt-1">
-            Manage your team members, roles, and permissions
+            {canInviteMembers 
+              ? "Manage your team members, roles, and permissions"
+              : "View your team members and their roles"}
           </p>
         </div>
-        <Button onClick={() => setInviteModalOpen(true)}>
-          <UserPlus className="h-4 w-4 mr-2" />
-          Invite Member
-        </Button>
+        <div className="flex items-center gap-2">
+          {/* Show current user's role badge */}
+          <Badge variant="outline" className="hidden sm:flex items-center gap-1">
+            <Eye className="h-3 w-3" />
+            Your role: {currentUserRole}
+          </Badge>
+          {canInviteMembers && (
+            <Button onClick={() => setInviteModalOpen(true)}>
+              <UserPlus className="h-4 w-4 mr-2" />
+              Invite Member
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -195,19 +239,23 @@ export default function TeamPage() {
               {activeMembers.length}
             </Badge>
           </TabsTrigger>
-          <TabsTrigger value="roles" className="flex items-center gap-2">
-            <Shield className="h-4 w-4" />
-            Roles
-          </TabsTrigger>
-          <TabsTrigger value="invitations" className="flex items-center gap-2">
-            <UserPlus className="h-4 w-4" />
-            Invitations
-            {pendingMembers.length > 0 && (
-              <Badge variant="destructive" className="ml-1">
-                {pendingMembers.length}
-              </Badge>
-            )}
-          </TabsTrigger>
+          {canManageRoles && (
+            <TabsTrigger value="roles" className="flex items-center gap-2">
+              <Shield className="h-4 w-4" />
+              Roles
+            </TabsTrigger>
+          )}
+          {canInviteMembers && (
+            <TabsTrigger value="invitations" className="flex items-center gap-2">
+              <UserPlus className="h-4 w-4" />
+              Invitations
+              {pendingMembers.length > 0 && (
+                <Badge variant="destructive" className="ml-1">
+                  {pendingMembers.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+          )}
           {isOwner && (
             <TabsTrigger value="ownership" className="flex items-center gap-2">
               <Crown className="h-4 w-4" />
@@ -221,20 +269,25 @@ export default function TeamPage() {
             members={activeMembers}
             companyId={companyId || ""}
             onUpdate={handleMemberUpdate}
+            canManageMembers={canManageRoles}
           />
         </TabsContent>
 
-        <TabsContent value="roles">
-          <RolesList companyId={companyId || ""} />
-        </TabsContent>
+        {canManageRoles && (
+          <TabsContent value="roles">
+            <RolesList companyId={companyId || ""} />
+          </TabsContent>
+        )}
 
-        <TabsContent value="invitations">
-          <PendingInvitations
-            members={pendingMembers}
-            companyId={companyId || ""}
-            onUpdate={handleMemberUpdate}
-          />
-        </TabsContent>
+        {canInviteMembers && (
+          <TabsContent value="invitations">
+            <PendingInvitations
+              members={pendingMembers}
+              companyId={companyId || ""}
+              onUpdate={handleMemberUpdate}
+            />
+          </TabsContent>
+        )}
 
         {isOwner && (
           <TabsContent value="ownership">
@@ -247,12 +300,14 @@ export default function TeamPage() {
         )}
       </Tabs>
 
-      {/* Invite Modal */}
-      <InviteMemberModal
-        open={inviteModalOpen}
-        onOpenChange={setInviteModalOpen}
-        onSuccess={handleInviteSuccess}
-      />
+      {/* Invite Modal - only if user has permission */}
+      {canInviteMembers && (
+        <InviteMemberModal
+          open={inviteModalOpen}
+          onOpenChange={setInviteModalOpen}
+          onSuccess={handleInviteSuccess}
+        />
+      )}
     </div>
   )
 }

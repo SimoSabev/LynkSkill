@@ -123,6 +123,11 @@ export function InternshipManageModal({ open, onClose, internship, onUpdate }: I
     // Load internship data into form
     useEffect(() => {
         if (internship) {
+            // Handle skills that might be array or string
+            const skillsValue = Array.isArray(internship.skills) 
+                ? internship.skills.join(", ") 
+                : (internship.skills || "")
+            
             setFormValues({
                 title: internship.title || "",
                 description: internship.description || "",
@@ -131,7 +136,7 @@ export function InternshipManageModal({ open, onClose, internship, onUpdate }: I
                 salary: internship.salary?.toString() || "",
                 paid: internship.paid || false,
                 duration: internship.duration || "",
-                skills: internship.skills || "",
+                skills: skillsValue,
                 applicationStart: internship.applicationStart ? parseISO(internship.applicationStart) : undefined,
                 applicationEnd: internship.applicationEnd ? parseISO(internship.applicationEnd) : undefined,
             })
@@ -229,8 +234,12 @@ export function InternshipManageModal({ open, onClose, internship, onUpdate }: I
     const approvedCount = applications.filter(a => a.status === "APPROVED").length
     const rejectedCount = applications.filter(a => a.status === "REJECTED").length
 
-    // Parse skills array
-    const skillsArray = internship.skills?.split(",").map(s => s.trim()).filter(Boolean) || []
+    // Parse skills array - handle both string and array formats
+    const skillsArray = Array.isArray(internship.skills) 
+        ? internship.skills 
+        : typeof internship.skills === 'string' 
+            ? internship.skills.split(",").map(s => s.trim()).filter(Boolean) 
+            : []
 
     // Calculate days remaining for application
     const daysRemaining = internship.applicationEnd 

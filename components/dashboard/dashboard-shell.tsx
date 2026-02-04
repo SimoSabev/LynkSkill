@@ -182,15 +182,15 @@ export function DashboardShell({ children, userType }: DashboardShellProps) {
 
             {/* Main Content */}
             <div className={cn(
-                "min-h-screen transition-all duration-300 ease-in-out",
+                "min-h-screen transition-[padding] duration-150 ease-in-out",
                 sidebarOpen ? "md:pl-72" : "md:pl-0"
             )}>
                 {/* Header */}
-                <header className="sticky top-0 z-10 flex h-16 w-full items-center gap-3 border-b border-purple-500/20 bg-gradient-to-r from-background via-purple-950/10 to-background px-4 backdrop-blur-xl">
+                <header className="sticky top-0 z-10 flex h-16 w-full items-center gap-3 border-b border-border/50 bg-background/95 px-4 backdrop-blur-sm">
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="md:hidden rounded-xl hover:bg-purple-500/10"
+                        className="md:hidden rounded-xl hover:bg-primary/10"
                         onClick={() => setMobileMenuOpen(true)}
                     >
                         <Menu className="h-5 w-5" />

@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import type { Application, Portfolio } from "@/app/types"
@@ -203,28 +202,23 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                                 <div className="h-8 bg-white/20 animate-pulse rounded-lg w-64 backdrop-blur-sm"></div>
                                 <div className="h-4 bg-white/15 animate-pulse rounded-lg w-96 backdrop-blur-sm"></div>
                             </div>
-                            <div className="h-6 bg-white/20 animate-pulse rounded-lg w-32 backdrop-blur-sm"></div>
+                            <div className="h-6 bg-muted/40 rounded-lg w-32"></div>
                         </div>
                     </div>
                 </div>
 
                 <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
                     {[...Array(6)].map((_, i) => (
-                        <motion.div
+                        <div
                             key={i}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: i * 0.1 }}
-                            className="relative overflow-hidden bg-gradient-to-br from-[var(--application-card-gradient-from)] to-[var(--application-card-gradient-to)] rounded-2xl p-6 shadow-[0_8px_30px_var(--application-shadow-light)] border border-border/50"
+                            className="relative overflow-hidden bg-card rounded-2xl p-6 shadow-sm border border-border/50"
                         >
-                            <div
-                                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -skew-x-12 animate-pulse"></div>
                             <div className="space-y-4">
-                                <div className="h-5 bg-muted/30 animate-pulse rounded-lg w-3/4"></div>
-                                <div className="h-4 bg-muted/20 animate-pulse rounded-lg w-1/2"></div>
-                                <div className="h-8 bg-muted/25 animate-pulse rounded-full w-20"></div>
+                                <div className="h-5 bg-muted/30 rounded-lg w-3/4"></div>
+                                <div className="h-4 bg-muted/20 rounded-lg w-1/2"></div>
+                                <div className="h-8 bg-muted/25 rounded-full w-20"></div>
                             </div>
-                        </motion.div>
+                        </div>
                     ))}
                 </div>
             </div>
@@ -404,10 +398,10 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
             </div>
 
             {finalApplications.length === 0 ? (
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center py-16">
+                <div className="text-center py-16">
                     <div className="relative mb-8">
                         <div
-                            className="bg-gradient-to-br from-muted/50 to-muted/30 rounded-full w-24 h-24 flex items-center justify-center mx-auto shadow-lg">
+                            className="bg-muted/40 rounded-full w-24 h-24 flex items-center justify-center mx-auto">
                             <Briefcase className="w-12 h-12 text-muted-foreground" />
                         </div>
                         <div className="absolute -top-2 -right-2 bg-primary/20 rounded-full p-2">
@@ -435,7 +429,7 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                             "Applications will appear here when students apply"
                         )}
                     </p>
-                </motion.div>
+                </div>
             ) : (
                 <>
                     <div className="flex items-center justify-between mb-6">
@@ -447,33 +441,15 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                     </div>
 
                     <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-                        <AnimatePresence>
                             {finalApplications.map((app, index) => {
                                 const statusConfig = getStatusConfig(app.status)
                                 const StatusIcon = statusConfig.icon
 
                                 return (
-                                    <motion.div
+                                    <div
                                         key={app.id}
-                                        initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                                        exit={{ opacity: 0, y: -20, scale: 0.95 }}
-                                        transition={{
-                                            delay: index * 0.1,
-                                            type: "spring",
-                                            stiffness: 300,
-                                            damping: 30,
-                                        }}
-                                        whileHover={{
-                                            y: -8,
-                                            scale: 1.02,
-                                            transition: { duration: 0.2, type: "spring", stiffness: 400 },
-                                        }}
-                                        className="group relative overflow-hidden bg-gradient-to-br from-[var(--application-card-gradient-from)] to-[var(--application-card-gradient-to)] rounded-2xl p-6 shadow-[0_8px_30px_var(--application-shadow-light)] hover:shadow-[0_20px_50px_var(--application-shadow-medium)] border border-border/50 transition-all duration-300"
+                                        className="group relative overflow-hidden bg-card rounded-2xl p-6 shadow-sm hover:shadow-md border border-border/50 transition-colors duration-150"
                                     >
-                                        <div
-                                            className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-
                                         <div className="relative z-10">
                                             <div className="flex items-start justify-between mb-6">
                                                 <div className="flex-1 space-y-2">
@@ -715,39 +691,28 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                                             </div>
 
                                         </div>
-                                    </motion.div>
+                                    </div>
                                 )
                             })}
-                        </AnimatePresence>
                     </div>
                 </>
             )}
 
-            <AnimatePresence>
                 {showPortfolio && portfolio && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-50 p-4"
+                    <div
+                        className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
                         onClick={() => setShowPortfolio(false)}
                     >
-                        <motion.div
-                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                            animate={{ scale: 1, opacity: 1, y: 0 }}
-                            exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                            className="bg-background rounded-3xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden border border-border/20"
+                        <div
+                            className="bg-background rounded-3xl shadow-lg w-full max-w-5xl max-h-[90vh] overflow-hidden border border-border/20"
                             onClick={(e) => e.stopPropagation()}
                         >
                             <div
                                 className="bg-gradient-to-r from-[var(--application-modal-gradient-from)] to-[var(--application-modal-gradient-to)] p-8 relative overflow-hidden">
-                                <div
-                                    className="absolute inset-0 bg-gradient-to-r from-white/10 via-transparent to-white/10"></div>
                                 <div className="relative flex items-center justify-between">
                                     <div className="flex items-center gap-6">
                                         <div
-                                            className="h-20 w-20 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-white font-bold text-2xl shadow-lg">
+                                            className="h-20 w-20 rounded-2xl bg-white/20 flex items-center justify-center text-white font-bold text-2xl shadow-lg">
                                             {portfolio.fullName?.charAt(0) ?? "?"}
                                         </div>
                                         <div className="space-y-2">
@@ -772,11 +737,8 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                                 <div className="grid gap-8 md:grid-cols-2">
                                     {/* Personal Info */}
                                     <div className="space-y-6">
-                                        <motion.div
-                                            initial={{ opacity: 0, x: -20 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            transition={{ delay: 0.1 }}
-                                            className="bg-card/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-border/50"
+                                        <div
+                                            className="bg-card rounded-2xl p-6 shadow-sm border border-border/50"
                                         >
                                             <h3 className="font-bold text-card-foreground mb-4 flex items-center text-lg">
                                                 <div className="p-2 bg-primary/10 rounded-xl mr-3">
@@ -795,14 +757,11 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                                                     {portfolio.bio || "No bio provided"}
                                                 </div>
                                             </div>
-                                        </motion.div>
+                                        </div>
 
                                         {/* Skills */}
-                                        <motion.div
-                                            initial={{ opacity: 0, x: -20 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            transition={{ delay: 0.2 }}
-                                            className="bg-card/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-border/50"
+                                        <div
+                                            className="bg-card rounded-2xl p-6 shadow-sm border border-border/50"
                                         >
                                             <h3 className="font-bold text-card-foreground mb-4 flex items-center text-lg">
                                                 <div className="p-2 bg-primary/10 rounded-xl mr-3">
@@ -811,14 +770,11 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                                                 Skills
                                             </h3>
                                             {renderField(portfolio.skills)}
-                                        </motion.div>
+                                        </div>
 
                                         {/* Links */}
-                                        <motion.div
-                                            initial={{ opacity: 0, x: -20 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            transition={{ delay: 0.3 }}
-                                            className="bg-card/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-border/50"
+                                        <div
+                                            className="bg-card rounded-2xl p-6 shadow-sm border border-border/50"
                                         >
                                             <h3 className="font-bold text-card-foreground mb-4 flex items-center text-lg">
                                                 <div className="p-2 bg-primary/10 rounded-xl mr-3">
@@ -848,16 +804,13 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                                                     </Button>
                                                 )}
                                             </div>
-                                        </motion.div>
+                                        </div>
                                     </div>
 
                                     {/* Education & Experience */}
                                     <div className="space-y-6">
-                                        <motion.div
-                                            initial={{ opacity: 0, x: 20 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            transition={{ delay: 0.1 }}
-                                            className="bg-card/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-border/50"
+                                        <div
+                                            className="bg-card rounded-2xl p-6 shadow-sm border border-border/50"
                                         >
                                             <h3 className="font-bold text-card-foreground mb-4 flex items-center text-lg">
                                                 <div className="p-2 bg-primary/10 rounded-xl mr-3">
@@ -866,13 +819,10 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                                                 Education
                                             </h3>
                                             {renderField(portfolio.education)}
-                                        </motion.div>
+                                        </div>
 
-                                        <motion.div
-                                            initial={{ opacity: 0, x: 20 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            transition={{ delay: 0.2 }}
-                                            className="bg-card/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-border/50"
+                                        <div
+                                            className="bg-card rounded-2xl p-6 shadow-sm border border-border/50"
                                         >
                                             <h3 className="font-bold text-card-foreground mb-4 flex items-center text-lg">
                                                 <div className="p-2 bg-primary/10 rounded-xl mr-3">
@@ -881,13 +831,10 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                                                 Projects
                                             </h3>
                                             {renderField(portfolio.projects)}
-                                        </motion.div>
+                                        </div>
 
-                                        <motion.div
-                                            initial={{ opacity: 0, x: 20 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            transition={{ delay: 0.3 }}
-                                            className="bg-card/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-border/50"
+                                        <div
+                                            className="bg-card rounded-2xl p-6 shadow-sm border border-border/50"
                                         >
                                             <h3 className="font-bold text-card-foreground mb-4 flex items-center text-lg">
                                                 <div className="p-2 bg-primary/10 rounded-xl mr-3">
@@ -896,40 +843,29 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                                                 Certifications
                                             </h3>
                                             {renderField(portfolio.certifications)}
-                                        </motion.div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </motion.div>
-                    </motion.div>
+                        </div>
+                    </div>
                 )}
-            </AnimatePresence>
 
-            <AnimatePresence>
                 {showCompany && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-50 p-4"
+                    <div
+                        className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
                         onClick={() => setShowCompany(null)}
                     >
-                        <motion.div
-                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
-                            animate={{ scale: 1, opacity: 1, y: 0 }}
-                            exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                            className="bg-background rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden border border-border/20"
+                        <div
+                            className="bg-background rounded-3xl shadow-lg w-full max-w-4xl max-h-[90vh] overflow-hidden border border-border/20"
                             onClick={(e) => e.stopPropagation()}
                         >
                             <div
                                 className="bg-gradient-to-r from-[var(--application-modal-gradient-from)] to-[var(--application-modal-gradient-to)] p-8 relative overflow-hidden">
-                                <div
-                                    className="absolute inset-0 bg-gradient-to-r from-white/10 via-transparent to-white/10"></div>
                                 <div className="relative flex items-center justify-between">
                                     <div className="flex items-center gap-6">
                                         <div
-                                            className="h-20 w-20 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-white font-bold text-2xl shadow-lg">
+                                            className="h-20 w-20 rounded-2xl bg-white/20 flex items-center justify-center text-white font-bold text-2xl shadow-lg">
                                             {showCompany.company?.name?.charAt(0) ?? "C"}
                                         </div>
                                         <div className="space-y-2">
@@ -943,7 +879,7 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                                         variant="ghost"
                                         size="icon"
                                         onClick={() => setShowCompany(null)}
-                                        className="rounded-full h-12 w-12 hover:bg-white/20 text-white hover:text-white transition-all duration-200"
+                                        className="rounded-full h-12 w-12 hover:bg-white/20 text-white hover:text-white transition-colors duration-150"
                                     >
                                         <XCircle className="w-6 h-6" />
                                     </Button>
@@ -951,15 +887,12 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                             </div>
 
                             <div
-                                className="p-8 overflow-y-auto max-h-[calc(90vh-160px)] bg-gradient-to-br from-background to-muted/20">
+                                className="p-8 overflow-y-auto max-h-[calc(90vh-160px)] bg-background">
                                 <div className="grid gap-8 md:grid-cols-2">
                                     {/* Company Information */}
                                     <div className="space-y-6">
-                                        <motion.div
-                                            initial={{ opacity: 0, x: -20 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            transition={{ delay: 0.1 }}
-                                            className="bg-card/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-border/50"
+                                        <div
+                                            className="bg-card rounded-2xl p-6 shadow-sm border border-border/50"
                                         >
                                             <h3 className="font-bold text-card-foreground mb-4 flex items-center text-lg">
                                                 <div className="p-2 bg-primary/10 rounded-xl mr-3">
@@ -994,14 +927,11 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                                                     </div>
                                                 )}
                                             </div>
-                                        </motion.div>
+                                        </div>
 
                                         {/* Additional Details */}
-                                        <motion.div
-                                            initial={{ opacity: 0, x: -20 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            transition={{ delay: 0.2 }}
-                                            className="bg-card/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-border/50"
+                                        <div
+                                            className="bg-card rounded-2xl p-6 shadow-sm border border-border/50"
                                         >
                                             <h3 className="font-bold text-card-foreground mb-4 flex items-center text-lg">
                                                 <div className="p-2 bg-primary/10 rounded-xl mr-3">
@@ -1019,16 +949,13 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                                                     </p>
                                                 </div>
                                             </div>
-                                        </motion.div>
+                                        </div>
                                     </div>
 
                                     {/* Links and Actions */}
                                     <div className="space-y-6">
-                                        <motion.div
-                                            initial={{ opacity: 0, x: 20 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            transition={{ delay: 0.1 }}
-                                            className="bg-card/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-border/50"
+                                        <div
+                                            className="bg-card rounded-2xl p-6 shadow-sm border border-border/50"
                                         >
                                             <h3 className="font-bold text-card-foreground mb-4 flex items-center text-lg">
                                                 <div className="p-2 bg-primary/10 rounded-xl mr-3">
@@ -1059,14 +986,11 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                                                     </div>
                                                 )}
                                             </div>
-                                        </motion.div>
+                                        </div>
 
                                         {/* --- Application Status --- */}
-                                        <motion.div
-                                            initial={{ opacity: 0, x: 20 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            transition={{ delay: 0.2 }}
-                                            className="bg-card/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-border/50"
+                                        <div
+                                            className="bg-card rounded-2xl p-6 shadow-sm border border-border/50"
                                         >
                                             <h3 className="font-bold text-card-foreground mb-4 flex items-center text-lg">
                                                 <div className="p-2 bg-primary/10 rounded-xl mr-3">
@@ -1075,20 +999,17 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                                                 Application Status
                                             </h3>
                                             <div
-                                                className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-xl p-4">
+                                                className="bg-primary/5 rounded-xl p-4">
                                                 <p className="text-sm text-foreground font-medium">
                                                     Your application has been submitted to this company. You&apos;ll be
                                                     notified of any status updates via email.
                                                 </p>
                                             </div>
-                                        </motion.div>
+                                        </div>
 
                                         {/* --- Internship Details + Assignment --- */}
-                                        <motion.div
-                                            initial={{ opacity: 0, x: 20 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            transition={{ delay: 0.3 }}
-                                            className="bg-card/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-border/50"
+                                        <div
+                                            className="bg-card rounded-2xl p-6 shadow-sm border border-border/50"
                                         >
                                             <h3 className="font-bold text-card-foreground mb-4 flex items-center text-lg">
                                                 <div className="p-2 bg-primary/10 rounded-xl mr-3">
@@ -1134,14 +1055,13 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                                                     )}
                                                 </>
                                             )}
-                                        </motion.div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </motion.div>
-                    </motion.div>
+                        </div>
+                    </div>
                 )}
-            </AnimatePresence>
 
             {/* Schedule Interview Modal (Company) */}
             <ScheduleInterviewModal

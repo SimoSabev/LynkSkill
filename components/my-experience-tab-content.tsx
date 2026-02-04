@@ -87,7 +87,11 @@ type Project = {
   companyId: string
 }
 
-export default function ExperienceTabContent() {
+interface ExperienceTabContentProps {
+  highlightProjectId?: string | null
+}
+
+export default function ExperienceTabContent({ highlightProjectId }: ExperienceTabContentProps = {}) {
   const { t } = useTranslation()
   const { user } = useUser()
   const role = user?.publicMetadata?.role as "STUDENT" | "COMPANY" | undefined
@@ -230,6 +234,25 @@ export default function ExperienceTabContent() {
   useEffect(() => {
     loadExperiences()
   }, [loadExperiences])
+
+  // Show welcome message when student comes from accepted offer
+  useEffect(() => {
+    if (highlightProjectId && role === "STUDENT") {
+      // Show a toast or welcome message
+      const timer = setTimeout(() => {
+        // This will help the user understand they're now in their project workspace
+        const element = document.getElementById(`project-${highlightProjectId}`)
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth", block: "center" })
+          element.classList.add("ring-2", "ring-green-500", "ring-offset-2")
+          setTimeout(() => {
+            element.classList.remove("ring-2", "ring-green-500", "ring-offset-2")
+          }, 3000)
+        }
+      }, 500)
+      return () => clearTimeout(timer)
+    }
+  }, [highlightProjectId, role])
 
   async function handleRefresh() {
     setRefreshing(true)
@@ -473,6 +496,29 @@ export default function ExperienceTabContent() {
 
   return (
       <div className="space-y-8">
+        {/* Welcome Banner for newly accepted internship */}
+        {highlightProjectId && role === "STUDENT" && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.5, type: "spring" }}
+            className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-green-500 to-emerald-600 p-6 text-white shadow-lg"
+          >
+            <div className="absolute inset-0 bg-[url('/patterns/confetti.svg')] opacity-10" />
+            <div className="relative z-10 flex items-center gap-4">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
+                <CheckCircle className="h-8 w-8" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold">🎉 Welcome to Your New Internship!</h3>
+                <p className="text-white/90">
+                  You&apos;ve accepted the offer. This is your project workspace where you can upload your work and track progress.
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
         {/* Hero Section */}
         <section>
           <motion.div

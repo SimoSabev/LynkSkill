@@ -151,20 +151,15 @@ export function CommunityHighlights({ setActiveTab, userType = "Student" }: Comm
                     </Card>
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        {experiences.map((exp, i) => {
+                        {experiences.map((exp) => {
                             const firstFile = exp.files[0]
                             return (
-                                <motion.div
+                                <div
                                     key={exp.id}
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ duration: 0.3, delay: i * 0.1 }}
-                                    whileHover={{ scale: 1.02, y: -5 }}
-                                    whileTap={{ scale: 0.98 }}
                                 >
                                     <Card
                                         onClick={handleNavigateToExperience}
-                                        className="overflow-hidden rounded-3xl border border-border bg-card hover:shadow-lg hover:shadow-muted/50 transition-all duration-300 group cursor-pointer"
+                                        className="overflow-hidden rounded-2xl border border-border bg-card hover:shadow-md transition-shadow duration-150 group cursor-pointer"
                                     >
                                         <div className="relative">
                                             <div className="aspect-square bg-muted flex items-center justify-center border-b border-border overflow-hidden">
@@ -250,7 +245,7 @@ export function CommunityHighlights({ setActiveTab, userType = "Student" }: Comm
                                             </div>
                                         </CardContent>
                                     </Card>
-                                </motion.div>
+                                </div>
                             )
                         })}
                     </div>

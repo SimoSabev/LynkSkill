@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server"
 import { prisma } from "@/lib/prisma"
 import { NextRequest, NextResponse } from "next/server"
 import { MemberStatus } from "@prisma/client"
+import { clerkClient } from "@/lib/clerk"
 
 export const runtime = "nodejs"
 
@@ -159,18 +160,31 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         })
       }
 
-      // Notify the inviter
-      await tx.notification.create({
-        data: {
-          userId: invitation.invitedById,
-          type: "TEAM_INVITATION_ACCEPTED",
-          title: "Invitation Accepted",
-          message: `${user.profile?.name || user.email} has joined your team`,
-          link: "/dashboard/company/team",
-        },
-      })
-
       return member
+    })
+
+    // Update Clerk user metadata to reflect the new role
+    // This is done outside the transaction since it's an external service
+    if (user.role !== "COMPANY") {
+      try {
+        await clerkClient.users.updateUser(clerkId, {
+          publicMetadata: { role: "COMPANY", onboardingComplete: true },
+        })
+      } catch (clerkError) {
+        console.error("Failed to update Clerk metadata:", clerkError)
+        // Don't fail the request, the database role is updated
+      }
+    }
+
+    // Notify the inviter
+    await prisma.notification.create({
+      data: {
+        userId: invitation.invitedById,
+        type: "TEAM_INVITATION_ACCEPTED",
+        title: "Invitation Accepted",
+        message: `${user.profile?.name || user.email} has joined your team`,
+        link: "/dashboard/company/team",
+      },
     })
 
     return NextResponse.json({

@@ -212,18 +212,15 @@ export function ActiveAssignmentsSection({ setActiveTab, userType = "Student" }:
                     {projects
                         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) // newest first
                         .slice(0, 3)
-                        .map((proj, index) => {
+                        .map((proj) => {
                             const details = getProjectDetails(proj)
 
                             return (
-                                <motion.div
+                                <div
                                     key={proj.id}
-                                    initial={{ opacity: 0, x: -20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ duration: 0.3, delay: index * 0.05 }}
                                     className="cursor-pointer"
                                 >
-                                    <Card className="hover:shadow-lg transition-all duration-300 group border border-border hover:border-purple-500/40 rounded-xl overflow-hidden">
+                                    <Card className="hover:shadow-md transition-shadow duration-150 group border border-border hover:border-purple-500/30 rounded-xl overflow-hidden">
                                         {/* Top accent bar */}
                                         <div className="h-1 bg-gradient-to-r from-purple-500/60 via-blue-500/60 to-purple-500/60" />
                                         <CardContent className="p-4">
@@ -382,7 +379,7 @@ export function ActiveAssignmentsSection({ setActiveTab, userType = "Student" }:
                                             </div>
                                         </CardContent>
                                     </Card>
-                                </motion.div>
+                                </div>
                             )
                         })}
                 </div>

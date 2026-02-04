@@ -344,13 +344,13 @@ export function SidebarNav({
                         <button
                             onClick={toggleAIMode}
                             className={cn(
-                                "flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all duration-300",
+                                "flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-colors duration-150",
                                 isAIMode
-                                    ? "bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg shadow-purple-500/25"
-                                    : "bg-gradient-to-r from-purple-500/10 to-blue-500/10 hover:from-purple-500/20 hover:to-blue-500/20"
+                                    ? "bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-sm"
+                                    : "bg-muted/50 hover:bg-muted"
                             )}
                         >
-                            <Sparkles className={cn("h-5 w-5", isAIMode && "animate-pulse")} />
+                            <Sparkles className="h-5 w-5" />
                             <span>{t('aiMode.title')}</span>
                             <span className={cn(
                                 "ml-auto text-xs px-2 py-0.5 rounded-full",
