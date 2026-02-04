@@ -49,6 +49,7 @@ import {
     Paintbrush,
     Settings,
     AlertCircle,
+    Bot,
 } from "lucide-react"
 import AIMascotScene from "./AIMascotScene"
 import { useTranslation } from "@/lib/i18n"
@@ -103,6 +104,10 @@ interface PortfolioData {
     needsApproval: boolean
     approvedBy?: string
     approvalStatus: "PENDING" | "APPROVED" | "REJECTED"
+    // AI Mode tracking
+    aiModeSessionId?: string
+    aiGeneratedAt?: string
+    aiGeneratedFields?: string[]
 }
 
 const PREDEFINED_SKILLS = [
@@ -524,6 +529,18 @@ export function Portfolio({ userType }: { userType: "Student" | "Company" }) {
                                                 {portfolio.approvalStatus}
                                             </Badge>
                                         )}
+                                        {portfolio?.aiModeSessionId && (
+                                            <motion.div
+                                                initial={{ opacity: 0, scale: 0.8 }}
+                                                animate={{ opacity: 1, scale: 1 }}
+                                                className="flex items-center gap-2 bg-gradient-to-r from-violet-500/30 to-purple-500/30 backdrop-blur-md px-5 py-3 rounded-2xl border border-violet-400/40 cursor-pointer hover:border-violet-400/60 transition-colors"
+                                                title={`Generated from AI Mode session on ${portfolio.aiGeneratedAt ? new Date(portfolio.aiGeneratedAt).toLocaleDateString() : 'Unknown date'}`}
+                                            >
+                                                <Bot className="h-5 w-5 text-violet-200" />
+                                                <span className="font-semibold text-violet-100">AI Generated</span>
+                                                <Sparkles className="h-4 w-4 text-violet-200" />
+                                            </motion.div>
+                                        )}
                                     </div>
                                 </div>
                             </motion.div>
@@ -650,6 +667,65 @@ export function Portfolio({ userType }: { userType: "Student" | "Company" }) {
 
                 <div className="container mx-auto px-4 mt-20 relative z-20">
                     <div className="space-y-8">
+                        {/* AI Mode Session Info Banner */}
+                        {portfolio?.aiModeSessionId && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="bg-gradient-to-r from-violet-500/10 via-purple-500/10 to-fuchsia-500/10 backdrop-blur-xl rounded-[2rem] shadow-lg border-2 border-violet-500/30 overflow-hidden"
+                            >
+                                <div className="bg-gradient-to-r from-violet-600 to-purple-600 p-4 flex items-center gap-3">
+                                    <div className="h-10 w-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                                        <Bot className="h-5 w-5 text-white" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                                            AI Mode Generated Portfolio
+                                            <Sparkles className="h-4 w-4" />
+                                        </h3>
+                                        <p className="text-white/80 text-sm">
+                                            Some parts of this portfolio were created with help from Linky, your AI Career Assistant
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="p-6">
+                                    <div className="grid md:grid-cols-3 gap-4">
+                                        <div className="bg-card/50 rounded-xl p-4 border border-violet-500/20">
+                                            <p className="text-xs text-muted-foreground mb-1">Session ID</p>
+                                            <p className="font-mono text-sm text-violet-600 dark:text-violet-400 truncate">
+                                                {portfolio.aiModeSessionId}
+                                            </p>
+                                        </div>
+                                        <div className="bg-card/50 rounded-xl p-4 border border-violet-500/20">
+                                            <p className="text-xs text-muted-foreground mb-1">Generated On</p>
+                                            <p className="font-medium text-sm">
+                                                {portfolio.aiGeneratedAt 
+                                                    ? new Date(portfolio.aiGeneratedAt).toLocaleString() 
+                                                    : "Unknown"}
+                                            </p>
+                                        </div>
+                                        <div className="bg-card/50 rounded-xl p-4 border border-violet-500/20">
+                                            <p className="text-xs text-muted-foreground mb-1">AI Generated Fields</p>
+                                            <div className="flex flex-wrap gap-1 mt-1">
+                                                {(portfolio.aiGeneratedFields || []).map((field, i) => (
+                                                    <Badge 
+                                                        key={i} 
+                                                        variant="secondary" 
+                                                        className="text-xs bg-violet-500/20 text-violet-600 dark:text-violet-400"
+                                                    >
+                                                        {field}
+                                                    </Badge>
+                                                ))}
+                                                {(!portfolio.aiGeneratedFields || portfolio.aiGeneratedFields.length === 0) && (
+                                                    <span className="text-sm text-muted-foreground">None tracked</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
+
                         <div className="grid lg:grid-cols-3 gap-8">
                             <motion.div
                                 initial={{ opacity: 0, y: 20 }}

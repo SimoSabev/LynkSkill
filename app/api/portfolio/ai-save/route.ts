@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
         }
 
         const body = await req.json()
-        const { headline, about, skills, interests } = body
+        const { headline, about, skills, interests, sessionId } = body
 
         // Merge with existing portfolio data if exists
         const existingSkills = student.portfolio?.skills || []
@@ -30,6 +30,17 @@ export async function POST(req: NextRequest) {
         const mergedSkills = [...new Set([...existingSkills, ...(skills || [])])]
         const mergedInterests = [...new Set([...existingInterests, ...(interests || [])])]
 
+        // Track which fields are being generated/updated by AI
+        const aiGeneratedFields: string[] = []
+        if (headline) aiGeneratedFields.push("headline")
+        if (about) aiGeneratedFields.push("bio")
+        if (skills && skills.length > 0) aiGeneratedFields.push("skills")
+        if (interests && interests.length > 0) aiGeneratedFields.push("interests")
+
+        // Merge with existing AI-generated fields if any
+        const existingAiFields = student.portfolio?.aiGeneratedFields || []
+        const mergedAiFields = [...new Set([...existingAiFields, ...aiGeneratedFields])]
+
         const portfolio = await prisma.portfolio.upsert({
             where: { studentId: student.id },
             update: {
@@ -37,6 +48,9 @@ export async function POST(req: NextRequest) {
                 bio: about || student.portfolio?.bio,
                 skills: mergedSkills,
                 interests: mergedInterests,
+                aiModeSessionId: sessionId || student.portfolio?.aiModeSessionId,
+                aiGeneratedAt: new Date(),
+                aiGeneratedFields: mergedAiFields,
             },
             create: {
                 student: { connect: { id: student.id } },
@@ -44,13 +58,17 @@ export async function POST(req: NextRequest) {
                 bio: about || "",
                 skills: mergedSkills,
                 interests: mergedInterests,
+                aiModeSessionId: sessionId,
+                aiGeneratedAt: new Date(),
+                aiGeneratedFields: aiGeneratedFields,
             },
         })
 
         return NextResponse.json({ 
             success: true, 
             portfolio,
-            message: "AI-generated portfolio saved successfully" 
+            message: "AI-generated portfolio saved successfully",
+            sessionId: sessionId
         })
     } catch (err) {
         console.error("Error saving AI portfolio:", err)

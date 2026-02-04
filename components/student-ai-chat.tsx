@@ -179,7 +179,8 @@ export function StudentAIChat() {
                     headline: generatedPortfolio.headline,
                     about: generatedPortfolio.about,
                     skills: generatedPortfolio.skills,
-                    interests: generatedPortfolio.interests
+                    interests: generatedPortfolio.interests,
+                    sessionId: currentSessionId
                 })
             })
 
