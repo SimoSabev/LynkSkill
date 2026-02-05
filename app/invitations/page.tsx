@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { useUser } from "@clerk/nextjs"
 import {
@@ -72,7 +73,7 @@ function InvitationSkeleton() {
   )
 }
 
-export default function InvitationsPage() {
+function InvitationContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const { user, isLoaded: userLoaded } = useUser()
@@ -341,7 +342,7 @@ export default function InvitationsPage() {
                     Email Mismatch
                   </p>
                   <p className="text-amber-700 dark:text-amber-300 mt-1">
-                    This invitation was sent to <strong>{invitation?.email}</strong>, but you're signed in as <strong>{user?.primaryEmailAddress?.emailAddress}</strong>.
+                    This invitation was sent to <strong>{invitation?.email}</strong>, but you&apos;re signed in as <strong>{user?.primaryEmailAddress?.emailAddress}</strong>.
                   </p>
                   <p className="text-amber-700 dark:text-amber-300 mt-2">
                     Please sign in with the correct email to accept this invitation.
@@ -384,5 +385,13 @@ export default function InvitationsPage() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+export default function InvitationsPage() {
+  return (
+    <Suspense fallback={<InvitationSkeleton />}>
+      <InvitationContent />
+    </Suspense>
   )
 }

@@ -45,6 +45,7 @@ model User {
   createdInvitations    CompanyInvitation[]    @relation("InvitationCreator")
   transfersInitiated    OwnershipTransferRequest[] @relation("TransferFrom")
   transfersReceived     OwnershipTransferRequest[] @relation("TransferTo")
+  codeJoins             CompanyCodeJoin[]      @relation("CodeJoins")
 
   @@index([role])
 }
@@ -75,11 +76,20 @@ model Company {
   tosAccepted     Boolean  @default(false)
   privacyAccepted Boolean  @default(false)
 
+  // Team Member Invitation Code System
+  invitationCode     String?   @unique                     // Will be formatted as XXXX-XXXX-XXXX-XXXX
+  codeEnabled        Boolean   @default(true)              // Owner can disable code
+  codeExpiresAt      DateTime?                             // Optional: code expiration
+  maxTeamMembers     Int?                                  // Optional: limit team size
+  codeUsageCount     Int       @default(0)                 // Track code usage
+  lastCodeRegenAt    DateTime?                             // Last code regeneration
+
   // Company Roles System
   members           CompanyMember[]
   customRoles       CompanyCustomRole[]
   invitations       CompanyInvitation[]
   transferRequests  OwnershipTransferRequest[]
+  codeJoins         CompanyCodeJoin[]                    // Audit trail for code joins
 }
 
 //
@@ -486,6 +496,7 @@ model Interview {
 enum Role {
   STUDENT
   COMPANY
+  TEAM_MEMBER  // Company employee joining via invitation code
 }
 
 enum ApplicationStatus {
@@ -546,6 +557,7 @@ enum DefaultCompanyRole {
   HR_MANAGER   // Manage internships, applications, interviews
   HR_RECRUITER // View candidates, manage applications (limited)
   VIEWER       // Read-only access
+  MEMBER       // Basic team member (joined via code)
 }
 
 // Member status in company
@@ -697,4 +709,21 @@ model CompanyInvitation {
   @@index([email])
   @@index([companyId])
   @@index([token])
+}
+
+// Audit trail for team members joining via invitation code
+model CompanyCodeJoin {
+  id          String   @id @default(cuid())
+  companyId   String
+  userId      String
+  joinedAt    DateTime @default(now())
+  ipAddress   String?
+  userAgent   String?
+
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user        User     @relation("CodeJoins", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([userId])
+  @@index([joinedAt])
 }

@@ -8,7 +8,7 @@ interface CreateNotificationParams {
     title: string
     message: string
     link?: string
-    metadata?: Prisma.JsonValue
+    metadata?: Prisma.InputJsonValue
 }
 
 /**

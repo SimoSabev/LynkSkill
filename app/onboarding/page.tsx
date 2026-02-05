@@ -23,6 +23,8 @@ import {
     FileText,
     Calendar,
     Loader2,
+    Users,
+    KeyRound,
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -64,6 +66,12 @@ const ROLE_OPTIONS = [
         description: "Manage teams and post internships",
         icon: Building2,
     },
+    {
+        value: "team_member" as const,
+        title: "Team Member",
+        description: "Join an existing company with an invitation code",
+        icon: Users,
+    },
 ] as const
 
 export default function OnboardingPage() {
@@ -71,9 +79,23 @@ export default function OnboardingPage() {
     const router = useRouter()
     const [isPending, setIsPending] = React.useState(false)
     const [error, setError] = React.useState("")
-    const [selectedRole, setSelectedRole] = React.useState<"student" | "company" | null>(null)
+    const [selectedRole, setSelectedRole] = React.useState<"student" | "company" | "team_member" | null>(null)
     const [createdCompanyId, setCreatedCompanyId] = React.useState<string | null>(null)
     const [createdPortfolioId, setCreatedPortfolioId] = React.useState<string | null>(null)
+
+    // Team Member invitation code state
+    const [invitationCode, setInvitationCode] = React.useState(["", "", "", ""])
+    const [codeValid, setCodeValid] = React.useState<boolean | null>(null)
+    const [codeValidating, setCodeValidating] = React.useState(false)
+    const [companyPreview, setCompanyPreview] = React.useState<{
+        id: string
+        name: string
+        logo: string | null
+        location: string
+        description: string
+        memberCount: number
+    } | null>(null)
+    const codeInputRefs = React.useRef<(HTMLInputElement | null)[]>([])
 
     const [showStudentPolicyModal, setShowStudentPolicyModal] = React.useState(false)
     const [studentTosChecked, setStudentTosChecked] = React.useState(false)
@@ -216,6 +238,87 @@ export default function OnboardingPage() {
         } catch (_err) {
             setAgeValid(false)
             setError("Invalid date format")
+        }
+    }
+
+    // Handle invitation code input for team members
+    const handleCodeSegmentChange = async (index: number, value: string) => {
+        // Only allow alphanumeric characters
+        const cleanValue = value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 4)
+        
+        const newCode = [...invitationCode]
+        newCode[index] = cleanValue
+        setInvitationCode(newCode)
+        setCodeValid(null)
+        setCompanyPreview(null)
+        setError("")
+
+        // Auto-focus next input if current is filled
+        if (cleanValue.length === 4 && index < 3) {
+            codeInputRefs.current[index + 1]?.focus()
+        }
+
+        // Validate full code when all segments are filled
+        const fullCode = newCode.join("-")
+        if (newCode.every(segment => segment.length === 4)) {
+            await validateInvitationCode(fullCode)
+        }
+    }
+
+    const handleCodeKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+        // Handle backspace to move to previous input
+        if (e.key === "Backspace" && invitationCode[index] === "" && index > 0) {
+            codeInputRefs.current[index - 1]?.focus()
+        }
+    }
+
+    const handleCodePaste = async (e: React.ClipboardEvent) => {
+        e.preventDefault()
+        const pastedText = e.clipboardData.getData("text").toUpperCase().replace(/[^A-Z0-9]/g, "")
+        
+        if (pastedText.length >= 16) {
+            const newCode = [
+                pastedText.slice(0, 4),
+                pastedText.slice(4, 8),
+                pastedText.slice(8, 12),
+                pastedText.slice(12, 16),
+            ]
+            setInvitationCode(newCode)
+            setCodeValid(null)
+            setCompanyPreview(null)
+            
+            // Validate the pasted code
+            const fullCode = newCode.join("-")
+            await validateInvitationCode(fullCode)
+        }
+    }
+
+    const validateInvitationCode = async (code: string) => {
+        setCodeValidating(true)
+        setError("")
+        
+        try {
+            const res = await fetch("/api/company/join", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ code }),
+            })
+
+            const data = await res.json()
+
+            if (data.valid) {
+                setCodeValid(true)
+                setCompanyPreview(data.company)
+            } else {
+                setCodeValid(false)
+                setError(data.error || "Invalid invitation code")
+            }
+        } catch (err) {
+            console.error("Code validation error:", err)
+            setCodeValid(false)
+            setError("Failed to validate code. Please try again.")
+        } finally {
+            setCodeValidating(false)
         }
     }
 
@@ -519,12 +622,16 @@ export default function OnboardingPage() {
             return 2
         }
         if (selectedRole === "company" && !policyAccepted) return 1
-        if (policyAccepted) return 2
+        if (selectedRole === "company" && policyAccepted) return 2
+        if (selectedRole === "team_member") {
+            if (!codeValid || !companyPreview) return 1
+            return 2
+        }
         return 1
     }
 
     const progressStep = getProgressStep()
-    const totalSteps = selectedRole === "student" ? 3 : selectedRole === "company" ? 3 : 2
+    const totalSteps = selectedRole === "student" ? 3 : selectedRole === "company" ? 3 : selectedRole === "team_member" ? 2 : 2
 
     // Show loading state while Clerk is loading
     if (!isLoaded) {
@@ -656,13 +763,14 @@ export default function OnboardingPage() {
                 <form onSubmit={handleSubmit} className="max-w-5xl mx-auto space-y-10">
                     <input type="hidden" name="role" value={selectedRole ?? ""} />
                     <input type="hidden" name="dob" value={dob} />
+                    <input type="hidden" name="invitationCode" value={invitationCode.join("-")} />
 
                     <div className="space-y-6">
                         <div className="text-center space-y-3 mb-10 animate-in fade-in slide-in-from-bottom-4 duration-700" style={{ animationDelay: '300ms' }}>
                             <h2 className="text-3xl md:text-4xl font-bold text-foreground">Select Your Role</h2>
                             <p className="text-muted-foreground text-lg">Choose the option that best describes you</p>
                         </div>
-                        <div className="grid md:grid-cols-2 gap-8">
+                        <div className="grid md:grid-cols-3 gap-6">
                             {ROLE_OPTIONS.map((r, index) => {
                                 const Icon = r.icon
                                 const isSelected = selectedRole === r.value
@@ -1142,6 +1250,122 @@ export default function OnboardingPage() {
                         </div>
                     )}
 
+                    {selectedRole === "team_member" && (
+                        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-8 duration-700">
+                            <div className="text-center space-y-3 mb-8">
+                                <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-500/10 border border-purple-500/20 rounded-full mb-4">
+                                    <Users className="w-4 h-4 text-purple-400" />
+                                    <span className="text-sm font-semibold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">Step 2 of 2</span>
+                                </div>
+                                <h2 className="text-2xl md:text-3xl font-bold text-foreground">Join Your Team</h2>
+                                <p className="text-muted-foreground">Enter the invitation code provided by your company</p>
+                            </div>
+
+                            <Card className="border border-white/10 overflow-hidden bg-background/80 backdrop-blur-sm">
+                                <CardHeader className="space-y-2 border-b border-white/10 bg-gradient-to-br from-purple-500/5 via-blue-500/5 to-transparent py-6">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-3 bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl">
+                                            <KeyRound className="w-5 h-5 text-white" />
+                                        </div>
+                                        <div>
+                                            <CardTitle className="text-xl">Invitation Code</CardTitle>
+                                            <CardDescription className="text-sm">
+                                                Enter the 16-character code in format XXXX-XXXX-XXXX-XXXX
+                                            </CardDescription>
+                                        </div>
+                                    </div>
+                                </CardHeader>
+
+                                <CardContent className="space-y-6 pt-6 pb-6">
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-center gap-2 md:gap-3">
+                                            {[0, 1, 2, 3].map((index) => (
+                                                <div key={index} className="flex items-center gap-2 md:gap-3">
+                                                    <Input
+                                                        ref={(el) => { codeInputRefs.current[index] = el }}
+                                                        value={invitationCode[index]}
+                                                        onChange={(e) => handleCodeSegmentChange(index, e.target.value)}
+                                                        onKeyDown={(e) => handleCodeKeyDown(index, e)}
+                                                        onPaste={index === 0 ? handleCodePaste : undefined}
+                                                        maxLength={4}
+                                                        className="w-16 md:w-20 h-12 md:h-14 text-center text-lg md:text-xl font-mono font-bold tracking-wider uppercase border border-white/20 focus:border-purple-500 bg-background/50 transition-all duration-300 rounded-lg"
+                                                        placeholder="XXXX"
+                                                    />
+                                                    {index < 3 && (
+                                                        <span className="text-2xl text-muted-foreground font-bold">-</span>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        {codeValidating && (
+                                            <div className="flex items-center justify-center gap-2 p-3 bg-purple-500/10 rounded-lg animate-pulse">
+                                                <Loader2 className="w-4 h-4 animate-spin text-purple-400" />
+                                                <span className="text-sm text-purple-400">Validating code...</span>
+                                            </div>
+                                        )}
+
+                                        {codeValid === true && companyPreview && (
+                                            <div className="p-4 bg-purple-500/10 border border-purple-500/30 rounded-xl animate-in fade-in zoom-in duration-500">
+                                                <div className="flex items-center gap-2 mb-4">
+                                                    <CheckCircle className="w-5 h-5 text-purple-400" />
+                                                    <span className="text-sm font-semibold text-purple-400">Valid Code - Company Found</span>
+                                                </div>
+                                                <div className="flex items-start gap-4">
+                                                    {companyPreview.logo ? (
+                                                        <div className="relative h-16 w-16 rounded-xl overflow-hidden bg-white/5 flex-shrink-0">
+                                                            <Image
+                                                                src={companyPreview.logo}
+                                                                alt={companyPreview.name}
+                                                                fill
+                                                                className="object-contain"
+                                                                unoptimized
+                                                            />
+                                                        </div>
+                                                    ) : (
+                                                        <div className="h-16 w-16 rounded-xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center flex-shrink-0">
+                                                            <Building2 className="w-8 h-8 text-purple-400" />
+                                                        </div>
+                                                    )}
+                                                    <div className="flex-1 min-w-0">
+                                                        <h3 className="text-lg font-bold text-foreground truncate">{companyPreview.name}</h3>
+                                                        <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                                                            <MapPin className="w-4 h-4" />
+                                                            <span>{companyPreview.location}</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                                                            <Users className="w-4 h-4" />
+                                                            <span>{companyPreview.memberCount} team members</span>
+                                                        </div>
+                                                        {companyPreview.description && (
+                                                            <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
+                                                                {companyPreview.description}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {codeValid === false && (
+                                            <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-lg animate-in fade-in slide-in-from-top-3 duration-500">
+                                                <XCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
+                                                <div>
+                                                    <p className="text-sm font-medium text-red-400">Invalid Code</p>
+                                                    <p className="text-xs text-red-400/80">{error || "Please check your code and try again"}</p>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <p className="text-sm text-muted-foreground text-center">
+                                            Ask your company administrator for the invitation code to join the team
+                                        </p>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    )}
+
                     <StudentPolicyModal
                         open={showStudentPolicyModal}
                         onOpenChange={setShowStudentPolicyModal}
@@ -1183,7 +1407,8 @@ export default function OnboardingPage() {
                                 !selectedRole ||
                                 isPending ||
                                 (selectedRole === "company" && !policyAccepted) ||
-                                (selectedRole === "student" && !studentPolicyAccepted)
+                                (selectedRole === "student" && !studentPolicyAccepted) ||
+                                (selectedRole === "team_member" && (!codeValid || !companyPreview))
                             }
                             size="lg"
                             className="min-w-72 h-14 text-white text-base font-bold bg-gradient-to-r from-purple-500 via-blue-500 to-purple-500 bg-[size:200%] hover:bg-[position:100%_0] shadow-lg shadow-purple-500/20 transition-all duration-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl"
@@ -1191,12 +1416,12 @@ export default function OnboardingPage() {
                             {isPending ? (
                                 <>
                                     <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                                    Processing...
+                                    {selectedRole === "team_member" ? "Joining Team..." : "Processing..."}
                                 </>
                             ) : (
                                 <>
                                     <Sparkles className="w-4 h-4 mr-2" />
-                                    Complete Registration
+                                    {selectedRole === "team_member" ? "Join Team" : "Complete Registration"}
                                     <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
                                 </>
                             )}

@@ -526,7 +526,6 @@ export function RecentInternshipsSection({ userType, setActiveTab }: RecentAppsS
                                                             ) : (
                                                                 <ApplyButton
                                                                     internshipId={item.id}
-                                                                    goToPortfolioTab={() => setActiveTab?.("apps")}
                                                                     onApplied={() => mutateApplications()}
                                                                 />
                                                             )}

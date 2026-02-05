@@ -327,6 +327,7 @@ export function getRoleDisplayName(
       HR_MANAGER: "HR Manager",
       HR_RECRUITER: "HR Recruiter",
       VIEWER: "Viewer",
+      MEMBER: "Team Member",
     }
     return roleNames[member.defaultRole]
   }

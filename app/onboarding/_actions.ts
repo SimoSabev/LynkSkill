@@ -4,6 +4,7 @@ import { auth } from "@clerk/nextjs/server"
 import { clerkClient } from "@/lib/clerk"
 import { prisma } from "@/lib/prisma"
 import { sanitizeForDb, schemas } from "@/lib/security"
+import { generateCompanyCode, isValidCodeFormat, normalizeCode } from "@/lib/company-code"
 import { z } from "zod"
 
 // Validation schemas for onboarding
@@ -20,17 +21,27 @@ const companyFormSchema = z.object({
     companyLogo: z.string().url().optional().nullable(),
 })
 
+const teamMemberSchema = z.object({
+    invitationCode: z.string()
+        .min(1, "Invitation code is required")
+        .refine((code) => isValidCodeFormat(code), {
+            message: "Invalid code format. Expected: XXXX-XXXX-XXXX-XXXX"
+        }),
+})
+
 export async function completeOnboarding(formData: FormData) {
     const { userId } = await auth()
     if (!userId) return { error: "No logged in user" }
 
     // ✅ Require explicit role selection (no auto-student)
     const roleInput = (formData.get("role") as string)?.toLowerCase()
-    if (!roleInput || !["student", "company"].includes(roleInput)) {
+    if (!roleInput || !["student", "company", "team_member"].includes(roleInput)) {
         return { error: "Please select a valid role before continuing." }
     }
 
-    const role: "COMPANY" | "STUDENT" = roleInput === "company" ? "COMPANY" : "STUDENT"
+    const role: "COMPANY" | "STUDENT" | "TEAM_MEMBER" = 
+        roleInput === "company" ? "COMPANY" : 
+        roleInput === "team_member" ? "TEAM_MEMBER" : "STUDENT"
 
     try {
         // Update Clerk metadata
@@ -130,6 +141,9 @@ export async function completeOnboarding(formData: FormData) {
             let createdCompany
 
             if (!existing) {
+                // Generate unique invitation code for the company
+                const invitationCode = generateCompanyCode()
+                
                 createdCompany = await prisma.company.create({
                     data: {
                         name: companyName,
@@ -139,6 +153,9 @@ export async function completeOnboarding(formData: FormData) {
                         ownerId: user.id,
                         eik: companyEik,
                         logo: companyLogo || null,
+                        invitationCode: invitationCode,
+                        codeEnabled: true,
+                        codeUsageCount: 0,
                     },
                 })
 
@@ -176,6 +193,98 @@ export async function completeOnboarding(formData: FormData) {
             return {
                 message: "Company onboarding complete",
                 createdCompanyId: createdCompany.id,
+                dashboard: "/dashboard/company",
+            }
+        }
+
+        // --- TEAM_MEMBER FLOW ---
+        if (role === "TEAM_MEMBER") {
+            const invitationCodeRaw = formData.get("invitationCode") as string
+
+            // Validate team member data
+            const validation = teamMemberSchema.safeParse({ invitationCode: invitationCodeRaw })
+            if (!validation.success) {
+                return { error: validation.error.issues[0].message }
+            }
+
+            const normalizedCode = normalizeCode(validation.data.invitationCode)
+
+            // Find company by invitation code
+            const company = await prisma.company.findFirst({
+                where: { invitationCode: normalizedCode },
+                include: {
+                    _count: { select: { members: true } }
+                }
+            })
+
+            if (!company) {
+                return { error: "Invalid invitation code. Please check and try again." }
+            }
+
+            // Check if code is enabled
+            if (!company.codeEnabled) {
+                return { error: "This invitation code has been disabled by the company." }
+            }
+
+            // Check if code has expired
+            if (company.codeExpiresAt && new Date() > company.codeExpiresAt) {
+                return { error: "This invitation code has expired." }
+            }
+
+            // Check max team members limit
+            if (company.maxTeamMembers && company._count.members >= company.maxTeamMembers) {
+                return { error: "This company has reached its maximum team size." }
+            }
+
+            // Check if user is already a member of any company
+            const existingMembership = await prisma.companyMember.findUnique({
+                where: { userId: user.id }
+            })
+
+            if (existingMembership) {
+                return { error: "You are already a member of a company. You cannot join another." }
+            }
+
+            // Create CompanyMember record with MEMBER role
+            await prisma.companyMember.create({
+                data: {
+                    companyId: company.id,
+                    userId: user.id,
+                    defaultRole: "MEMBER",
+                    status: "ACTIVE",
+                    invitedAt: new Date(),
+                    joinedAt: new Date(),
+                },
+            })
+
+            // Create audit log entry
+            await prisma.companyCodeJoin.create({
+                data: {
+                    companyId: company.id,
+                    userId: user.id,
+                }
+            })
+
+            // Increment code usage count
+            await prisma.company.update({
+                where: { id: company.id },
+                data: { codeUsageCount: { increment: 1 } }
+            })
+
+            // Update user role to TEAM_MEMBER and complete onboarding
+            await prisma.user.update({
+                where: { id: user.id },
+                data: { role: "TEAM_MEMBER", onboardingComplete: true },
+            })
+
+            // Update Clerk metadata
+            await clerkClient.users.updateUser(userId, {
+                publicMetadata: { role: "TEAM_MEMBER", onboardingComplete: true },
+            })
+
+            return {
+                message: "Successfully joined company",
+                companyName: company.name,
                 dashboard: "/dashboard/company",
             }
         }

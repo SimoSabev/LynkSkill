@@ -157,6 +157,19 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<DefaultCompanyRole, Permission[]> 
     // Analytics - Read only
     Permission.VIEW_ANALYTICS,
   ],
+
+  MEMBER: [
+    // Basic view permissions for team members who joined via code
+    Permission.VIEW_CANDIDATES,
+    Permission.VIEW_APPLICATIONS,
+    
+    // Messaging - Can send and view
+    Permission.SEND_MESSAGES,
+    Permission.VIEW_MESSAGES,
+    
+    // Analytics - Read only
+    Permission.VIEW_ANALYTICS,
+  ],
 }
 
 /**
@@ -197,6 +210,12 @@ export const ROLE_DISPLAY_INFO: Record<DefaultCompanyRole, {
     description: "Read-only access to view candidates, messages, and analytics.",
     color: "#6b7280", // gray
     badgeColor: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300",
+  },
+  MEMBER: {
+    label: "Member",
+    description: "Basic team member who joined via invitation code. Can view and communicate.",
+    color: "#0ea5e9", // sky blue
+    badgeColor: "bg-sky-100 text-sky-800 dark:bg-sky-900 dark:text-sky-300",
   },
 }
 
@@ -375,10 +394,11 @@ export function roleHasPermission(role: DefaultCompanyRole, permission: Permissi
  */
 export function getRoleLevel(role: DefaultCompanyRole): number {
   const levels: Record<DefaultCompanyRole, number> = {
-    OWNER: 5,
-    ADMIN: 4,
-    HR_MANAGER: 3,
-    HR_RECRUITER: 2,
+    OWNER: 6,
+    ADMIN: 5,
+    HR_MANAGER: 4,
+    HR_RECRUITER: 3,
+    MEMBER: 2,
     VIEWER: 1,
   }
   return levels[role]

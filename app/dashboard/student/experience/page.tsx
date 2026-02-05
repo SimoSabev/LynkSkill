@@ -6,7 +6,7 @@ import MyExperienceTabContent from "@/components/my-experience-tab-content"
 
 function ExperienceContent() {
     const searchParams = useSearchParams()
-    const projectId = searchParams.get("project")
+    const projectId = searchParams?.get("project") ?? null
     
     return <MyExperienceTabContent highlightProjectId={projectId} />
 }

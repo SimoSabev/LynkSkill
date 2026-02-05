@@ -241,7 +241,7 @@ export default function InvitationsPage() {
               </div>
               <h2 className="text-xl font-semibold mb-2">Welcome to the Team!</h2>
               <p className="text-muted-foreground mb-6">
-                You've successfully joined {invitation?.company.name}. Redirecting to your dashboard...
+                You&apos;ve successfully joined {invitation?.company.name}. Redirecting to your dashboard...
               </p>
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
             </div>
@@ -276,7 +276,7 @@ export default function InvitationsPage() {
           
           <CardTitle className="text-2xl">Team Invitation</CardTitle>
           <CardDescription className="text-base">
-            You've been invited to join <strong className="text-foreground">{invitation?.company.name}</strong>
+            You&apos;ve been invited to join <strong className="text-foreground">{invitation?.company.name}</strong>
           </CardDescription>
         </CardHeader>
 
@@ -330,7 +330,7 @@ export default function InvitationsPage() {
                     Email Mismatch
                   </p>
                   <p className="text-amber-700 dark:text-amber-300 mt-1">
-                    This invitation was sent to <strong>{invitation?.email}</strong>, but you're signed in as <strong>{user?.primaryEmailAddress?.emailAddress}</strong>.
+                    This invitation was sent to <strong>{invitation?.email}</strong>, but you&apos;re signed in as <strong>{user?.primaryEmailAddress?.emailAddress}</strong>.
                   </p>
                   <p className="text-amber-700 dark:text-amber-300 mt-2">
                     Please sign in with the correct email to accept this invitation.
@@ -368,7 +368,7 @@ export default function InvitationsPage() {
 
           {/* Help Text */}
           <p className="text-xs text-center text-muted-foreground">
-            By accepting, you'll join {invitation?.company.name}'s team and be able to access their company dashboard.
+            By accepting, you&apos;ll join {invitation?.company.name}&apos;s team and be able to access their company dashboard.
           </p>
         </CardContent>
       </Card>

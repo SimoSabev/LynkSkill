@@ -239,6 +239,20 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
+    // RESTRICTION: Cannot invite STUDENT users
+    if (existingUser?.role === "STUDENT") {
+      return NextResponse.json({ 
+        error: "Students cannot be invited to companies. They need to create a separate account as a team member." 
+      }, { status: 403 })
+    }
+
+    // RESTRICTION: Cannot invite COMPANY owners
+    if (existingUser?.role === "COMPANY") {
+      return NextResponse.json({ 
+        error: "Company owners cannot be invited to other companies. They must transfer or leave their company first." 
+      }, { status: 403 })
+    }
+
     // Check if there's already a pending invitation for this email
     const existingInvitation = await prisma.companyInvitation.findFirst({
       where: {
@@ -259,6 +273,13 @@ export async function POST(request: NextRequest) {
     const selectedRole = role as DefaultCompanyRole
     if (role && !Object.values(DefaultCompanyRole).includes(selectedRole)) {
       return NextResponse.json({ error: "Invalid role" }, { status: 400 })
+    }
+
+    // RESTRICTION: Cannot invite to OWNER role (use ownership transfer instead)
+    if (selectedRole === DefaultCompanyRole.OWNER) {
+      return NextResponse.json({ 
+        error: "Cannot invite someone as OWNER. Use the ownership transfer feature instead." 
+      }, { status: 403 })
     }
 
     // If custom role is specified, verify it exists and belongs to this company
