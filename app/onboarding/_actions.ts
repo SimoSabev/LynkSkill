@@ -16,6 +16,8 @@ const companyFormSchema = z.object({
     companyName: schemas.companyName,
     companyDescription: schemas.description,
     companyLocation: schemas.location,
+    companyLatitude: z.coerce.number().min(-90).max(90).optional().nullable(),
+    companyLongitude: z.coerce.number().min(-180).max(180).optional().nullable(),
     companyEik: schemas.eik,
     companyWebsite: schemas.url.optional(),
     companyLogo: z.string().url().optional().nullable(),
@@ -121,6 +123,8 @@ export async function completeOnboarding(formData: FormData) {
                 companyName: formData.get("companyName") as string,
                 companyDescription: formData.get("companyDescription") as string,
                 companyLocation: formData.get("companyLocation") as string,
+                companyLatitude: formData.get("companyLatitude") ? parseFloat(formData.get("companyLatitude") as string) : null,
+                companyLongitude: formData.get("companyLongitude") ? parseFloat(formData.get("companyLongitude") as string) : null,
                 companyEik: formData.get("companyEik") as string,
                 companyWebsite: (formData.get("companyWebsite") as string) || null,
                 companyLogo: (formData.get("companyLogoHidden") as string) || null,
@@ -132,7 +136,7 @@ export async function completeOnboarding(formData: FormData) {
                 return { error: validation.error.issues[0].message }
             }
 
-            const { companyName, companyDescription, companyLocation, companyEik, companyWebsite, companyLogo } = validation.data
+            const { companyName, companyDescription, companyLocation, companyLatitude, companyLongitude, companyEik, companyWebsite, companyLogo } = validation.data
 
             const existing = await prisma.company.findFirst({
                 where: { ownerId: user.id },
@@ -149,6 +153,8 @@ export async function completeOnboarding(formData: FormData) {
                         name: companyName,
                         description: companyDescription,
                         location: companyLocation,
+                        latitude: companyLatitude || null,
+                        longitude: companyLongitude || null,
                         website: companyWebsite || null,
                         ownerId: user.id,
                         eik: companyEik,
@@ -177,6 +183,8 @@ export async function completeOnboarding(formData: FormData) {
                         name: companyName,
                         description: companyDescription,
                         location: companyLocation,
+                        latitude: companyLatitude || null,
+                        longitude: companyLongitude || null,
                         website: companyWebsite || null,
                         eik: companyEik,
                         logo: companyLogo || existing.logo,

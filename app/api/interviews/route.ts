@@ -27,6 +27,8 @@ const scheduleInterviewSchema = z.object({
             return date >= minDate || date.toDateString() === new Date().toDateString()
         }, "Please schedule at least for today"),
     location: z.string().max(500, "Location too long").optional(),
+    latitude: z.number().min(-90).max(90).optional().nullable(),
+    longitude: z.number().min(-180).max(180).optional().nullable(),
     notes: z.string().max(1000, "Notes too long").optional()
 })
 
@@ -151,7 +153,7 @@ export async function POST(req: NextRequest) {
             }, { status: 400 })
         }
 
-        const { applicationId, scheduledAt, location, notes } = validation.data
+        const { applicationId, scheduledAt, location, latitude, longitude, notes } = validation.data
 
         // Verify the application belongs to the user's company
         const application = await prisma.application.findUnique({
@@ -191,6 +193,8 @@ export async function POST(req: NextRequest) {
                 applicationId,
                 scheduledAt: new Date(scheduledAt),
                 location,
+                latitude: latitude ?? null,
+                longitude: longitude ?? null,
                 notes
             },
             include: {

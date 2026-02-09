@@ -86,7 +86,7 @@ interface DashboardContextType {
     // Applications
     applications: Application[]
     isLoadingApplications: boolean
-    mutateApplications: () => void
+    mutateApplications: (data?: Application[] | ((current?: Application[]) => Application[] | undefined), opts?: { revalidate?: boolean }) => void
     
     // Projects
     projects: Project[]
@@ -294,7 +294,7 @@ export function DashboardProvider({
         mutateInternships: () => mutateInternships(),
         applications: applications ?? [],
         isLoadingApplications,
-        mutateApplications: () => mutateApplications(),
+        mutateApplications: mutateApplications as DashboardContextType['mutateApplications'],
         projects: projects ?? [],
         isLoadingProjects,
         mutateProjects: () => mutateProjects(),

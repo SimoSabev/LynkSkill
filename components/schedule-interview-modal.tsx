@@ -16,6 +16,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
 import { format, addMonths } from "date-fns"
+import { LocationPicker, type LocationData } from "@/components/location-picker"
+import { cn } from "@/lib/utils"
 
 interface ScheduleInterviewModalProps {
     open: boolean
@@ -37,6 +39,7 @@ export function ScheduleInterviewModal({
     const [date, setDate] = useState("")
     const [time, setTime] = useState("")
     const [location, setLocation] = useState("")
+    const [locationData, setLocationData] = useState<LocationData>({ address: "", latitude: 0, longitude: 0 })
     const [locationType, setLocationType] = useState<"video" | "in-person">("video")
     const [notes, setNotes] = useState("")
     const [isSubmitting, setIsSubmitting] = useState(false)
@@ -73,7 +76,9 @@ export function ScheduleInterviewModal({
                     scheduledAt: scheduledAt.toISOString(),
                     location: locationType === "video" 
                         ? location || "Video call (link will be shared)" 
-                        : location,
+                        : locationData.address || location,
+                    latitude: locationType === "in-person" ? locationData.latitude || null : null,
+                    longitude: locationType === "in-person" ? locationData.longitude || null : null,
                     notes: notes.trim() || undefined
                 })
             })
@@ -86,6 +91,7 @@ export function ScheduleInterviewModal({
                 setDate("")
                 setTime("")
                 setLocation("")
+                setLocationData({ address: "", latitude: 0, longitude: 0 })
                 setNotes("")
             } else {
                 const data = await res.json()
@@ -184,15 +190,21 @@ export function ScheduleInterviewModal({
                                 </div>
                             </div>
 
-                            {/* Location Type */}
-                            <div className="space-y-2">
-                                <Label>Interview Type</Label>
+                            {/* Location Section */}
+                            <div className="rounded-2xl border border-blue-500/15 bg-gradient-to-br from-blue-500/5 to-indigo-500/5 p-4 space-y-3">
+                                <Label className="flex items-center gap-2 text-sm font-semibold">
+                                    <MapPin className="h-4 w-4 text-blue-500" />
+                                    Interview Location
+                                </Label>
                                 <div className="grid grid-cols-2 gap-2">
                                     <Button
                                         type="button"
                                         variant={locationType === "video" ? "default" : "outline"}
                                         onClick={() => setLocationType("video")}
-                                        className="rounded-xl h-12"
+                                        className={cn(
+                                            "rounded-xl h-11 transition-all",
+                                            locationType === "video" && "bg-blue-500 hover:bg-blue-600 shadow-sm shadow-blue-500/25"
+                                        )}
                                     >
                                         <Video className="h-4 w-4 mr-2" />
                                         Video Call
@@ -201,30 +213,38 @@ export function ScheduleInterviewModal({
                                         type="button"
                                         variant={locationType === "in-person" ? "default" : "outline"}
                                         onClick={() => setLocationType("in-person")}
-                                        className="rounded-xl h-12"
+                                        className={cn(
+                                            "rounded-xl h-11 transition-all",
+                                            locationType === "in-person" && "bg-blue-500 hover:bg-blue-600 shadow-sm shadow-blue-500/25"
+                                        )}
                                     >
                                         <MapPin className="h-4 w-4 mr-2" />
                                         In Person
                                     </Button>
                                 </div>
-                            </div>
-
-                            {/* Location Details */}
-                            <div className="space-y-2">
-                                <Label htmlFor="location">
-                                    {locationType === "video" ? "Meeting Link (optional)" : "Address"}
-                                </Label>
-                                <Input
-                                    id="location"
-                                    value={location}
-                                    onChange={(e) => setLocation(e.target.value)}
-                                    placeholder={
-                                        locationType === "video" 
-                                            ? "https://zoom.us/j/... or Google Meet link" 
-                                            : "Office address..."
-                                    }
-                                    className="rounded-xl"
-                                />
+                                {locationType === "video" ? (
+                                    <div className="space-y-1.5">
+                                        <Label htmlFor="location" className="text-xs text-muted-foreground">
+                                            Meeting Link (optional)
+                                        </Label>
+                                        <Input
+                                            id="location"
+                                            value={location}
+                                            onChange={(e) => setLocation(e.target.value)}
+                                            placeholder="https://zoom.us/j/... or Google Meet link"
+                                            className="rounded-xl h-11"
+                                        />
+                                    </div>
+                                ) : (
+                                    <LocationPicker
+                                        value={locationData}
+                                        onChange={(loc) => {
+                                            setLocationData(loc)
+                                            setLocation(loc.address)
+                                        }}
+                                        mapHeight={200}
+                                    />
+                                )}
                             </div>
 
                             {/* Notes */}

@@ -66,7 +66,7 @@ export default function CreateInternshipPage() {
                     <Button 
                         onClick={() => setModalOpen(true)}
                         size="lg"
-                        className="rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-lg hover:shadow-xl transition-all duration-300"
+                        className="rounded-xl text-foreground bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-lg hover:shadow-xl transition-all duration-300"
                     >
                         <Plus className="h-5 w-5 mr-2" />
                         New Internship

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import type { Application, Portfolio } from "@/app/types"
@@ -49,8 +49,16 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
     // Use context for initial data
     const { applications: contextApplications, isLoadingApplications, mutateApplications } = useDashboard()
     
-    const [applications, setApplications] = useState<Application[]>([])
-    const [loading, setLoading] = useState(true)
+    // Derive applications directly from context to avoid stale local state
+    const applications = useMemo(() => 
+        contextApplications.map(app => ({
+            ...app,
+            assignmentRequired: Boolean((app as Application).assignmentRequired),
+            hasUploadedFiles: Boolean((app as Application).hasUploadedFiles)
+        })) as Application[],
+        [contextApplications]
+    )
+    const loading = isLoadingApplications && applications.length === 0
     const [portfolio, setPortfolio] = useState<Portfolio | null>(null)
     const [showPortfolio, setShowPortfolio] = useState(false)
     const [showCompany, setShowCompany] = useState<{
@@ -101,18 +109,6 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
         studentName?: string
     }>({ open: false, applicationId: "" })
 
-    // Initialize from context
-    useEffect(() => {
-        if (contextApplications.length > 0 || !isLoadingApplications) {
-            setApplications(contextApplications.map(app => ({
-                ...app,
-                assignmentRequired: Boolean((app as Application).assignmentRequired),
-                hasUploadedFiles: Boolean((app as Application).hasUploadedFiles)
-            })) as Application[])
-            setLoading(false)
-        }
-    }, [contextApplications, isLoadingApplications])
-
     async function handleRefresh() {
         setRefreshing(true)
         await mutateApplications()
@@ -128,8 +124,10 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
             })
             
             if (res.ok) {
-                setApplications((prev) => prev.map((app) => (app.id === id ? { ...app, status } : app)))
-                mutateApplications()
+                // Optimistically update the SWR cache so the UI reflects immediately
+                mutateApplications(
+                    contextApplications.map((app: Application) => (app.id === id ? { ...app, status } : app))
+                )
                 toast.success(`Application ${status === "APPROVED" ? "approved" : "rejected"} successfully`)
             } else {
                 const data = await res.json().catch(() => ({}))
@@ -154,8 +152,10 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
             })
             
             if (res.ok) {
-                setApplications((prev) => prev.filter((app) => app.id !== id))
-                mutateApplications()
+                // Optimistically update the SWR cache so the UI reflects immediately
+                mutateApplications(
+                    contextApplications.filter((app: Application) => app.id !== id)
+                )
                 toast.success("Application withdrawn successfully")
             } else {
                 const data = await res.json()

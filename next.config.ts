@@ -15,6 +15,10 @@ const nextConfig: NextConfig = {
                 protocol: "https",
                 hostname: "fucfjfxmhatybotfuask.supabase.co",
             },
+            {
+                protocol: "https",
+                hostname: "cdnjs.cloudflare.com",
+            },
         ],
     },
     experimental: {

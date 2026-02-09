@@ -29,6 +29,7 @@ import {
 } from "lucide-react"
 import { format, startOfDay } from "date-fns"
 import { cn } from "@/lib/utils"
+import { LocationPicker, type LocationData } from "@/components/location-picker"
 
 interface InternshipModalProps {
     open: boolean
@@ -53,7 +54,7 @@ interface Errors {
 interface FormValues {
     title: string
     description: string
-    location: string
+    location: LocationData
     qualifications: string
     salary: string
     paid: boolean
@@ -68,7 +69,7 @@ interface FormValues {
 const INITIAL_FORM_STATE: FormValues = {
     title: "",
     description: "",
-    location: "",
+    location: { address: "", latitude: 0, longitude: 0 },
     qualifications: "",
     salary: "",
     paid: false,
@@ -124,7 +125,7 @@ export function InternshipModal({ open, onClose, onCreate }: InternshipModalProp
         }
 
         if (step === 2) {
-            if (!formValues.location || formValues.location.length < 2) {
+            if (!formValues.location.address || formValues.location.address.length < 2) {
                 newErrors.location = ["Location must be at least 2 characters"]
             }
             if (!formValues.applicationStart) {
@@ -184,7 +185,9 @@ export function InternshipModal({ open, onClose, onCreate }: InternshipModalProp
             const body = {
                 title: formValues.title,
                 description: formValues.description,
-                location: formValues.location,
+                location: formValues.location.address,
+                latitude: formValues.location.latitude || null,
+                longitude: formValues.location.longitude || null,
                 qualifications: formValues.qualifications || null,
                 paid: formValues.paid,
                 salary: formValues.paid && formValues.salary ? Number.parseFloat(formValues.salary) : null,
@@ -342,131 +345,128 @@ export function InternshipModal({ open, onClose, onCreate }: InternshipModalProp
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
-            className="space-y-6"
+            className="space-y-5"
         >
-            <div className="text-center mb-6">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 mb-4">
-                    <MapPin className="h-8 w-8 text-blue-500" />
+            <div className="text-center mb-4">
+                <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 mb-3">
+                    <MapPin className="h-7 w-7 text-blue-500" />
                 </div>
                 <h3 className="text-xl font-semibold">Location & Timeline</h3>
                 <p className="text-sm text-muted-foreground">Where and when will this internship take place?</p>
             </div>
 
-            <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <Label className="flex items-center gap-2 text-sm font-medium">
-                            <MapPin className="h-4 w-4 text-blue-500" />
-                            Location <span className="text-red-500">*</span>
-                        </Label>
-                        <Input
-                            value={formValues.location}
-                            onChange={(e) => updateField("location", e.target.value)}
-                            placeholder="e.g., Sofia, Bulgaria or Remote"
-                            className={cn(
-                                "h-12 rounded-xl border-2 transition-all",
-                                errors.location ? "border-red-500" : "border-border focus:border-blue-500"
-                            )}
-                        />
-                        {errors.location && (
-                            <p className="text-sm text-red-500 flex items-center gap-1">
-                                <AlertCircle className="h-3 w-3" /> {errors.location[0]}
-                            </p>
-                        )}
-                    </div>
+            {/* Location Section */}
+            <div className="rounded-2xl border border-blue-500/20 bg-gradient-to-br from-blue-500/5 to-cyan-500/5 p-4 space-y-2">
+                <Label className="flex items-center gap-2 text-sm font-semibold">
+                    <MapPin className="h-4 w-4 text-blue-500" />
+                    Internship Location <span className="text-red-500">*</span>
+                </Label>
+                <LocationPicker
+                    value={formValues.location}
+                    onChange={(loc) => updateField("location", loc)}
+                    error={errors.location?.[0]}
+                    required
+                    mapHeight={180}
+                />
+                {errors.location && (
+                    <p className="text-sm text-red-500 flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" /> {errors.location[0]}
+                    </p>
+                )}
+            </div>
 
-                    <div className="space-y-2">
-                        <Label className="flex items-center gap-2 text-sm font-medium">
-                            <GraduationCap className="h-4 w-4 text-blue-500" />
-                            Qualifications
-                        </Label>
-                        <Input
-                            value={formValues.qualifications}
-                            onChange={(e) => updateField("qualifications", e.target.value)}
-                            placeholder="e.g., Computer Science student"
-                            className="h-12 rounded-xl border-2 border-border focus:border-blue-500 transition-all"
-                        />
-                    </div>
+            {/* Qualifications - Full Width */}
+            <div className="space-y-2">
+                <Label className="flex items-center gap-2 text-sm font-medium">
+                    <GraduationCap className="h-4 w-4 text-blue-500" />
+                    Qualifications
+                </Label>
+                <Input
+                    value={formValues.qualifications}
+                    onChange={(e) => updateField("qualifications", e.target.value)}
+                    placeholder="e.g., Computer Science student, 3rd year or above"
+                    className="h-11 rounded-xl border-2 border-border focus:border-blue-500 transition-all"
+                />
+            </div>
+
+            {/* Timeline - Two Columns */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <Label className="flex items-center gap-2 text-sm font-medium">
+                        <CalendarIcon className="h-4 w-4 text-blue-500" />
+                        Applications Open <span className="text-red-500">*</span>
+                    </Label>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button
+                                variant="outline"
+                                className={cn(
+                                    "w-full h-11 justify-start rounded-xl border-2 transition-all",
+                                    errors.applicationStart ? "border-red-500" : "border-border hover:border-blue-500"
+                                )}
+                            >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {formValues.applicationStart ? (
+                                    format(formValues.applicationStart, "PPP")
+                                ) : (
+                                    <span className="text-muted-foreground">Pick a date</span>
+                                )}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                                mode="single"
+                                selected={formValues.applicationStart}
+                                onSelect={(date) => updateField("applicationStart", date)}
+                                initialFocus
+                                disabled={disableStartDate}
+                            />
+                        </PopoverContent>
+                    </Popover>
+                    {errors.applicationStart && (
+                        <p className="text-sm text-red-500 flex items-center gap-1">
+                            <AlertCircle className="h-3 w-3" /> {errors.applicationStart[0]}
+                        </p>
+                    )}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <Label className="flex items-center gap-2 text-sm font-medium">
-                            <CalendarIcon className="h-4 w-4 text-blue-500" />
-                            Applications Open <span className="text-red-500">*</span>
-                        </Label>
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <Button
-                                    variant="outline"
-                                    className={cn(
-                                        "w-full h-12 justify-start rounded-xl border-2 transition-all",
-                                        errors.applicationStart ? "border-red-500" : "border-border hover:border-blue-500"
-                                    )}
-                                >
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {formValues.applicationStart ? (
-                                        format(formValues.applicationStart, "PPP")
-                                    ) : (
-                                        <span className="text-muted-foreground">Pick a date</span>
-                                    )}
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar
-                                    mode="single"
-                                    selected={formValues.applicationStart}
-                                    onSelect={(date) => updateField("applicationStart", date)}
-                                    initialFocus
-                                    disabled={disableStartDate}
-                                />
-                            </PopoverContent>
-                        </Popover>
-                        {errors.applicationStart && (
-                            <p className="text-sm text-red-500 flex items-center gap-1">
-                                <AlertCircle className="h-3 w-3" /> {errors.applicationStart[0]}
-                            </p>
-                        )}
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label className="flex items-center gap-2 text-sm font-medium">
-                            <CalendarIcon className="h-4 w-4 text-blue-500" />
-                            Applications Close <span className="text-red-500">*</span>
-                        </Label>
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <Button
-                                    variant="outline"
-                                    className={cn(
-                                        "w-full h-12 justify-start rounded-xl border-2 transition-all",
-                                        errors.applicationEnd ? "border-red-500" : "border-border hover:border-blue-500"
-                                    )}
-                                >
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {formValues.applicationEnd ? (
-                                        format(formValues.applicationEnd, "PPP")
-                                    ) : (
-                                        <span className="text-muted-foreground">Pick a date</span>
-                                    )}
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar
-                                    mode="single"
-                                    selected={formValues.applicationEnd}
-                                    onSelect={(date) => updateField("applicationEnd", date)}
-                                    initialFocus
-                                    disabled={disableEndDate}
-                                />
-                            </PopoverContent>
-                        </Popover>
-                        {errors.applicationEnd && (
-                            <p className="text-sm text-red-500 flex items-center gap-1">
-                                <AlertCircle className="h-3 w-3" /> {errors.applicationEnd[0]}
-                            </p>
-                        )}
-                    </div>
+                <div className="space-y-2">
+                    <Label className="flex items-center gap-2 text-sm font-medium">
+                        <CalendarIcon className="h-4 w-4 text-blue-500" />
+                        Applications Close <span className="text-red-500">*</span>
+                    </Label>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button
+                                variant="outline"
+                                className={cn(
+                                    "w-full h-11 justify-start rounded-xl border-2 transition-all",
+                                    errors.applicationEnd ? "border-red-500" : "border-border hover:border-blue-500"
+                                )}
+                            >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {formValues.applicationEnd ? (
+                                    format(formValues.applicationEnd, "PPP")
+                                ) : (
+                                    <span className="text-muted-foreground">Pick a date</span>
+                                )}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                                mode="single"
+                                selected={formValues.applicationEnd}
+                                onSelect={(date) => updateField("applicationEnd", date)}
+                                initialFocus
+                                disabled={disableEndDate}
+                            />
+                        </PopoverContent>
+                    </Popover>
+                    {errors.applicationEnd && (
+                        <p className="text-sm text-red-500 flex items-center gap-1">
+                            <AlertCircle className="h-3 w-3" /> {errors.applicationEnd[0]}
+                        </p>
+                    )}
                 </div>
             </div>
         </motion.div>

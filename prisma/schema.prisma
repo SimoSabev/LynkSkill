@@ -60,6 +60,8 @@ model Company {
   eik         String?
   description String
   location    String
+  latitude    Float?
+  longitude   Float?
   website     String?
   logo        String?
   ownerId     String
@@ -116,6 +118,8 @@ model Internship {
   description               String
   qualifications            String?
   location                  String
+  latitude                  Float?
+  longitude                 Float?
   paid                      Boolean   @default(false)
   salary                    Float?
   skills                    String[]  @default([])
@@ -486,6 +490,8 @@ model Interview {
   scheduledAt   DateTime
   duration      Int             @default(30) // minutes
   location      String?         // physical location or video link
+  latitude      Float?
+  longitude     Float?
   notes         String?
   status        InterviewStatus @default(SCHEDULED)
   createdAt     DateTime        @default(now())

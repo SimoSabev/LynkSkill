@@ -22,6 +22,8 @@ const updateInterviewSchema = z.object({
         }, "Date must be within 3 months")
         .optional(),
     location: z.string().max(500, "Location too long").optional(),
+    latitude: z.number().min(-90).max(90).optional().nullable(),
+    longitude: z.number().min(-180).max(180).optional().nullable(),
     notes: z.string().max(1000, "Notes too long").optional()
 })
 
@@ -149,7 +151,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
             }, { status: 400 })
         }
 
-        const { status, scheduledAt, location, notes } = validation.data
+        const { status, scheduledAt, location, latitude, longitude, notes } = validation.data
 
         // Students can only confirm or request reschedule
         if (isStudent && status && !["CONFIRMED", "RESCHEDULED"].includes(status)) {
@@ -166,6 +168,8 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
         if (status) updateData.status = status
         if (scheduledAt && isCompanyMember) updateData.scheduledAt = new Date(scheduledAt)
         if (location !== undefined && isCompanyMember) updateData.location = location
+        if (latitude !== undefined && isCompanyMember) updateData.latitude = latitude
+        if (longitude !== undefined && isCompanyMember) updateData.longitude = longitude
         if (notes !== undefined) updateData.notes = notes
 
         const updatedInterview = await prisma.interview.update({

@@ -39,6 +39,7 @@ import {
 } from "lucide-react"
 import { format, formatDistanceToNow, isValid, parseISO, startOfDay } from "date-fns"
 import { cn } from "@/lib/utils"
+import { LocationPicker, type LocationData } from "@/components/location-picker"
 
 // Safe date formatting helper
 const safeFormatDate = (dateValue: string | Date | null | undefined, formatStr: string): string => {
@@ -91,7 +92,7 @@ export function InternshipManageModal({ open, onClose, internship, onUpdate }: I
     const [formValues, setFormValues] = useState({
         title: "",
         description: "",
-        location: "",
+        location: { address: "", latitude: 0, longitude: 0 } as LocationData,
         qualifications: "",
         salary: "",
         paid: false,
@@ -133,11 +134,15 @@ export function InternshipManageModal({ open, onClose, internship, onUpdate }: I
             setFormValues({
                 title: internship.title || "",
                 description: internship.description || "",
-                location: internship.location || "",
+                location: {
+                    address: internship.location || "",
+                    latitude: internship.latitude || 0,
+                    longitude: internship.longitude || 0,
+                },
                 qualifications: internship.qualifications || "",
                 salary: internship.salary?.toString() || "",
                 paid: internship.paid || false,
-                requiresCoverLetter: (internship as any).requiresCoverLetter || false,
+                requiresCoverLetter: internship.requiresCoverLetter || false,
                 duration: internship.duration || "",
                 skills: skillsValue,
                 applicationStart: internship.applicationStart ? parseISO(internship.applicationStart) : undefined,
@@ -160,10 +165,11 @@ export function InternshipManageModal({ open, onClose, internship, onUpdate }: I
         }
     }, [open, internship?.id])
 
-    // Reset view when modal closes
+    // Reset view and clear stale application data when modal closes
     useEffect(() => {
         if (!open) {
             setActiveView("overview")
+            setApplications([])
         }
     }, [open])
 
@@ -182,7 +188,9 @@ export function InternshipManageModal({ open, onClose, internship, onUpdate }: I
                 body: JSON.stringify({
                     title: formValues.title,
                     description: formValues.description,
-                    location: formValues.location,
+                    location: typeof formValues.location === 'object' ? formValues.location.address : formValues.location,
+                    latitude: typeof formValues.location === 'object' ? formValues.location.latitude || null : null,
+                    longitude: typeof formValues.location === 'object' ? formValues.location.longitude || null : null,
                     qualifications: formValues.qualifications || null,
                     paid: formValues.paid,
                     salary: formValues.paid && formValues.salary ? parseFloat(formValues.salary) : null,
@@ -652,32 +660,31 @@ export function InternshipManageModal({ open, onClose, internship, onUpdate }: I
                                 exit={{ opacity: 0, y: -10 }}
                                 className="p-6 space-y-6"
                             >
-                                {/* Basic Info Row */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                    <div className="space-y-2">
-                                        <Label className="flex items-center gap-2 text-sm font-medium">
-                                            <Briefcase className="h-4 w-4 text-purple-500" />
-                                            Job Title
-                                        </Label>
-                                        <Input
-                                            value={formValues.title}
-                                            onChange={e => updateField("title", e.target.value)}
-                                            placeholder="e.g., Software Engineering Intern"
-                                            className="h-12 rounded-xl border-2 focus:border-purple-500 transition-colors"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label className="flex items-center gap-2 text-sm font-medium">
-                                            <MapPin className="h-4 w-4 text-blue-500" />
-                                            Location
-                                        </Label>
-                                        <Input
-                                            value={formValues.location}
-                                            onChange={e => updateField("location", e.target.value)}
-                                            placeholder="e.g., New York, NY or Remote"
-                                            className="h-12 rounded-xl border-2 focus:border-blue-500 transition-colors"
-                                        />
-                                    </div>
+                                {/* Job Title - Full Width */}
+                                <div className="space-y-2">
+                                    <Label className="flex items-center gap-2 text-sm font-medium">
+                                        <Briefcase className="h-4 w-4 text-purple-500" />
+                                        Job Title
+                                    </Label>
+                                    <Input
+                                        value={formValues.title}
+                                        onChange={e => updateField("title", e.target.value)}
+                                        placeholder="e.g., Software Engineering Intern"
+                                        className="h-12 rounded-xl border-2 focus:border-purple-500 transition-colors"
+                                    />
+                                </div>
+
+                                {/* Location Section - Full Width with Card */}
+                                <div className="rounded-2xl border border-purple-500/20 bg-gradient-to-br from-purple-500/5 to-blue-500/5 p-4 space-y-2">
+                                    <Label className="flex items-center gap-2 text-sm font-semibold">
+                                        <MapPin className="h-4 w-4 text-blue-500" />
+                                        Internship Location
+                                    </Label>
+                                    <LocationPicker
+                                        value={typeof formValues.location === 'object' ? formValues.location : { address: formValues.location as string, latitude: 0, longitude: 0 }}
+                                        onChange={(loc) => updateField("location", loc as LocationData)}
+                                        mapHeight={200}
+                                    />
                                 </div>
 
                                 {/* Duration & Skills Row */}

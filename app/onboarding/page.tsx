@@ -30,6 +30,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { z } from "zod"
+import { LocationPicker, type LocationData } from "@/components/location-picker"
 
 // Dynamically import heavy modal components for better initial load performance
 const StudentPolicyModal = dynamic(
@@ -111,7 +112,7 @@ export default function OnboardingPage() {
     const [companyValid, setCompanyValid] = React.useState<boolean | null>(null)
     const [companyName, setCompanyName] = React.useState("")
     const [companyDescription, setCompanyDescription] = React.useState("")
-    const [companyLocation, setCompanyLocation] = React.useState("")
+    const [companyLocation, setCompanyLocation] = React.useState<LocationData>({ address: "", latitude: 0, longitude: 0 })
     const [logoPreview, setLogoPreview] = React.useState<string | null>(null)
     const [logoUrl, setLogoUrl] = React.useState<string | null>(null)
     const [isUploadingLogo, setIsUploadingLogo] = React.useState(false)
@@ -501,7 +502,7 @@ export default function OnboardingPage() {
             companyEik: eik,
             companyName,
             companyDescription,
-            companyLocation,
+            companyLocation: companyLocation.address,
         })
 
         if (!result.success) {
@@ -520,7 +521,9 @@ export default function OnboardingPage() {
             formData.append("companyEik", eik)
             formData.append("companyName", companyName)
             formData.append("companyDescription", companyDescription)
-            formData.append("companyLocation", companyLocation)
+            formData.append("companyLocation", companyLocation.address)
+            formData.append("companyLatitude", companyLocation.latitude.toString())
+            formData.append("companyLongitude", companyLocation.longitude.toString())
             if (logoUrl) {
                 formData.append("companyLogoHidden", logoUrl)
             }
@@ -1155,44 +1158,40 @@ export default function OnboardingPage() {
 
                                     <div className="h-px bg-gradient-to-r from-transparent via-purple-500/20 to-transparent" />
 
-                                    <div className="space-y-3">
-                                        <div className="flex items-center gap-2">
-                                            <MapPin className="w-4 h-4 text-purple-400" />
-                                            <Label htmlFor="companyLocation" className="text-base font-semibold flex items-center gap-2">
-                                                Location <span className="text-red-400">*</span>
-                                            </Label>
+                                    {/* Location Section - Prominent Card */}
+                                    <div className="rounded-2xl border border-purple-500/20 bg-gradient-to-br from-purple-500/5 to-blue-500/5 p-5 space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2.5">
+                                                <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-purple-500/15">
+                                                    <MapPin className="w-4 h-4 text-purple-400" />
+                                                </div>
+                                                <div>
+                                                    <Label className="text-base font-semibold flex items-center gap-2">
+                                                        Company Location <span className="text-red-400">*</span>
+                                                    </Label>
+                                                    <p className="text-xs text-muted-foreground">Where is your company headquartered?</p>
+                                                </div>
+                                            </div>
+                                            {companyLocation.address.length >= 2 && !fieldErrors.companyLocation && (
+                                                <div className="flex items-center gap-1 text-xs text-purple-400 bg-purple-500/10 px-2.5 py-1 rounded-full">
+                                                    <CheckCircle className="w-3 h-3" /> Set
+                                                </div>
+                                            )}
                                         </div>
-                                        <Input
-                                            id="companyLocation"
-                                            name="companyLocation"
+                                        <LocationPicker
                                             value={companyLocation}
-                                            onChange={(e) => {
-                                                setCompanyLocation(e.target.value)
-                                                validateField("companyLocation", e.target.value)
+                                            onChange={(loc) => {
+                                                setCompanyLocation(loc)
+                                                validateField("companyLocation", loc.address)
                                             }}
+                                            error={fieldErrors.companyLocation}
                                             required
-                                            placeholder="e.g., Sofia, Bulgaria"
-                                            className={`text-base h-12 border bg-background/50 transition-all duration-300 rounded-lg ${
-                                                fieldErrors.companyLocation 
-                                                    ? "border-red-500 focus:border-red-500" 
-                                                    : companyLocation.length >= 2 
-                                                        ? "border-purple-500 focus:border-purple-500" 
-                                                        : "border-white/20 focus:border-purple-500"
-                                            }`}
+                                            mapHeight={220}
                                         />
-                                        {fieldErrors.companyLocation ? (
+                                        {fieldErrors.companyLocation && (
                                             <p className="text-sm text-red-400 flex items-center gap-1">
                                                 <XCircle className="w-4 h-4" />
                                                 {fieldErrors.companyLocation}
-                                            </p>
-                                        ) : companyLocation.length >= 2 ? (
-                                            <p className="text-sm text-purple-400 flex items-center gap-1">
-                                                <CheckCircle className="w-4 h-4" />
-                                                Location looks good
-                                            </p>
-                                        ) : (
-                                            <p className="text-sm text-muted-foreground">
-                                                Where is your company headquartered?
                                             </p>
                                         )}
                                     </div>

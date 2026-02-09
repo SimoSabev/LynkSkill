@@ -6,6 +6,8 @@ export interface Internship {
     description: string
     qualifications?: string | null
     location: string
+    latitude?: number | null
+    longitude?: number | null
     paid: boolean
     salary?: number | null
     createdAt: string

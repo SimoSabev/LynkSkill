@@ -94,6 +94,8 @@ export async function PATCH(
         if (body.title !== undefined) updateData.title = body.title;
         if (body.description !== undefined) updateData.description = body.description;
         if (body.location !== undefined) updateData.location = body.location;
+        if (body.latitude !== undefined) updateData.latitude = body.latitude;
+        if (body.longitude !== undefined) updateData.longitude = body.longitude;
         if (body.qualifications !== undefined) updateData.qualifications = body.qualifications;
         if (body.paid !== undefined) updateData.paid = body.paid;
         if (body.salary !== undefined) updateData.salary = body.salary;
