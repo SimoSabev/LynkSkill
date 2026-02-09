@@ -75,6 +75,7 @@ export async function GET() {
                 hasUploadedFiles,
                 assignmentRequired,
                 project,
+                requiresCoverLetter: Boolean(app.internship.requiresCoverLetter),
             }
         })
 

@@ -19,6 +19,7 @@ import { useDashboard } from "@/lib/dashboard-context"
 import { useAIMode } from "@/lib/ai-mode-context"
 import { useTranslation } from "@/lib/i18n"
 import { useSettings } from "@/lib/settings-context"
+import { useTeamMemberPermissions } from "@/lib/team-member-permissions-context"
 import { cn } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
 
@@ -67,6 +68,7 @@ export function DashboardShell({ children, userType, memberPermissions = [] }: D
     const companyName = company?.name ?? null
     const companyLogo = company?.logo ?? null
     const userName = user?.profile?.name ?? null
+    const { role: memberRole } = useTeamMemberPermissions()
 
     // Check if intro should be shown
     useEffect(() => {
@@ -171,6 +173,8 @@ export function DashboardShell({ children, userType, memberPermissions = [] }: D
                 companyName={companyName}
                 companyLogo={companyLogo}
                 memberPermissions={memberPermissions}
+                userName={userName}
+                memberRole={memberRole || null}
             />
 
             {/* Sidebar - Desktop */}
@@ -181,6 +185,8 @@ export function DashboardShell({ children, userType, memberPermissions = [] }: D
                 companyName={companyName}
                 companyLogo={companyLogo}
                 memberPermissions={memberPermissions}
+                userName={userName}
+                memberRole={memberRole || null}
             />
 
             {/* Main Content */}

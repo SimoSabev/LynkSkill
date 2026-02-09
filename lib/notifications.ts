@@ -199,6 +199,47 @@ export async function notifyTeamInvitationAccepted(
 }
 
 /**
+ * Creates notification when a cover letter is reviewed by company
+ */
+export async function notifyCoverLetterReviewed(
+    studentId: string,
+    internshipTitle: string,
+    companyName: string,
+    applicationId: string
+) {
+    return createNotification({
+        userId: studentId,
+        type: "COVER_LETTER_REVIEWED",
+        title: "Cover Letter Reviewed",
+        message: `Your cover letter for "${internshipTitle}" at ${companyName} has been reviewed`,
+        link: "/dashboard/student/internships/applied",
+        metadata: {
+            applicationId,
+            internshipTitle,
+            companyName
+        }
+    })
+}
+
+/**
+ * Creates notification reminding student to add cover letter
+ */
+export async function notifyCoverLetterReminder(
+    studentId: string,
+    internshipTitle: string,
+    companyName: string,
+    daysRemaining: number
+) {
+    return createNotification({
+        userId: studentId,
+        type: "COVER_LETTER_REMINDER",
+        title: "Cover Letter Reminder",
+        message: `Don't forget to add a cover letter for "${internshipTitle}" at ${companyName}. ${daysRemaining} day${daysRemaining > 1 ? "s" : ""} remaining before the deadline.`,
+        link: "/dashboard/student/internships/applied"
+    })
+}
+
+/**
  * Gets the human-readable role display name
  */
 function getRoleDisplayName(role: string): string {

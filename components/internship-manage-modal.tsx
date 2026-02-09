@@ -28,6 +28,7 @@ import {
     X,
     Building2,
     Timer,
+    ScrollText,
     Award,
     Sparkles,
     ArrowRight,
@@ -94,6 +95,7 @@ export function InternshipManageModal({ open, onClose, internship, onUpdate }: I
         qualifications: "",
         salary: "",
         paid: false,
+        requiresCoverLetter: false,
         duration: "",
         skills: "",
         applicationStart: undefined as Date | undefined,
@@ -135,6 +137,7 @@ export function InternshipManageModal({ open, onClose, internship, onUpdate }: I
                 qualifications: internship.qualifications || "",
                 salary: internship.salary?.toString() || "",
                 paid: internship.paid || false,
+                requiresCoverLetter: (internship as any).requiresCoverLetter || false,
                 duration: internship.duration || "",
                 skills: skillsValue,
                 applicationStart: internship.applicationStart ? parseISO(internship.applicationStart) : undefined,
@@ -183,6 +186,7 @@ export function InternshipManageModal({ open, onClose, internship, onUpdate }: I
                     qualifications: formValues.qualifications || null,
                     paid: formValues.paid,
                     salary: formValues.paid && formValues.salary ? parseFloat(formValues.salary) : null,
+                    requiresCoverLetter: formValues.requiresCoverLetter,
                     duration: formValues.duration || null,
                     skills: formValues.skills || null,
                     applicationStart: formValues.applicationStart?.toISOString().split("T")[0] || null,
@@ -844,6 +848,27 @@ export function InternshipManageModal({ open, onClose, internship, onUpdate }: I
                                             </motion.div>
                                         )}
                                     </AnimatePresence>
+                                </div>
+
+                                {/* Cover Letter Requirement */}
+                                <div className="p-5 rounded-2xl border-2 space-y-2 bg-gradient-to-r from-indigo-500/5 to-purple-500/5 border-indigo-500/20">
+                                    <div className="flex items-center gap-3">
+                                        <Checkbox
+                                            id="requiresCoverLetter"
+                                            checked={formValues.requiresCoverLetter}
+                                            onCheckedChange={val => updateField("requiresCoverLetter", !!val)}
+                                            className="h-5 w-5 rounded-md"
+                                        />
+                                        <div>
+                                            <Label htmlFor="requiresCoverLetter" className="flex items-center gap-2 cursor-pointer font-medium">
+                                                <ScrollText className="h-4 w-4 text-indigo-500" />
+                                                Require Cover Letter
+                                            </Label>
+                                            <p className="text-xs text-muted-foreground mt-0.5">
+                                                Students must write a cover letter when applying
+                                            </p>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 {/* Action Buttons */}

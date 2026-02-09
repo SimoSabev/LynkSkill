@@ -19,6 +19,7 @@ const internshipSchema = z.object({
     qualifications: z.string().optional().nullable(),
     paid: z.boolean(),
     salary: z.union([z.number().positive(), z.null()]).optional(),
+    requiresCoverLetter: z.boolean().optional().default(false),
     applicationStart: z.string().transform((val) => new Date(val)),
     applicationEnd: z.string().transform((val) => new Date(val)),
     testAssignmentTitle: z.string().optional().nullable(),
@@ -86,6 +87,7 @@ export async function POST(req: Request) {
             qualifications: data.qualifications ?? null,
             paid: data.paid,
             salary: data.paid ? (data.salary ?? null) : null,
+            requiresCoverLetter: data.requiresCoverLetter,
             companyId: membership.companyId,
             applicationStart: data.applicationStart,
             applicationEnd: data.applicationEnd,
@@ -133,6 +135,7 @@ export async function GET(req: NextRequest) {
                 paid: true,
                 salary: true,
                 qualifications: true,
+                requiresCoverLetter: true,
                 applicationStart: true,
                 applicationEnd: true,
                 startDate: true,
@@ -157,8 +160,8 @@ export async function GET(req: NextRequest) {
 
         if (!internship) return new NextResponse("Not found", { status: 404 });
 
-        // Company → full info (use membership-based access)
-        if (user.role === "COMPANY") {
+        // Company or TeamMember → full info (use membership-based access)
+        if (user.role === "COMPANY" || user.role === "TEAM_MEMBER") {
             const membership = await getUserCompanyByClerkId(userId);
             if (!membership || internship.companyId !== membership.companyId)
                 return new NextResponse("Forbidden", { status: 403 });
@@ -177,9 +180,13 @@ export async function GET(req: NextRequest) {
 
     // ------------------- MULTIPLE INTERNSHIPS -------------------
 
-    if (user.role === "COMPANY") {
+    if (user.role === "COMPANY" || user.role === "TEAM_MEMBER") {
         const membership = await getUserCompanyByClerkId(userId);
         const companyId = membership?.companyId;
+
+        if (!companyId) {
+            return new NextResponse("Company not found", { status: 404 });
+        }
 
         const internships = await prisma.internship.findMany({
             where: { companyId },
@@ -190,6 +197,7 @@ export async function GET(req: NextRequest) {
                 location: true,
                 paid: true,
                 salary: true,
+                requiresCoverLetter: true,
                 applicationStart: true,
                 applicationEnd: true,
                 company: { select: { name: true, logo: true } },
@@ -266,6 +274,7 @@ export async function GET(req: NextRequest) {
             paid: true,
             salary: true,
             skills: true,
+            requiresCoverLetter: true,
             applicationStart: true,
             applicationEnd: true,
             createdAt: true,

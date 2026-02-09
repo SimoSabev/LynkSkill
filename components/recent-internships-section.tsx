@@ -526,6 +526,9 @@ export function RecentInternshipsSection({ userType, setActiveTab }: RecentAppsS
                                                             ) : (
                                                                 <ApplyButton
                                                                     internshipId={item.id}
+                                                                    internshipTitle={item.title}
+                                                                    companyName={item.company?.name || ""}
+                                                                    requiresCoverLetter={(item as { requiresCoverLetter?: boolean }).requiresCoverLetter}
                                                                     onApplied={() => mutateApplications()}
                                                                 />
                                                             )}

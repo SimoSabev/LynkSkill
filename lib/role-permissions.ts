@@ -26,6 +26,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<DefaultCompanyRole, Permission[]> 
     // Application Management - Full access
     Permission.VIEW_APPLICATIONS,
     Permission.MANAGE_APPLICATIONS,
+    Permission.REVIEW_COVER_LETTERS,
     
     // Candidate Management - Full access
     Permission.VIEW_CANDIDATES,
@@ -63,6 +64,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<DefaultCompanyRole, Permission[]> 
     // Application Management - Full access
     Permission.VIEW_APPLICATIONS,
     Permission.MANAGE_APPLICATIONS,
+    Permission.REVIEW_COVER_LETTERS,
     
     // Candidate Management - Full access
     Permission.VIEW_CANDIDATES,
@@ -93,6 +95,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<DefaultCompanyRole, Permission[]> 
     // Application Management - Full access
     Permission.VIEW_APPLICATIONS,
     Permission.MANAGE_APPLICATIONS,
+    Permission.REVIEW_COVER_LETTERS,
     
     // Candidate Management - Full access
     Permission.VIEW_CANDIDATES,
@@ -115,6 +118,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<DefaultCompanyRole, Permission[]> 
     // Application Management - Limited
     Permission.VIEW_APPLICATIONS,
     Permission.MANAGE_APPLICATIONS,
+    Permission.REVIEW_COVER_LETTERS,
     
     // Candidate Management - Full access
     Permission.VIEW_CANDIDATES,
@@ -273,6 +277,11 @@ export const PERMISSION_DISPLAY_INFO: Record<Permission, {
   MANAGE_APPLICATIONS: {
     label: "Manage Applications",
     description: "Manage application status and notes",
+    category: "Application Management",
+  },
+  REVIEW_COVER_LETTERS: {
+    label: "Review Cover Letters",
+    description: "Review and provide feedback on student cover letters",
     category: "Application Management",
   },
 

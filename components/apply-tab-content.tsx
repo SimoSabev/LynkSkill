@@ -28,12 +28,15 @@ import {
     Undo2,
     Loader2,
     MessageSquare,
-    CalendarPlus
+    CalendarPlus,
+    FileEdit,
+    ScrollText,
 } from 'lucide-react'
 import { toast } from "sonner"
 import { useDashboard } from "@/lib/dashboard-context"
 import { ScheduleInterviewModal } from "@/components/schedule-interview-modal"
 import { ReviewModal } from "@/components/review-modal"
+import { CoverLetterViewer } from "@/components/cover-letter-viewer"
 import { useTranslation } from "@/lib/i18n"
 
 interface ApplicationsTabContentProps {
@@ -90,6 +93,13 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
         companyName: string
         internshipTitle: string
     }>({ open: false, applicationId: "", companyName: "", internshipTitle: "" })
+
+    // Cover Letter viewer state
+    const [coverLetterModal, setCoverLetterModal] = useState<{
+        open: boolean
+        applicationId: string
+        studentName?: string
+    }>({ open: false, applicationId: "" })
 
     // Initialize from context
     useEffect(() => {
@@ -591,6 +601,29 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
 
                                                         </div>
 
+                                                        {/* ---------- ROW 2.5: VIEW COVER LETTER ---------- */}
+                                                        {app.coverLetter && (
+                                                            <Button
+                                                                size="sm"
+                                                                variant="outline"
+                                                                onClick={() => setCoverLetterModal({
+                                                                    open: true,
+                                                                    applicationId: app.id,
+                                                                    studentName: app.student?.profile?.name || app.student?.email || "Student"
+                                                                })}
+                                                                className="w-full border-indigo-500/30 text-indigo-600 hover:bg-indigo-500/10 font-semibold"
+                                                            >
+                                                                <ScrollText className="w-4 h-4 mr-2" />
+                                                                View Cover Letter
+                                                                {app.coverLetterGeneratedByAI && (
+                                                                    <Sparkles className="w-3 h-3 ml-1.5 text-purple-500" />
+                                                                )}
+                                                                {app.coverLetterStatus === "REVIEWED" && (
+                                                                    <CheckCircle className="w-3 h-3 ml-1.5 text-green-500" />
+                                                                )}
+                                                            </Button>
+                                                        )}
+
                                                         {/* ---------- ROW 3: MESSAGE + SCHEDULE INTERVIEW (for approved) ---------- */}
                                                         {app.status === "APPROVED" && (
                                                             <div className="flex gap-3">
@@ -641,6 +674,38 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                                                             <Eye className="w-4 h-4 mr-2" />
                                                             View Details
                                                         </Button>
+
+                                                        {/* Cover Letter View/Edit */}
+                                                        {app.coverLetter ? (
+                                                            <Button
+                                                                size="sm"
+                                                                variant="outline"
+                                                                onClick={() => setCoverLetterModal({
+                                                                    open: true,
+                                                                    applicationId: app.id,
+                                                                })}
+                                                                className="w-full border-indigo-500/30 text-indigo-600 hover:bg-indigo-500/10 font-semibold"
+                                                            >
+                                                                <ScrollText className="w-4 h-4 mr-2" />
+                                                                {app.status === "PENDING" ? "View / Edit Cover Letter" : "View Cover Letter"}
+                                                                {app.coverLetterStatus === "REVIEWED" && (
+                                                                    <CheckCircle className="w-3 h-3 ml-1.5 text-green-500" />
+                                                                )}
+                                                            </Button>
+                                                        ) : app.status === "PENDING" && (app.requiresCoverLetter || app.internship?.requiresCoverLetter) ? (
+                                                            <Button
+                                                                size="sm"
+                                                                variant="outline"
+                                                                onClick={() => setCoverLetterModal({
+                                                                    open: true,
+                                                                    applicationId: app.id,
+                                                                })}
+                                                                className="w-full border-amber-500/30 text-amber-600 hover:bg-amber-500/10 font-semibold"
+                                                            >
+                                                                <FileEdit className="w-4 h-4 mr-2" />
+                                                                Add Cover Letter (Required)
+                                                            </Button>
+                                                        ) : null}
                                                         
                                                         {app.status === "PENDING" && (
                                                             <Button
@@ -1062,6 +1127,16 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                         </div>
                     </div>
                 )}
+
+            {/* Cover Letter Viewer Modal */}
+            <CoverLetterViewer
+                open={coverLetterModal.open}
+                onClose={() => setCoverLetterModal(prev => ({ ...prev, open: false }))}
+                applicationId={coverLetterModal.applicationId}
+                userType={userType}
+                studentName={coverLetterModal.studentName}
+                canReview={userType === "Company"}
+            />
 
             {/* Schedule Interview Modal (Company) */}
             <ScheduleInterviewModal

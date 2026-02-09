@@ -128,6 +128,7 @@ model Internship {
   testAssignmentTitle       String?
   testAssignmentDescription String?
   testAssignmentDueDate     DateTime?
+  requiresCoverLetter       Boolean   @default(false)
   createdAt                 DateTime  @default(now())
   updatedAt                 DateTime  @updatedAt
 
@@ -207,6 +208,14 @@ model Application {
   status       ApplicationStatus @default(PENDING)
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt
+
+  // Cover Letter fields
+  coverLetter            String?
+  coverLetterStatus      CoverLetterStatus?
+  coverLetterGeneratedByAI Boolean  @default(false)
+  coverLetterReviewedBy  String?
+  coverLetterReviewNote  String?
+  coverLetterReviewedAt  DateTime?
 
   internship   Internship   @relation(fields: [internshipId], references: [id])
   student      User         @relation("StudentApplications", fields: [studentId], references: [id])
@@ -505,6 +514,12 @@ enum ApplicationStatus {
   REJECTED
 }
 
+enum CoverLetterStatus {
+  DRAFT
+  SUBMITTED
+  REVIEWED
+}
+
 enum ApprovalStatus {
   PENDING
   APPROVED
@@ -531,6 +546,9 @@ enum NotificationType {
   INTERVIEW_SCHEDULED
   INTERVIEW_REMINDER
   GENERAL
+  // Cover Letter Notifications
+  COVER_LETTER_REVIEWED
+  COVER_LETTER_REMINDER
   // Company Team Notifications
   TEAM_INVITATION
   TEAM_INVITATION_ACCEPTED
@@ -589,6 +607,7 @@ enum Permission {
   // Application Management
   VIEW_APPLICATIONS
   MANAGE_APPLICATIONS
+  REVIEW_COVER_LETTERS
   
   // Candidate Management
   VIEW_CANDIDATES

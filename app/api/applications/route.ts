@@ -15,7 +15,7 @@ export async function POST(req: Request) {
         return new NextResponse("Forbidden", { status: 403 });
     }
 
-    const { internshipId } = await req.json();
+    const { internshipId, coverLetter, coverLetterGeneratedByAI } = await req.json();
     if (!internshipId) {
         return NextResponse.json(
             { error: "Internship ID required" },
@@ -40,11 +40,29 @@ export async function POST(req: Request) {
         );
     }
 
+    // Check if cover letter is required
+    const internshipCheck = await prisma.internship.findUnique({
+        where: { id: internshipId },
+        select: { requiresCoverLetter: true }
+    });
+
+    if (internshipCheck?.requiresCoverLetter && !coverLetter?.trim()) {
+        return NextResponse.json(
+            { error: "A cover letter is required for this internship" },
+            { status: 400 }
+        );
+    }
+
     // ✅ Create the application
     const application = await prisma.application.create({
         data: {
             studentId: student.id,
             internshipId,
+            ...(coverLetter?.trim() ? {
+                coverLetter: coverLetter.trim(),
+                coverLetterStatus: "SUBMITTED",
+                coverLetterGeneratedByAI: Boolean(coverLetterGeneratedByAI),
+            } : {}),
         },
         include: {
             internship: {

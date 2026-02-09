@@ -25,6 +25,7 @@ import {
     Sparkles,
     ClipboardList,
     Check,
+    ScrollText,
 } from "lucide-react"
 import { format, startOfDay } from "date-fns"
 import { cn } from "@/lib/utils"
@@ -56,6 +57,7 @@ interface FormValues {
     qualifications: string
     salary: string
     paid: boolean
+    requiresCoverLetter: boolean
     testAssignmentTitle: string
     testAssignmentDescription: string
     testAssignmentDueDate?: Date
@@ -70,6 +72,7 @@ const INITIAL_FORM_STATE: FormValues = {
     qualifications: "",
     salary: "",
     paid: false,
+    requiresCoverLetter: false,
     testAssignmentTitle: "",
     testAssignmentDescription: "",
     testAssignmentDueDate: undefined,
@@ -187,6 +190,7 @@ export function InternshipModal({ open, onClose, onCreate }: InternshipModalProp
                 salary: formValues.paid && formValues.salary ? Number.parseFloat(formValues.salary) : null,
                 applicationStart: formValues.applicationStart?.toISOString().split("T")[0] ?? "",
                 applicationEnd: formValues.applicationEnd?.toISOString().split("T")[0] ?? "",
+                requiresCoverLetter: formValues.requiresCoverLetter,
                 testAssignmentTitle: formValues.testAssignmentTitle || null,
                 testAssignmentDescription: formValues.testAssignmentDescription || null,
                 testAssignmentDueDate: formValues.testAssignmentDueDate?.toISOString().split("T")[0] ?? null,
@@ -564,8 +568,39 @@ export function InternshipModal({ open, onClose, onCreate }: InternshipModalProp
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-500/20 to-amber-500/20 mb-4">
                     <ClipboardList className="h-8 w-8 text-orange-500" />
                 </div>
-                <h3 className="text-xl font-semibold">Test Assignment</h3>
-                <p className="text-sm text-muted-foreground">Optional assignment for applicants to complete</p>
+                <h3 className="text-xl font-semibold">Requirements & Assignment</h3>
+                <p className="text-sm text-muted-foreground">Cover letter and optional test assignment</p>
+            </div>
+
+            {/* Cover Letter Requirement Toggle */}
+            <div className="p-5 rounded-2xl border-2 space-y-2 bg-gradient-to-r from-indigo-500/5 to-purple-500/5 border-indigo-500/20">
+                <div className="flex items-center gap-3">
+                    <Checkbox
+                        id="requiresCoverLetter"
+                        checked={formValues.requiresCoverLetter}
+                        onCheckedChange={(val) => updateField("requiresCoverLetter", !!val)}
+                        className="h-5 w-5 rounded-md"
+                    />
+                    <div>
+                        <Label htmlFor="requiresCoverLetter" className="flex items-center gap-2 cursor-pointer font-medium">
+                            <ScrollText className="h-4 w-4 text-indigo-500" />
+                            Require Cover Letter
+                        </Label>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                            Students must write a cover letter when applying to this internship
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Divider */}
+            <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-border" />
+                </div>
+                <div className="relative flex justify-center text-xs">
+                    <span className="bg-background px-3 text-muted-foreground">Test Assignment (Optional)</span>
+                </div>
             </div>
 
             <div className="space-y-4">

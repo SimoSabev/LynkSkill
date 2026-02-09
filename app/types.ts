@@ -14,6 +14,7 @@ export interface Internship {
     skills?: string | string[]
     applicationStart?: string | null
     applicationEnd?: string | null
+    requiresCoverLetter?: boolean
 }
 
 export interface Application {
@@ -27,6 +28,14 @@ export interface Application {
     // Backend computed fields
     assignmentRequired?: boolean
     hasUploadedFiles?: boolean
+
+    // Cover Letter fields
+    coverLetter?: string | null
+    coverLetterStatus?: "DRAFT" | "SUBMITTED" | "REVIEWED" | null
+    coverLetterGeneratedByAI?: boolean
+    coverLetterReviewNote?: string | null
+    coverLetterReviewedAt?: string | null
+    requiresCoverLetter?: boolean
 
     // Optional project data (from assignment page)
     project?: {
@@ -44,6 +53,7 @@ export interface Application {
     internship?: {
         id: string
         title: string
+        requiresCoverLetter?: boolean
         company?: {
             id: string
             name: string

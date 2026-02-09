@@ -33,11 +33,17 @@ export async function GET() {
                 status: true,
                 studentId: true,
                 internshipId: true,
+                coverLetter: true,
+                coverLetterStatus: true,
+                coverLetterGeneratedByAI: true,
+                coverLetterReviewNote: true,
+                coverLetterReviewedAt: true,
                 internship: {
                     select: {
                         id: true,
                         title: true,
                         testAssignmentTitle: true,
+                        requiresCoverLetter: true,
                         company: {
                             select: {
                                 id: true,
@@ -84,7 +90,8 @@ export async function GET() {
                 ...app,
                 hasUploadedFiles,
                 assignmentRequired,
-                project
+                project,
+                requiresCoverLetter: Boolean(app.internship.requiresCoverLetter),
             }
         })
 

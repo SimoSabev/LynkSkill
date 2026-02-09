@@ -189,6 +189,9 @@ export function SavedInternshipsTab() {
                                             ) : (
                                                 <ApplyButton
                                                     internshipId={item.id}
+                                                    internshipTitle={item.title}
+                                                    companyName={item.company?.name || ""}
+                                                    requiresCoverLetter={(item as { requiresCoverLetter?: boolean }).requiresCoverLetter}
                                                     onApplied={() => mutateApplications()}
                                                 />
                                             )}

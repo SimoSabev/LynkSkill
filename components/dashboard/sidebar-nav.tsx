@@ -49,6 +49,8 @@ interface SidebarNavProps {
     companyName?: string | null
     companyLogo?: string | null
     memberPermissions?: string[]
+    userName?: string | null
+    memberRole?: string | null
 }
 
 interface NavItem {
@@ -67,6 +69,8 @@ export function SidebarNav({
     companyName,
     companyLogo,
     memberPermissions = [],
+    userName,
+    memberRole,
 }: SidebarNavProps) {
     const { t } = useTranslation()
     const pathname = usePathname()
@@ -413,10 +417,18 @@ export function SidebarNav({
                     </div>
                     <div>
                         <h2 className="font-semibold text-sm">
-                            {userType === "Company" ? companyName ?? t('common.loading') : t('dashboard.student')}
+                            {userType === "Company" 
+                                ? companyName ?? t('common.loading') 
+                                : userType === "TeamMember" 
+                                    ? userName ?? t('common.loading')
+                                    : t('dashboard.student')}
                         </h2>
                         <p className="text-xs text-muted-foreground">
-                            {userType === "Company" ? t('dashboard.company') : t('dashboard.student')}
+                            {userType === "Company" 
+                                ? t('dashboard.company') 
+                                : userType === "TeamMember" 
+                                    ? memberRole ?? t('team.member')
+                                    : t('dashboard.student')}
                         </p>
                     </div>
                 </div>

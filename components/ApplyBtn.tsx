@@ -12,15 +12,21 @@ import {
 } from "@/components/ui/dialog"
 import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { CoverLetterModal } from "@/components/cover-letter-modal"
 
 interface ApplyButtonProps {
     internshipId: string
+    internshipTitle?: string
+    companyName?: string
+    requiresCoverLetter?: boolean
     onApplied?: () => void
 }
 
-export default function ApplyButton({ internshipId, onApplied }: ApplyButtonProps) {
+export default function ApplyButton({ internshipId, internshipTitle, companyName, requiresCoverLetter, onApplied }: ApplyButtonProps) {
     const [isApplying, setIsApplying] = useState(false)
     const [showIncompleteModal, setShowIncompleteModal] = useState(false)
+    const [showCoverLetterModal, setShowCoverLetterModal] = useState(false)
+    const [portfolioChecked, setPortfolioChecked] = useState(false)
     const router = useRouter()
 
     const handleApply = async () => {
@@ -52,11 +58,30 @@ export default function ApplyButton({ internshipId, onApplied }: ApplyButtonProp
                 }
             }
 
-            // Proceed with application
+            // Portfolio is OK — open cover letter modal
+            setPortfolioChecked(true)
+            setShowCoverLetterModal(true)
+            setIsApplying(false)
+        } catch (err) {
+            console.error(err)
+            alert("An error occurred while checking your portfolio")
+            setIsApplying(false)
+        }
+    }
+
+    const handleCoverLetterSubmit = async (coverLetter: string | null, generatedByAI: boolean) => {
+        setIsApplying(true)
+        setShowCoverLetterModal(false)
+
+        try {
             const res = await fetch("/api/applications", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ internshipId }),
+                body: JSON.stringify({
+                    internshipId,
+                    coverLetter,
+                    coverLetterGeneratedByAI: generatedByAI,
+                }),
             })
 
             if (res.ok) {
@@ -128,6 +153,20 @@ export default function ApplyButton({ internshipId, onApplied }: ApplyButtonProp
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            {/* Cover Letter Modal */}
+            <CoverLetterModal
+                open={showCoverLetterModal}
+                onClose={() => {
+                    setShowCoverLetterModal(false)
+                    setPortfolioChecked(false)
+                }}
+                internshipId={internshipId}
+                internshipTitle={internshipTitle || "this internship"}
+                companyName={companyName || "the company"}
+                requiresCoverLetter={requiresCoverLetter || false}
+                onSubmit={handleCoverLetterSubmit}
+            />
         </>
     )
 }
