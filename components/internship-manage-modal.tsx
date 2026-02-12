@@ -17,7 +17,7 @@ import {
     MapPin,
     FileText,
     GraduationCap,
-    DollarSign,
+    Euro,
     CheckCircle,
     CalendarIcon,
     Save,
@@ -289,7 +289,7 @@ export function InternshipManageModal({ open, onClose, internship, onUpdate }: I
                                 </div>
                                 {internship.paid && (
                                     <div className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full bg-emerald-500 flex items-center justify-center border-2 border-white shadow-lg">
-                                        <DollarSign className="h-4 w-4 text-white" />
+                                        <Euro className="h-4 w-4 text-white" />
                                     </div>
                                 )}
                             </div>
@@ -382,14 +382,14 @@ export function InternshipManageModal({ open, onClose, internship, onUpdate }: I
                             <div className="p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20">
                                 <div className="flex items-center justify-between mb-2">
                                     {internship.paid ? (
-                                        <DollarSign className="h-5 w-5 text-cyan-300" />
+                                        <Euro className="h-5 w-5 text-cyan-300" />
                                     ) : (
                                         <CalendarIcon className="h-5 w-5 text-white/80" />
                                     )}
                                 </div>
                                 <p className="text-3xl font-bold text-white">
                                     {internship.paid && internship.salary 
-                                        ? `$${internship.salary.toLocaleString()}`
+                                        ? `€${internship.salary.toLocaleString()}`
                                         : daysRemaining !== null 
                                             ? daysRemaining 
                                             : "—"
@@ -464,10 +464,10 @@ export function InternshipManageModal({ open, onClose, internship, onUpdate }: I
                                         <p className="font-semibold text-sm">{internship.duration || t("manageInternship.flexible")}</p>
                                     </div>
                                     <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border border-emerald-500/20">
-                                        <DollarSign className="h-5 w-5 text-emerald-500 mb-2" />
+                                        <Euro className="h-5 w-5 text-emerald-500 mb-2" />
                                         <p className="text-xs text-muted-foreground mb-1">{t("manageInternship.compensation")}</p>
                                         <p className="font-semibold text-sm">
-                                            {internship.paid ? `$${internship.salary}/${t("manageInternship.month")}` : t("manageInternship.unpaid")}
+                                            {internship.paid ? `€${internship.salary}/${t("manageInternship.month")}` : t("manageInternship.unpaid")}
                                         </p>
                                     </div>
                                 </div>
@@ -826,7 +826,7 @@ export function InternshipManageModal({ open, onClose, internship, onUpdate }: I
                                         />
                                         <div>
                                             <Label htmlFor="paid" className="flex items-center gap-2 cursor-pointer font-medium">
-                                                <DollarSign className="h-4 w-4 text-emerald-500" />
+                                                <Euro className="h-4 w-4 text-emerald-500" />
                                                 {t("manageInternship.paidInternship")}
                                             </Label>
                                             <p className="text-xs text-muted-foreground mt-0.5">{t("manageInternship.enableCompensation")}</p>
@@ -844,7 +844,7 @@ export function InternshipManageModal({ open, onClose, internship, onUpdate }: I
                                                 <div className="pt-3 border-t border-dashed">
                                                     <Label className="text-sm font-medium mb-2 block">{t("manageInternship.monthlySalaryUSD")}</Label>
                                                     <div className="relative">
-                                                        <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                                        <Euro className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                                         <Input
                                                             type="number"
                                                             value={formValues.salary}

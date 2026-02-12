@@ -16,7 +16,7 @@ import {
     MapPin,
     FileText,
     GraduationCap,
-    DollarSign,
+    Euro,
     CheckCircle,
     AlertCircle,
     CalendarIcon,
@@ -85,7 +85,7 @@ const INITIAL_FORM_STATE: FormValues = {
 const steps = [
     { id: 1, title: "Basic Info", icon: Briefcase, description: "Title & Description" },
     { id: 2, title: "Details", icon: MapPin, description: "Location & Dates" },
-    { id: 3, title: "Compensation", icon: DollarSign, description: "Paid or Unpaid" },
+    { id: 3, title: "Compensation", icon: Euro, description: "Paid or Unpaid" },
     { id: 4, title: "Assignment", icon: ClipboardList, description: "Optional Test" },
 ]
 
@@ -485,7 +485,7 @@ export function InternshipModal({ open, onClose, onCreate }: InternshipModalProp
         >
             <div className="text-center mb-6">
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-green-500/20 mb-4">
-                    <DollarSign className="h-8 w-8 text-emerald-500" />
+                    <Euro className="h-8 w-8 text-emerald-500" />
                 </div>
                 <h3 className="text-xl font-semibold">{t("internshipModal.compensation")}</h3>
                 <p className="text-sm text-muted-foreground">{t("internshipModal.isPaidInternship")}</p>
@@ -509,7 +509,7 @@ export function InternshipModal({ open, onClose, onCreate }: InternshipModalProp
                         />
                         <div className="flex-1">
                             <div className="flex items-center gap-2">
-                                <DollarSign className="h-5 w-5 text-emerald-500" />
+                                <Euro className="h-5 w-5 text-emerald-500" />
                                 <span className="font-semibold">{t("internshipModal.paidInternship")}</span>
                             </div>
                             <p className="text-sm text-muted-foreground mt-1">
@@ -528,7 +528,7 @@ export function InternshipModal({ open, onClose, onCreate }: InternshipModalProp
                             className="space-y-2"
                         >
                             <Label className="flex items-center gap-2 text-sm font-medium">
-                                <DollarSign className="h-4 w-4 text-emerald-500" />
+                                <Euro className="h-4 w-4 text-emerald-500" />
                                 {t("internshipModal.monthlySalaryBGN")} <span className="text-red-500">*</span>
                             </Label>
                             <Input

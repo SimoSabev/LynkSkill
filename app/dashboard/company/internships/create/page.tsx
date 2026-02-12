@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Plus, Briefcase, Calendar, MapPin, DollarSign, Clock, ChevronRight, Sparkles } from "lucide-react"
+import { Plus, Briefcase, Calendar, MapPin, Euro, Clock, ChevronRight, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -155,10 +155,10 @@ export default function CreateInternshipPage() {
                                                 <span>{formatDate(internship.applicationStart)} - {formatDate(internship.applicationEnd)}</span>
                                             </div>
                                             <div className="flex items-center gap-2 text-sm">
-                                                <DollarSign className="h-4 w-4 flex-shrink-0" />
+                                                <Euro className="h-4 w-4 flex-shrink-0" />
                                                 {internship.paid ? (
                                                     <span className="text-emerald-600 dark:text-emerald-400 font-medium">
-                                                        {internship.salary ? `$${internship.salary}/month` : "Paid"}
+                                                        {internship.salary ? `€${internship.salary}/month` : "Paid"}
                                                     </span>
                                                 ) : (
                                                     <span className="text-muted-foreground">Unpaid</span>

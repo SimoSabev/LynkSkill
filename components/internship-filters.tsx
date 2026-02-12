@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Search, Filter, X, MapPin, DollarSign, Briefcase, Sparkles } from "lucide-react"
+import { Search, Filter, X, MapPin, Euro, Briefcase, Sparkles } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -219,7 +219,7 @@ export function InternshipFiltersComponent({
                                 <div className="space-y-4">
                                     <Label className="flex items-center gap-2 text-sm font-semibold text-foreground">
                                         <div className="p-1.5 rounded-lg bg-emerald-500/10">
-                                            <DollarSign className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                                            <Euro className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                                         </div>
                                         {t("filters.salaryRange")}
                                     </Label>
@@ -350,7 +350,7 @@ export function InternshipFiltersComponent({
                                             : "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30 hover:border-amber-500/50"
                                     }`}
                                 >
-                                    <DollarSign className="h-3 w-3" />
+                                    <Euro className="h-3 w-3" />
                                     <span>{filters.paid === "paid" ? t("filters.paid") : t("filters.unpaid")}</span>
                                     <X className="h-3 w-3 ml-0.5 opacity-60 group-hover:opacity-100" />
                                 </button>

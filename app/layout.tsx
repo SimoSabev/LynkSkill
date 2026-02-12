@@ -1,7 +1,7 @@
 import { type Metadata } from 'next'
 import { ClerkProvider } from '@clerk/nextjs'
 import { dark } from '@clerk/themes'
-import { Geist, Geist_Mono } from 'next/font/google'
+import { Inter } from 'next/font/google'
 import './globals.css'
 import { ThemeProvider } from "@/components/theme-provider"
 import { I18nProvider } from "@/lib/i18n"
@@ -22,7 +22,7 @@ const clerkAppearance = {
         colorWarning: '#f59e0b',
         colorNeutral: '#71717a',
         borderRadius: '0.75rem', // Rounded-xl
-        fontFamily: 'var(--font-geist-sans), system-ui, sans-serif',
+        fontFamily: 'var(--font-inter), system-ui, sans-serif',
         fontSize: '14px',
         spacingUnit: '4px',
     },
@@ -173,18 +173,11 @@ const clerkAppearance = {
     },
 }
 
-const geistSans = Geist({
-    variable: '--font-geist-sans',
-    subsets: ['latin'],
+const inter = Inter({
+    variable: '--font-inter',
+    subsets: ['latin', 'cyrillic'],
     display: 'swap',
     fallback: ['system-ui', 'sans-serif'],
-})
-
-const geistMono = Geist_Mono({
-    variable: '--font-geist-mono',
-    subsets: ['latin'],
-    display: 'swap',
-    fallback: ['system-ui', 'monospace'],
 })
 
 export const metadata: Metadata = {
@@ -298,7 +291,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             appearance={clerkAppearance}
         >
             <html lang="en" suppressHydrationWarning>
-            <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+            <body className={`${inter.variable} antialiased`}>
             <ThemeProvider
                 attribute="class"
                 defaultTheme="dark"

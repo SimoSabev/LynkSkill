@@ -10,7 +10,7 @@ import {
     Briefcase,
     MapPin,
     GraduationCap,
-    DollarSign,
+    Euro,
     FileText,
     Clock,
     Building2,
@@ -223,8 +223,8 @@ export default function InternshipDetailsModal({internshipId, open, onClose}: In
                                                 <>
                                                     <span className="text-white/50">•</span>
                                                     <span className="flex items-center gap-1 font-semibold text-white">
-                                                        <DollarSign className="h-4 w-4"/>
-                                                        ${internship.salary}/mo
+                                                        <Euro className="h-4 w-4"/>
+                                                        €{internship.salary}/mo
                                                     </span>
                                                 </>
                                             )}
@@ -247,11 +247,11 @@ export default function InternshipDetailsModal({internshipId, open, onClose}: In
                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                     <div className="p-4 rounded-xl bg-gradient-to-br from-purple-500/10 to-blue-500/10 border border-purple-500/20 space-y-1">
                                         <p className="text-xs text-muted-foreground flex items-center gap-1">
-                                            <DollarSign className="h-3 w-3 text-purple-500"/>
+                                            <Euro className="h-3 w-3 text-purple-500"/>
                                             {t("internshipDetails.compensation")}
                                         </p>
                                         <p className="font-bold text-sm">
-                                            {internship.paid && internship.salary ? `$${internship.salary}/mo` : t("internshipDetails.volunteer")}
+                                            {internship.paid && internship.salary ? `€${internship.salary}/mo` : t("internshipDetails.volunteer")}
                                         </p>
                                     </div>
                                     <div className="p-4 rounded-xl bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/20 space-y-1">

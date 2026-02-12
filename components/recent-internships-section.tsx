@@ -8,7 +8,7 @@ import { toast } from "sonner"
 import { InternshipCardSkeleton } from "@/components/card-skeleton"
 import InternshipDetailsModal from "@/components/internship-details-modal"
 import { InternshipManageModal } from "@/components/internship-manage-modal"
-import { Layers, Clock, RefreshCw, Trash2, MapPin, DollarSign, Building2, Briefcase, CheckCircle2, XCircle, Clock3, ArrowRight, Sparkles, Search, Eye, Zap, Settings, Calendar, AlertTriangle } from 'lucide-react'
+import { Layers, Clock, RefreshCw, Trash2, MapPin, Euro, Building2, Briefcase, CheckCircle2, XCircle, Clock3, ArrowRight, Sparkles, Search, Eye, Zap, Settings, Calendar, AlertTriangle } from 'lucide-react'
 import ApplyButton from "@/components/ApplyBtn"
 import { BookmarkButton } from "@/components/bookmark-button"
 import { InternshipFiltersComponent, type InternshipFilters } from "@/components/internship-filters"
@@ -476,8 +476,8 @@ export function RecentInternshipsSection({ userType, setActiveTab: _setActiveTab
                                                             <p className="text-[10px] text-muted-foreground">{t("internships.location")}</p>
                                                         </div>
                                                         <div className="p-2.5 rounded-lg bg-muted/50 text-center">
-                                                            <DollarSign className="h-4 w-4 text-blue-500 mx-auto mb-1" />
-                                                            <p className="text-xs font-medium text-foreground">{item.paid ? `$${item.salary || t("common.paid")}` : t("common.unpaid")}</p>
+                                                            <Euro className="h-4 w-4 text-blue-500 mx-auto mb-1" />
+                                                            <p className="text-xs font-medium text-foreground">{item.paid ? `€${item.salary || t("common.paid")}` : t("common.unpaid")}</p>
                                                             <p className="text-[10px] text-muted-foreground">{t("internships.salary")}</p>
                                                         </div>
                                                         <div className={`p-2.5 rounded-lg text-center ${isExpired ? "bg-red-500/10" : "bg-muted/50"}`}>

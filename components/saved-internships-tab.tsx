@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion"
 import { useState } from "react"
-import { Bookmark, MapPin, DollarSign, Timer, Building2, Briefcase, ArrowRight, Sparkles, RefreshCw } from "lucide-react"
+import { Bookmark, MapPin, Euro, Timer, Building2, Briefcase, ArrowRight, Sparkles, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { CardSkeleton } from "@/components/card-skeleton"
@@ -168,8 +168,8 @@ export function SavedInternshipsTab() {
 
                                                 {item.paid && (
                                                     <div className="flex items-center gap-1.5 md:gap-2 text-green-600 dark:text-green-400 font-semibold">
-                                                        <DollarSign className="h-3.5 w-3.5 md:h-4 md:w-4 flex-shrink-0" />
-                                                        <span>${item.salary ?? t('savedInternships.negotiable')}</span>
+                                                        <Euro className="h-3.5 w-3.5 md:h-4 md:w-4 flex-shrink-0" />
+                                                        <span>€{item.salary ?? t('savedInternships.negotiable')}</span>
                                                     </div>
                                                 )}
                                             </div>
