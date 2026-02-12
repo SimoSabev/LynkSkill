@@ -52,8 +52,13 @@ export function CompanyPolicyModal({
     }
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-2xl border-border/50 shadow-2xl">
+        <Dialog open={open} onOpenChange={() => {/* Prevent dismissal - user must accept policies */}}>
+            <DialogContent
+                className="max-w-2xl border-border/50 shadow-2xl"
+                onInteractOutside={(e) => e.preventDefault()}
+                onEscapeKeyDown={(e) => e.preventDefault()}
+                showCloseButton={false}
+            >
                 <DialogHeader>
                     <div className="flex items-start gap-5 mb-4">
                         <div className="p-4 bg-gradient-to-br from-amber-100 to-amber-50 dark:from-amber-900/40 dark:to-amber-950/30 rounded-2xl shadow-sm ring-1 ring-amber-200/50 dark:ring-amber-800/50">
@@ -61,7 +66,7 @@ export function CompanyPolicyModal({
                         </div>
                         <div className="flex-1 pt-1">
                             <DialogTitle className="text-3xl font-bold text-balance leading-tight mb-2">
-                                Company Registration Policy
+                                {t("policyModal.companyTitle")}
                             </DialogTitle>
                             <p className="text-sm text-muted-foreground leading-relaxed">
                                 {t("policyModal.reviewPolicies")}
@@ -75,10 +80,9 @@ export function CompanyPolicyModal({
                         <div className="absolute top-0 right-0 w-32 h-32 bg-amber-200/20 dark:bg-amber-700/10 rounded-full blur-3xl -mr-16 -mt-16" />
                         <div className="relative">
                             <p className="text-sm leading-relaxed text-amber-950 dark:text-amber-50 font-medium">
-                                By continuing, you declare that the provided company information and EIK are accurate and correspond to
-                                a legally registered entity. Providing false or misleading data is punishable under{" "}
+                                {t("policyModal.companyBodyText")}{" "}
                                 <span className="font-bold text-amber-900 dark:text-amber-100 underline decoration-amber-400/50 decoration-2 underline-offset-2">
-                  Article 313 of the Bulgarian Penal Code
+                  {t("policyModal.article313")}
                 </span>
                                 .
                             </p>
@@ -142,18 +146,10 @@ export function CompanyPolicyModal({
 
                     <div className="flex justify-end gap-3 pt-6 border-t-2 border-border/50">
                         <Button
-                            variant="outline"
-                            onClick={() => onOpenChange(false)}
-                            disabled={loading}
-                            className="px-6 hover:bg-accent/50 transition-colors"
-                        >
-                            {t("policyModal.cancel")}
-                        </Button>
-                        <Button
                             onClick={handleAccept}
                             disabled={!tosChecked || !privacyChecked || loading}
                             size="lg"
-                            className="px-8 shadow-md hover:shadow-lg transition-all disabled:opacity-50"
+                            className="px-8 shadow-md text-background hover:shadow-lg transition-all disabled:opacity-50"
                         >
                             {loading ? (
                                 <>

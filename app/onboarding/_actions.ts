@@ -46,9 +46,10 @@ export async function completeOnboarding(formData: FormData) {
         roleInput === "team_member" ? "TEAM_MEMBER" : "STUDENT"
 
     try {
-        // Update Clerk metadata
+        // Update Clerk metadata - DON'T mark onboarding complete yet
+        // onboardingComplete will be set to true only after policies are accepted
         await clerkClient.users.updateUser(userId, {
-            publicMetadata: { role, onboardingComplete: true },
+            publicMetadata: { role, onboardingComplete: false },
         })
 
         // Get Clerk user info
@@ -57,15 +58,16 @@ export async function completeOnboarding(formData: FormData) {
             clerkUser.emailAddresses.find((e) => e.id === clerkUser.primaryEmailAddressId)
                 ?.emailAddress || ""
 
-        // Ensure user exists and update onboarding state
+        // Ensure user exists - DON'T mark onboarding complete yet
+        // onboardingComplete will be set to true only after policies are accepted via finalizeOnboarding
         const user = await prisma.user.upsert({
             where: { clerkId: userId },
-            update: { role, onboardingComplete: true },
+            update: { role, onboardingComplete: false },
             create: {
                 clerkId: userId,
                 email,
                 role,
-                onboardingComplete: true,
+                onboardingComplete: false,
                 profile: { create: { name: sanitizeForDb(clerkUser.firstName ?? ""), bio: "" } },
             },
         })
@@ -304,6 +306,110 @@ export async function completeOnboarding(formData: FormData) {
     }
 }
 
+/**
+ * Check if the user has a pending onboarding state (entity created but policies not accepted).
+ * Used to restore state on page reload.
+ */
+export async function checkOnboardingState() {
+    const { userId } = await auth()
+    if (!userId) return null
+
+    try {
+        const user = await prisma.user.findUnique({
+            where: { clerkId: userId },
+            include: {
+                companies: {
+                    select: { id: true, tosAccepted: true, privacyAccepted: true },
+                    take: 1,
+                },
+                portfolio: {
+                    select: { id: true },
+                },
+            },
+        })
+
+        if (!user) return null
+
+        return {
+            role: user.role,
+            onboardingComplete: user.onboardingComplete,
+            tosAccepted: user.tosAccepted,
+            privacyAccepted: user.privacyAccepted,
+            portfolioId: user.portfolio?.id || null,
+            companyId: user.companies[0]?.id || null,
+            companyTosAccepted: user.companies[0]?.tosAccepted || false,
+            companyPrivacyAccepted: user.companies[0]?.privacyAccepted || false,
+        }
+    } catch (err) {
+        console.error("❌ checkOnboardingState error:", err)
+        return null
+    }
+}
+
+/**
+ * Finalize onboarding by verifying that policies have been accepted in the DB,
+ * then marking onboardingComplete = true in both Clerk and the database.
+ * This is the ONLY place where onboardingComplete is set to true.
+ */
+export async function finalizeOnboarding() {
+    const { userId } = await auth()
+    if (!userId) return { error: "No logged in user" }
+
+    try {
+        const user = await prisma.user.findUnique({
+            where: { clerkId: userId },
+            include: {
+                companies: {
+                    select: { id: true, tosAccepted: true, privacyAccepted: true },
+                    take: 1,
+                },
+            },
+        })
+
+        if (!user) return { error: "User not found" }
+
+        const role = user.role
+
+        if (role === "STUDENT") {
+            // Verify student policy acceptance in DB
+            if (!user.tosAccepted || !user.privacyAccepted) {
+                return { error: "You must accept both Terms of Service and Privacy Policy before continuing." }
+            }
+        } else if (role === "COMPANY") {
+            // Verify company policy acceptance in DB
+            const company = user.companies[0]
+            if (!company || !company.tosAccepted || !company.privacyAccepted) {
+                return { error: "You must accept both Terms of Service and Privacy Policy before continuing." }
+            }
+        } else if (role === "TEAM_MEMBER") {
+            // Team members join existing companies - no separate policy acceptance needed
+        } else {
+            return { error: "Unknown role" }
+        }
+
+        // All checks passed - NOW mark onboarding as complete
+        await clerkClient.users.updateUser(userId, {
+            publicMetadata: { role, onboardingComplete: true },
+        })
+
+        await prisma.user.update({
+            where: { clerkId: userId },
+            data: { onboardingComplete: true },
+        })
+
+        const dashboard =
+            role === "COMPANY"
+                ? "/dashboard/company"
+                : role === "TEAM_MEMBER"
+                    ? "/dashboard/team-member"
+                    : "/dashboard/student"
+
+        return { dashboard }
+    } catch (err) {
+        console.error("❌ finalizeOnboarding error:", err)
+        return { error: "Error completing onboarding. Please try again." }
+    }
+}
 
 function calculateAge(dob: Date): number {
     const diff = Date.now() - dob.getTime()

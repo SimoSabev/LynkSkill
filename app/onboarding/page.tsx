@@ -5,7 +5,7 @@ import dynamic from "next/dynamic"
 import Image from "next/image"
 import { useUser } from "@clerk/nextjs"
 import { useRouter } from "next/navigation"
-import { completeOnboarding } from "./_actions"
+import { completeOnboarding, finalizeOnboarding, checkOnboardingState } from "./_actions"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -179,6 +179,52 @@ export default function OnboardingPage() {
             router.replace(dest)
         }
     }, [isLoaded, user, router])
+
+    // On mount/reload: check if user has a pending onboarding state (entity created but policies not accepted)
+    // This handles the case where the user reloads the page after the policy modal was shown
+    React.useEffect(() => {
+        if (!isLoaded || !user) return
+
+        const metadata = user.publicMetadata as { role?: string; onboardingComplete?: boolean } | undefined
+        // Only check if onboarding is NOT complete (user is in the middle of the flow)
+        if (metadata?.onboardingComplete) return
+
+        const restoreState = async () => {
+            try {
+                const state = await checkOnboardingState()
+                if (!state) return
+
+                if (state.role === "STUDENT" && state.portfolioId) {
+                    // Student has a portfolio but hasn't accepted policies
+                    if (!state.tosAccepted || !state.privacyAccepted) {
+                        setSelectedRole("student")
+                        setCreatedPortfolioId(state.portfolioId)
+                        setShowStudentPolicyModal(true)
+                    } else {
+                        // Policies accepted but onboarding not finalized - finalize now
+                        setSelectedRole("student")
+                        setStudentPolicyAccepted(true)
+                    }
+                } else if (state.role === "COMPANY" && state.companyId) {
+                    // Company exists but policies not accepted
+                    if (!state.companyTosAccepted || !state.companyPrivacyAccepted) {
+                        setSelectedRole("company")
+                        setCreatedCompanyId(state.companyId)
+                        setShowPolicyModal(true)
+                    } else {
+                        // Policies accepted but onboarding not finalized - finalize now
+                        setSelectedRole("company")
+                        setPolicyAccepted(true)
+                    }
+                }
+            } catch (err) {
+                console.error("Error restoring onboarding state:", err)
+            }
+        }
+
+        restoreState()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isLoaded, user])
 
     // Cleanup ObjectURL on unmount or when logoPreview changes
     React.useEffect(() => {
@@ -603,16 +649,30 @@ export default function OnboardingPage() {
         setIsPending(true)
 
         try {
-            const res = await completeOnboarding(formData)
-
-            if (res?.error) {
-                setError(res.error)
-                return
-            }
-
-            if (res?.dashboard) {
-                await user?.reload()
-                router.push(res.dashboard)
+            if (role === "team_member") {
+                // Team members don't need policy acceptance - use completeOnboarding directly
+                // (completeOnboarding handles team member join + sets onboardingComplete: true for them)
+                const res = await completeOnboarding(formData)
+                if (res?.error) {
+                    setError(res.error)
+                    return
+                }
+                if (res?.dashboard) {
+                    await user?.reload()
+                    router.push(res.dashboard)
+                }
+            } else {
+                // For students and companies: use finalizeOnboarding which verifies
+                // policies are accepted in the DB before marking onboardingComplete = true
+                const res = await finalizeOnboarding()
+                if (res?.error) {
+                    setError(res.error)
+                    return
+                }
+                if (res?.dashboard) {
+                    await user?.reload()
+                    router.push(res.dashboard)
+                }
             }
         } catch (err) {
             console.error(err)

@@ -52,8 +52,13 @@ export function StudentPolicyModal({
     }
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-2xl border-border/50 shadow-2xl">
+        <Dialog open={open} onOpenChange={() => {/* Prevent dismissal - user must accept policies */}}>
+            <DialogContent
+                className="max-w-2xl border-border/50 shadow-2xl"
+                onInteractOutside={(e) => e.preventDefault()}
+                onEscapeKeyDown={(e) => e.preventDefault()}
+                showCloseButton={false}
+            >
                 <DialogHeader>
                     <div className="flex items-start gap-5 mb-4">
                         <div className="p-4 bg-gradient-to-br from-blue-100 to-blue-50 dark:from-blue-900/40 dark:to-blue-950/30 rounded-2xl shadow-sm ring-1 ring-blue-200/50 dark:ring-blue-800/50">
@@ -61,7 +66,7 @@ export function StudentPolicyModal({
                         </div>
                         <div className="flex-1 pt-1">
                             <DialogTitle className="text-3xl font-bold text-balance leading-tight mb-2">
-                                Student Registration Policy
+                                {t("policyModal.studentTitle")}
                             </DialogTitle>
                             <p className="text-sm text-muted-foreground leading-relaxed">
                                 {t("policyModal.reviewPolicies")}
@@ -75,12 +80,11 @@ export function StudentPolicyModal({
                         <div className="absolute top-0 right-0 w-32 h-32 bg-amber-200/20 dark:bg-amber-700/10 rounded-full blur-3xl -mr-16 -mt-16" />
                         <div className="relative">
                             <p className="text-sm leading-relaxed text-amber-950 dark:text-amber-50 font-medium">
-                                By continuing, you confirm that you are at least{" "}
+                                {t("policyModal.studentBodyPart1")}{" "}
                                 <span className="font-bold text-amber-900 dark:text-amber-100 underline decoration-amber-400/50 decoration-2 underline-offset-2">
                   {t("policyModal.sixteenYearsOld")}
                 </span>
-                                , in accordance with Bulgarian law regarding digital services and data processing for minors. You also
-                                declare that all information provided in your student profile and portfolio is accurate and truthful.
+                                {t("policyModal.studentBodyPart2")}
                             </p>
                         </div>
                     </div>
@@ -142,18 +146,10 @@ export function StudentPolicyModal({
 
                     <div className="flex justify-end gap-3 pt-6 border-t-2 border-border/50">
                         <Button
-                            variant="outline"
-                            onClick={() => onOpenChange(false)}
-                            disabled={loading}
-                            className="px-6 hover:bg-accent/50 transition-colors"
-                        >
-                            {t("policyModal.cancel")}
-                        </Button>
-                        <Button
                             onClick={handleAccept}
                             disabled={!tosChecked || !privacyChecked || loading}
                             size="lg"
-                            className="px-8 shadow-md hover:shadow-lg transition-all disabled:opacity-50"
+                            className="px-8 text-background shadow-md hover:shadow-lg transition-all disabled:opacity-50"
                         >
                             {loading ? (
                                 <>

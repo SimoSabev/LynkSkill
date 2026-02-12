@@ -70,11 +70,12 @@ export function DashboardShell({ children, userType, memberPermissions = [] }: D
     const userName = user?.profile?.name ?? null
     const { role: memberRole } = useTeamMemberPermissions()
 
-    // Check if intro should be shown
+    // TEMPORARILY DISABLED: Mascot intro scene
+    // To re-enable, uncomment the condition below
     useEffect(() => {
-        if (user && !user.introShown) {
-            setShowMascot(true)
-        }
+        // if (user && !user.introShown) {
+        //     setShowMascot(true)
+        // }
     }, [user])
 
     if (isInitialLoading) {

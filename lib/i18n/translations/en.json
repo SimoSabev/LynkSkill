@@ -1234,9 +1234,15 @@
     "createInternship": "Create Internship"
   },
   "policyModal": {
+    "companyTitle": "Company Registration Policy",
+    "studentTitle": "Student Registration Policy",
     "reviewPolicies": "Please review and accept our policies to continue",
     "companyDeclaration": "By continuing, you declare that the provided company information and EIK are accurate and you are authorized to act on behalf of this company. All activities on this platform must comply with Bulgarian law.",
+    "companyBodyText": "By continuing, you declare that the provided company information and EIK are accurate and correspond to a legally registered entity. Providing false or misleading data is punishable under",
+    "article313": "Article 313 of the Bulgarian Penal Code",
     "studentDeclaration": "By continuing, you confirm that you are at least 16 years old, in accordance with Bulgarian law. All activities on this platform must comply with applicable regulations.",
+    "studentBodyPart1": "By continuing, you confirm that you are at least",
+    "studentBodyPart2": ", in accordance with Bulgarian law regarding digital services and data processing for minors. You also declare that all information provided in your student profile and portfolio is accurate and truthful.",
     "sixteenYearsOld": "16 years old",
     "readAcceptTerms": "I have read and accept the ",
     "termsOfService": "Terms of Service",

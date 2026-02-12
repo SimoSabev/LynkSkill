@@ -7,10 +7,18 @@ import { HowItWorks } from "@/components/landing/how-it-works"
 import { StatsSection } from "@/components/landing/stats-section"
 import { FAQSection } from "@/components/landing/faq-section"
 import { FooterCTA } from "@/components/landing/footer-cta"
+import { LanguageSwitcher } from "@/components/language-switcher"
+import { LandingThemeToggle } from "@/components/landing-theme-toggle"
 
 export default function LynkSkillLanding() {
     return (
         <div className="min-h-screen bg-background text-foreground overflow-hidden">
+            {/* Top-right language & theme controls */}
+            <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
+                <LanguageSwitcher />
+                <LandingThemeToggle />
+            </div>
+
             <HeroSection />
             <FeaturesOverview />
             <ServicesSection />

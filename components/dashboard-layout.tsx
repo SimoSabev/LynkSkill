@@ -72,11 +72,12 @@ export function DashboardLayout({ userType }: DashboardLayoutProps) {
         }
     }, [contextInternships])
 
-    // Check if intro should be shown (using cached user data)
+    // TEMPORARILY DISABLED: Mascot intro scene
+    // To re-enable, uncomment the condition below
     useEffect(() => {
-        if (user && !user.introShown) {
-            setShowMascot(true)
-        }
+        // if (user && !user.introShown) {
+        //     setShowMascot(true)
+        // }
     }, [user])
 
     function handleCreateInternship(newInternship: Internship) {
