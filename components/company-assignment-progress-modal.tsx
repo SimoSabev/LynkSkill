@@ -220,22 +220,22 @@ export function CompanyAssignmentProgressModal({
 
     return (
         <Dialog open={open} onOpenChange={() => onClose()}>
-            <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden p-0 gap-0 rounded-2xl border-border bg-background">
+            <DialogContent showCloseButton={false} className="w-[95vw] !max-w-7xl max-h-[90vh] overflow-hidden p-0 gap-0 rounded-2xl border-border bg-background">
                 {/* Header */}
                 <div className="relative overflow-hidden">
-                    <div className="bg-gradient-to-r from-slate-800 via-slate-800 to-slate-700 p-6">
+                    <div className="bg-gradient-to-r from-slate-800 via-slate-800 to-slate-700 p-4 md:p-6">
                         <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-blue-500/10 to-transparent" />
                         <div className="absolute -top-12 -right-12 w-32 h-32 bg-purple-500/10 rounded-full blur-2xl" />
                         
-                        <div className="relative flex items-center gap-4">
-                            <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-purple-500/20">
+                        <div className="relative flex items-center gap-3 md:gap-4">
+                            <div className="hidden sm:flex p-3 rounded-xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 border border-purple-500/20">
                                 <BarChart3 className="h-6 w-6 text-purple-400" />
                             </div>
-                            <div className="flex-1">
-                                <DialogTitle className="text-xl font-bold text-white">
+                            <div className="flex-1 min-w-0">
+                                <DialogTitle className="text-base md:text-xl font-bold text-white truncate">
                                     {t("assignmentProgress.dashboardTitle")}
                                 </DialogTitle>
-                                <p className="text-white/60 text-sm mt-1">
+                                <p className="text-white/60 text-xs md:text-sm mt-1 truncate">
                                     {t("assignmentProgress.dashboardSubtitle")}
                                 </p>
                             </div>
@@ -259,7 +259,7 @@ export function CompanyAssignmentProgressModal({
                 </div>
 
                 {/* Content */}
-                <div className="flex flex-col h-[calc(90vh-100px)] overflow-hidden">
+                <div className="flex flex-col h-[calc(90vh-80px)] md:h-[calc(90vh-100px)] overflow-hidden">
                     {loading ? (
                         <div className="flex items-center justify-center py-12">
                             <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
@@ -283,14 +283,14 @@ export function CompanyAssignmentProgressModal({
                             </p>
                         </div>
                     ) : (
-                        <div className="flex flex-1 overflow-hidden">
-                            {/* Sidebar - Internship List */}
-                            <div className="w-64 border-r border-border bg-muted/20 overflow-y-auto">
+                        <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
+                            {/* Sidebar - Internship List (horizontal scroll on mobile/tablet, vertical sidebar on desktop) */}
+                            <div className="lg:w-56 xl:w-64 border-b lg:border-b-0 lg:border-r border-border bg-muted/20 shrink-0">
                                 <div className="p-3">
                                     <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 px-2">
                                         {t("assignmentProgress.internships")}
                                     </p>
-                                    <div className="space-y-1">
+                                    <div className="flex lg:flex-col gap-2 lg:gap-1 overflow-x-auto lg:overflow-x-visible lg:overflow-y-auto pb-2 lg:pb-0">
                                         {internships.map(internship => {
                                             const assignmentCount = internship.assignments.length
                                             const submittedCount = internship.assignments.filter(a => a.submissions.length > 0).length
@@ -299,19 +299,19 @@ export function CompanyAssignmentProgressModal({
                                                 <button
                                                     key={internship.id}
                                                     onClick={() => setSelectedInternship(internship.id)}
-                                                    className={`w-full p-3 rounded-xl text-left transition-all ${
+                                                    className={`min-w-[180px] lg:min-w-0 w-full p-3 rounded-xl text-left transition-all shrink-0 ${
                                                         selectedInternship === internship.id
                                                             ? 'bg-purple-500/10 border border-purple-500/30'
-                                                            : 'hover:bg-muted'
+                                                            : 'hover:bg-muted border border-transparent'
                                                     }`}
                                                 >
                                                     <p className="font-medium text-sm truncate">{internship.title}</p>
                                                     <div className="flex items-center gap-2 mt-1">
-                                                        <span className="text-xs text-muted-foreground">
+                                                        <span className="text-xs text-muted-foreground whitespace-nowrap">
                                                             {submittedCount}/{assignmentCount} {t("assignmentProgress.submitted")}
                                                         </span>
                                                         {assignmentCount > 0 && (
-                                                            <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                                                            <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden min-w-[40px]">
                                                                 <div
                                                                     className="h-full bg-gradient-to-r from-purple-500 to-blue-500"
                                                                     style={{ width: `${(submittedCount / assignmentCount) * 100}%` }}
@@ -331,30 +331,30 @@ export function CompanyAssignmentProgressModal({
                                 {currentInternship ? (
                                     <>
                                         {/* Stats Bar */}
-                                        <div className="p-4 border-b border-border bg-muted/10">
-                                            <div className="grid grid-cols-4 gap-3">
-                                                <div className="p-3 rounded-xl bg-muted/50 text-center">
-                                                    <p className="text-2xl font-bold text-foreground">{stats.total}</p>
-                                                    <p className="text-xs text-muted-foreground">{t("assignmentProgress.total")}</p>
+                                        <div className="px-3 py-2 md:px-4 md:py-3 border-b border-border bg-muted/10">
+                                            <div className="grid grid-cols-4 gap-2 md:gap-3">
+                                                <div className="p-2 md:p-3 rounded-xl bg-muted/50 text-center">
+                                                    <p className="text-lg md:text-2xl font-bold text-foreground">{stats.total}</p>
+                                                    <p className="text-[9px] md:text-xs text-muted-foreground truncate">{t("assignmentProgress.total")}</p>
                                                 </div>
-                                                <div className="p-3 rounded-xl bg-emerald-500/10 text-center">
-                                                    <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{stats.submitted}</p>
-                                                    <p className="text-xs text-emerald-600/70 dark:text-emerald-400/70">{t("assignmentProgress.submittedLabel")}</p>
+                                                <div className="p-2 md:p-3 rounded-xl bg-emerald-500/10 text-center">
+                                                    <p className="text-lg md:text-2xl font-bold text-emerald-600 dark:text-emerald-400">{stats.submitted}</p>
+                                                    <p className="text-[9px] md:text-xs text-emerald-600/70 dark:text-emerald-400/70 truncate">{t("assignmentProgress.submittedLabel")}</p>
                                                 </div>
-                                                <div className="p-3 rounded-xl bg-amber-500/10 text-center">
-                                                    <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{stats.pending}</p>
-                                                    <p className="text-xs text-amber-600/70 dark:text-amber-400/70">{t("assignmentProgress.pendingLabel")}</p>
+                                                <div className="p-2 md:p-3 rounded-xl bg-amber-500/10 text-center">
+                                                    <p className="text-lg md:text-2xl font-bold text-amber-600 dark:text-amber-400">{stats.pending}</p>
+                                                    <p className="text-[9px] md:text-xs text-amber-600/70 dark:text-amber-400/70 truncate">{t("assignmentProgress.pendingLabel")}</p>
                                                 </div>
-                                                <div className="p-3 rounded-xl bg-red-500/10 text-center">
-                                                    <p className="text-2xl font-bold text-red-600 dark:text-red-400">{stats.overdue}</p>
-                                                    <p className="text-xs text-red-600/70 dark:text-red-400/70">{t("assignmentProgress.overdueLabel")}</p>
+                                                <div className="p-2 md:p-3 rounded-xl bg-red-500/10 text-center">
+                                                    <p className="text-lg md:text-2xl font-bold text-red-600 dark:text-red-400">{stats.overdue}</p>
+                                                    <p className="text-[9px] md:text-xs text-red-600/70 dark:text-red-400/70 truncate">{t("assignmentProgress.overdueLabel")}</p>
                                                 </div>
                                             </div>
                                         </div>
 
                                         {/* Filters */}
-                                        <div className="p-4 border-b border-border flex items-center gap-3">
-                                            <div className="relative flex-1 max-w-xs">
+                                        <div className="px-3 py-2 md:px-4 md:py-3 border-b border-border flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+                                            <div className="relative flex-1 sm:max-w-sm">
                                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                                 <Input
                                                     placeholder={t("assignmentProgress.searchStudents")}
@@ -363,14 +363,14 @@ export function CompanyAssignmentProgressModal({
                                                     className="pl-9 rounded-xl"
                                                 />
                                             </div>
-                                            <div className="flex items-center gap-1 p-1 rounded-xl bg-muted/50">
+                                            <div className="flex items-center gap-1 p-1 rounded-xl bg-muted/50 overflow-x-auto">
                                                 {(['all', 'submitted', 'pending', 'overdue'] as const).map(status => (
                                                     <Button
                                                         key={status}
                                                         size="sm"
                                                         variant={statusFilter === status ? 'default' : 'ghost'}
                                                         onClick={() => setStatusFilter(status)}
-                                                        className={`rounded-lg text-xs capitalize ${
+                                                        className={`rounded-lg text-xs capitalize whitespace-nowrap ${
                                                             statusFilter === status 
                                                                 ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white' 
                                                                 : ''
@@ -404,7 +404,7 @@ export function CompanyAssignmentProgressModal({
                                                                     animate={{ opacity: 1, y: 0 }}
                                                                     exit={{ opacity: 0, y: -10 }}
                                                                     transition={{ delay: index * 0.02 }}
-                                                                    className={`p-4 rounded-xl border transition-all cursor-pointer hover:shadow-md ${
+                                                                    className={`p-3 md:p-4 rounded-xl border transition-all cursor-pointer hover:shadow-md ${
                                                                         hasSubmissions 
                                                                             ? 'bg-emerald-500/5 border-emerald-500/20 hover:border-emerald-500/40' 
                                                                             : isOverdue
@@ -413,9 +413,9 @@ export function CompanyAssignmentProgressModal({
                                                                     }`}
                                                                     onClick={() => setSelectedAssignment(assignment)}
                                                                 >
-                                                                    <div className="flex items-start gap-4">
+                                                                    <div className="flex items-start gap-3 md:gap-4">
                                                                         {/* Student Avatar */}
-                                                                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold ${
+                                                                        <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center text-white font-bold text-sm md:text-base ${
                                                                             hasSubmissions 
                                                                                 ? 'bg-gradient-to-br from-emerald-500 to-green-600' 
                                                                                 : isOverdue
@@ -455,9 +455,9 @@ export function CompanyAssignmentProgressModal({
                                                                             </div>
 
                                                                             {/* Assignment Info */}
-                                                                            <div className="mt-3 p-2 rounded-lg bg-muted/30">
-                                                                                <p className="text-sm font-medium">{assignment.title}</p>
-                                                                                <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
+                                                                            <div className="mt-2 md:mt-3 p-2 rounded-lg bg-muted/30">
+                                                                                <p className="text-xs md:text-sm font-medium">{assignment.title}</p>
+                                                                                <div className="flex flex-wrap items-center gap-2 md:gap-4 mt-1 text-xs text-muted-foreground">
                                                                                     <span className="flex items-center gap-1">
                                                                                         <Calendar className="h-3 w-3" />
                                                                                         {t("assignmentProgress.due")}: {safeFormatDate(assignment.dueDate, "MMM d, yyyy")}

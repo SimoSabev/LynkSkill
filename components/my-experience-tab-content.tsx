@@ -561,7 +561,7 @@ export default function ExperienceTabContent({ highlightProjectId }: ExperienceT
         <div className="flex flex-wrap gap-3 mb-6">
           <Button
               variant={filter === "all" ? "default" : "outline"}
-              className="rounded-2xl"
+              className="rounded-2xl text-background"
               onClick={() => setFilter("all")}
           >
             <Layers className="mr-2 h-4 w-4" />
