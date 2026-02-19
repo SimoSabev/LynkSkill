@@ -11,12 +11,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: [
           // API routes (except public ones)
           '/api/',
-          // Dashboard and authenticated areas
-          '/dashboard/',
-          '/assignments/',
-          // Onboarding and redirect flows
-          '/onboarding/',
-          '/redirect-after-signin/',
           // Admin and sensitive areas
           '/admin/',
           '/settings/',
@@ -37,10 +31,6 @@ export default function robots(): MetadataRoute.Robots {
         allow: '/',
         disallow: [
           '/api/',
-          '/dashboard/',
-          '/assignments/',
-          '/onboarding/',
-          '/redirect-after-signin/',
           '/admin/',
           '/settings/',
           '/me/',
