@@ -590,7 +590,7 @@ export function CompanyAssignmentProgressModal({
                                         )}
                                     </div>
 
-                                    <Button onClick={() => setSelectedAssignment(null)} className="w-full">
+                                    <Button onClick={() => setSelectedAssignment(null)} className="w-full bg-background">
                                         {t("assignmentProgress.close")}
                                     </Button>
                                 </div>
