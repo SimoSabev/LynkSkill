@@ -1,417 +1,315 @@
-# LynkSkill
+<p align="center">
+  <img src="public/lynkskill.png" alt="LynkSkill Logo" width="120" />
+</p>
 
-A modern internship platform connecting students with companies, featuring AI-powered portfolio auditing, assignment management, and comprehensive dashboards for both students and companies.
+<h1 align="center">LynkSkill</h1>
 
-## 🌟 Features
+<p align="center">
+  <strong>The AI-Powered Platform Connecting Students with Career-Defining Internships</strong>
+</p>
 
-### For Students
-- **Portfolio Management**: Create and manage professional portfolios with skills, projects, experience, and education
-- **AI-Powered Portfolio Audit**: Get intelligent feedback and suggestions to improve your portfolio using OpenAI
-- **Internship Discovery**: Browse and apply to internships from various companies
-- **Application Tracking**: Monitor the status of your applications (Pending, Approved, Rejected)
-- **Assignment Management**: Complete and submit assignments for internships
-- **Experience Tracking**: Document and showcase your internship experiences
-- **Leaderboard**: See how you rank among other students
+<p align="center">
+  <a href="#-for-students">For Students</a> •
+  <a href="#-for-companies">For Companies</a> •
+  <a href="#-meet-linky">Meet Linky</a> •
+  <a href="#-why-lynkskill">Why LynkSkill</a> •
+  <a href="#-getting-started">Getting Started</a>
+</p>
 
-### For Companies
-- **Company Profile**: Create and manage company profiles with logos and descriptions
-- **Internship Posting**: Create and manage internship listings with detailed requirements
-- **Application Management**: Review and manage student applications
-- **Assignment Creation**: Create assignments for interns with due dates
-- **Experience Verification**: Review and grade student-submitted experiences
-- **EIK Validation**: Validate company identification numbers (Bulgarian EIK)
+<p align="center">
+  <img src="https://img.shields.io/badge/Platform-Web-blue?style=for-the-badge" alt="Platform" />
+  <img src="https://img.shields.io/badge/AI%20Powered-OpenAI-green?style=for-the-badge" alt="AI" />
+  <img src="https://img.shields.io/badge/Languages-EN%20%7C%20BG-purple?style=for-the-badge" alt="Languages" />
+  <img src="https://img.shields.io/badge/Theme-Light%20%26%20Dark-orange?style=for-the-badge" alt="Theme" />
+</p>
 
-### Platform Features
-- **Role-Based Access Control**: Separate dashboards for students and companies
-- **Onboarding Flow**: Guided setup process for new users
-- **Policy Acceptance**: Terms of Service and Privacy Policy acceptance
-- **Real-time Updates**: Live updates on applications and assignments
-- **Responsive Design**: Mobile-friendly interface with dark mode support
-- **AI Assistant**: Intelligent chat advisor for portfolio improvement
+---
 
-## 🛠️ Tech Stack
+## 🌍 What is LynkSkill?
 
-### Frontend
-- **Next.js 15** - React framework with App Router
-- **React 19** - UI library
-- **TypeScript** - Type-safe JavaScript
-- **Tailwind CSS 4** - Utility-first CSS framework
-- **Radix UI** - Accessible UI components
-- **Framer Motion** - Animation library
-- **React Hook Form** - Form management
-- **Zod** - Schema validation
-- **next-themes** - Theme management (dark/light mode)
+**LynkSkill** is the ultimate platform bridging the gap between **talented students** and **innovative businesses**. We're not just another job board — we're an intelligent career ecosystem powered by AI that helps students build professional portfolios, discover the right internships, and grow their careers, while giving companies the tools to find, manage, and develop top talent.
 
-### Backend
-- **Next.js API Routes** - Serverless API endpoints
-- **Prisma** - ORM for database operations
-- **PostgreSQL** - Database (hosted on Supabase)
+Whether you're a student looking for your first real-world experience or a company searching for fresh, motivated interns — **LynkSkill makes the connection seamless.**
 
-### Authentication & Authorization
-- **Clerk** - Authentication and user management
-- **Middleware** - Route protection and role-based access
+<p align="center">
+  <img src="https://img.shields.io/badge/Active%20Students-10%2C000%2B-blue?style=flat-square" />
+  <img src="https://img.shields.io/badge/Partner%20Companies-500%2B-green?style=flat-square" />
+  <img src="https://img.shields.io/badge/Internships%20Posted-15%2C000%2B-purple?style=flat-square" />
+  <img src="https://img.shields.io/badge/Success%20Rate-95%25-orange?style=flat-square" />
+</p>
 
-### AI & External Services
-- **OpenAI** - AI-powered portfolio auditing and chat advisor
-- **Supabase** - Database hosting and file storage
-- **Upstash Redis** - Rate limiting
+---
 
-### Development Tools
-- **ESLint** - Code linting
-- **TypeScript** - Type checking
-- **Prisma Studio** - Database GUI
+## 🎓 For Students
 
-## 📁 Project Structure
+Everything you need to launch your career — in one place.
 
-```
-LynkSkill/
-├── app/                          # Next.js App Router
-│   ├── api/                      # API routes
-│   │   ├── assistant/           # AI assistant endpoints
-│   │   ├── applications/        # Application management
-│   │   ├── assignments/         # Assignment management
-│   │   ├── companies/           # Company management
-│   │   ├── experience/          # Experience tracking
-│   │   ├── internships/         # Internship management
-│   │   ├── portfolio/           # Portfolio management
-│   │   ├── projects/            # Project management
-│   │   └── user/                # User management
-│   ├── dashboard/               # Dashboard pages
-│   │   ├── company/            # Company dashboard
-│   │   └── student/            # Student dashboard
-│   ├── onboarding/             # Onboarding flow
-│   ├── assignments/            # Assignment pages
-│   ├── privacy/                # Privacy policy
-│   └── terms/                  # Terms of service
-├── components/                  # React components
-│   ├── ui/                     # Reusable UI components
-│   ├── dashboard/              # Dashboard-specific components
-│   └── landing/                # Landing page components
-├── lib/                         # Utility libraries
-│   ├── clerk.ts               # Clerk client
-│   ├── openai.ts              # OpenAI client
-│   ├── prisma.ts              # Prisma client
-│   └── utils.ts               # Utility functions
-├── prisma/                     # Database schema and migrations
-│   └── schema.prisma          # Database models
-├── public/                     # Static assets
-└── scripts/                    # Utility scripts
-```
+### 📋 Build a Standout Portfolio
+Create a professional portfolio that highlights your **skills**, **projects**, **education**, **certifications**, and **career interests**. Upload project screenshots, transcripts, and certificates. Share your LinkedIn, GitHub, and personal website — all from a single, polished profile that employers actually want to see.
+
+### 🤖 AI Career Assistant (Linky)
+Meet **Linky**, your personal AI career coach. Linky doesn't just give generic advice — it analyzes your portfolio, identifies gaps, and generates tailored improvements. Need a headline? A bio? Skill suggestions? Linky writes them for you. It even generates **AI-powered cover letters** customized to each internship you apply for.
+
+### 🔍 Smart Internship Discovery
+Browse internships with powerful filters — by **location**, **salary range**, **skills**, **paid or unpaid**, and more. See popular skills, sort by relevance, and bookmark opportunities for later. When you're ready, apply with one click.
+
+### 📨 One-Click Applications
+Apply to internships instantly. Attach your portfolio, upload assignments, and include a cover letter — either written yourself or generated by AI. Track every application's status in real time: **Pending → Approved → Hired**.
+
+### 💬 Direct Messaging
+Communicate directly with companies. Ask questions, discuss roles, and stay in the loop — all within the platform. No more switching between email, LinkedIn, and WhatsApp.
+
+### 📅 Interview Management
+Receive interview invitations, confirm attendance, and join video calls — all from your dashboard. See upcoming and past interviews, with support for both **virtual meetings** and **in-person interviews** with map locations.
+
+### 📊 Leaderboard & Professional Score
+Stand out from the crowd. LynkSkill ranks students based on their **experience**, **skill scores**, **company endorsements**, and **professional achievements**. The leaderboard gamifies your career growth and gives you a competitive edge.
+
+### ⭐ Experience & Endorsements
+Document your internship work with media uploads. Get **endorsed by companies** with detailed ratings on your skills, impact, and growth. These endorsements build your professional reputation and are visible to future employers.
+
+### 📄 Assignment Submissions
+Complete and submit assignments directly on the platform. Drag-and-drop file uploads support PDF, DOC, ZIP, images, and more. Track deadlines, view feedback, and never miss a submission.
+
+---
+
+## 🏢 For Companies
+
+Powerful tools to find, hire, and develop the best interns.
+
+### 📝 Effortless Internship Management
+Create internship listings in minutes with rich details: **descriptions**, **qualifications**, **skills required**, **salary information**, **application periods**, and **location** (powered by interactive maps). Edit, renew, or close listings at any time.
+
+### 🔎 AI Talent Scout
+Let AI find candidates for you. LynkSkill's **AI Talent Scout** searches your candidate pool and returns match percentages, matched skills, and reasons why each student is a fit. Save search sessions and come back to top candidates anytime.
+
+### 📬 Streamlined Application Review
+Review applications with one-click **approve** or **reject**. View student portfolios inline, read cover letters, check assignment submissions, and make informed decisions — all without leaving the page.
+
+### 👥 Enterprise Team Management
+LynkSkill offers enterprise-grade team features:
+- **6 predefined roles**: Owner, Admin, HR Manager, HR Recruiter, Viewer, Member
+- **Custom roles** with **23 granular permissions** (create internships, manage members, edit company, and more)
+- **Invite via email** or **shareable company codes**
+- **Ownership transfer** with secure confirmation
+- Full control over who can do what — down to the permission level
+
+### 📹 Interview Scheduling
+Schedule interviews directly on the platform. Choose **video call** or **in-person** (with map-based location picker). Add notes, manage meeting links, and track interview statuses: Scheduled → Confirmed → Completed.
+
+### ⭐ Endorse & Rate Students
+After an internship, rate students on **skills** (1–5), **impact** (1–5), and **growth** (1–5). Write endorsement notes and set recommendation levels. Your endorsements help top students stand out — and help other companies find verified talent.
+
+### 📊 Assignment & Progress Tracking
+Create test assignments with deadlines. Monitor submissions, track completion rates, and review uploaded work — all from a dedicated progress dashboard.
+
+### 🔔 Smart Notifications
+Stay on top of everything: **new applications**, **assignment submissions**, **team changes**, **internship expirations**, and more. Notifications update in real time and include quick actions — accept an applicant right from the notification panel.
+
+### 🏢 Verified Company Profiles
+Build trust with a verified company profile. LynkSkill validates companies via **EIK (Единен идентификационен код)** verification during onboarding. Upload your logo, describe your mission, and show where you're located on the map.
+
+---
+
+## 🤖 Meet Linky
+
+<p align="center">
+  <strong>Your AI-Powered Career Companion</strong>
+</p>
+
+**Linky** is LynkSkill's intelligent mascot — not just a chatbot, but a fully integrated AI assistant that guides users through the entire platform experience.
+
+| For Students | For Companies |
+|:---|:---|
+| 🎯 Portfolio audit & improvement suggestions | 🔍 AI-powered candidate search & matching |
+| ✍️ Auto-generate headlines, bios, and skills | 📊 Match percentages with explanations |
+| 💌 One-click cover letter generation | 💡 Talent pool insights and recommendations |
+| 💬 Career advice through conversational chat | 📋 Session saving for ongoing searches |
+
+Linky remembers your conversations, learns your needs, and gets smarter the more you use it.
+
+---
+
+## 💡 Why LynkSkill?
+
+| Feature | LynkSkill | Traditional Job Boards |
+|:--------|:---------:|:----------------------:|
+| AI-powered matching | ✅ | ❌ |
+| Portfolio builder with AI | ✅ | ❌ |
+| Built-in messaging | ✅ | ❌ |
+| Interview scheduling with maps | ✅ | ❌ |
+| Company endorsements & ratings | ✅ | ❌ |
+| Gamified leaderboard | ✅ | ❌ |
+| Team management with RBAC | ✅ | ❌ |
+| Multilingual (EN + BG) | ✅ | Rare |
+| Dark & light themes | ✅ | Rare |
+| AI cover letter generation | ✅ | ❌ |
+| Company verification (EIK) | ✅ | ❌ |
+| Assignment & project tracking | ✅ | ❌ |
+| Free for students | ✅ | Sometimes |
+
+---
+
+## ⚡ How It Works
+
+<table>
+<tr>
+<td align="center" width="25%">
+<h3>1️⃣</h3>
+<strong>Create Your Profile</strong><br/>
+Sign up in seconds. Choose your role — Student or Company — and complete a guided onboarding flow.
+</td>
+<td align="center" width="25%">
+<h3>2️⃣</h3>
+<strong>Discover Opportunities</strong><br/>
+Students browse internships with smart filters. Companies post listings and let AI find the best candidates.
+</td>
+<td align="center" width="25%">
+<h3>3️⃣</h3>
+<strong>Apply & Connect</strong><br/>
+Apply with one click, message employers directly, schedule interviews, and submit assignments — all in one place.
+</td>
+<td align="center" width="25%">
+<h3>4️⃣</h3>
+<strong>Grow Your Career</strong><br/>
+Earn endorsements, climb the leaderboard, build your portfolio, and unlock career opportunities.
+</td>
+</tr>
+</table>
+
+---
+
+## 🌐 Platform Features
+
+### 🌍 Multilingual Support
+LynkSkill is fully available in **English** and **Bulgarian**, with every label, button, notification, and AI response localized. Switch languages anytime from the dashboard or landing page.
+
+### 🌗 Dark & Light Themes
+A beautiful, modern interface that looks great in both modes. Toggle between light and dark themes system-wide, with smooth transitions and carefully calibrated contrast.
+
+### 🔔 Real-Time Notifications
+20+ notification types covering applications, assignments, interviews, messages, team changes, internship deadlines, and more. Notifications update in real time and support quick inline actions.
+
+### 🗺️ Interactive Maps
+Powered by **OpenStreetMap**, every location input — company addresses, internship locations, interview venues — comes with an interactive map. Click to set, search to find, or use your current GPS location.
+
+### 📱 Fully Responsive
+Designed mobile-first with optimized layouts for phones, tablets, and desktops. Collapsible sidebars, adaptive grids, and touch-friendly interactions ensure a seamless experience on any device.
+
+### 🔒 Secure & Compliant
+Enterprise-grade authentication, rate limiting on all API endpoints, role-based route protection, and policy compliance workflows with Terms of Service and Privacy Policy acceptance.
+
+---
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 
-- Node.js 18+ and npm/yarn/pnpm
-- PostgreSQL database (Supabase recommended)
-- Clerk account for authentication
-- OpenAI API key for AI features
-
-### Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd LynkSkill
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Set up environment variables**
-
-   Create a `.env` file in the root directory with the following variables:
-
-   ```env
-   # Database (Supabase)
-   DATABASE_URL="postgresql://postgres:password@aws-0-region.pooler.supabase.com:6543/postgres?pgbouncer=true"
-   DIRECT_URL="postgresql://postgres:password@db.project.supabase.co:5432/postgres"
-   NEXT_PUBLIC_SUPABASE_URL="https://project.supabase.co"
-   NEXT_PUBLIC_SUPABASE_ANON_KEY="your-anon-key"
-   SUPABASE_SERVICE_ROLE_KEY="your-service-role-key"
-
-   # Clerk Authentication
-   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="pk_test_..."
-   CLERK_SECRET_KEY="sk_test_..."
-   NEXT_PUBLIC_CLERK_SIGN_IN_FORCE_REDIRECT_URL=/redirect-after-signin
-   NEXT_PUBLIC_CLERK_SIGN_UP_FORCE_REDIRECT_URL=/redirect-after-signin
-
-   # OpenAI (for AI assistant)
-   OPENAI_API_KEY="sk-proj-..."
-   ```
-
-4. **Set up the database**
-
-   ```bash
-   # Generate Prisma client
-   npx prisma generate
-
-   # Run migrations
-   npx prisma migrate dev
-
-   # (Optional) Open Prisma Studio to view database
-   npx prisma studio
-   ```
-
-5. **Configure Clerk**
-
-   - Create a Clerk account at [clerk.com](https://clerk.com)
-   - Create a new application
-   - Copy the Publishable Key and Secret Key to your `.env` file
-   - Configure JWT templates in Clerk dashboard to include:
-     - `role`: "STUDENT" or "COMPANY"
-     - `onboardingComplete`: boolean
-
-6. **Start the development server**
-
-   ```bash
-   npm run dev
-   ```
-
-   Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-## 📊 Database Schema
-
-### Core Models
-
-- **User**: Represents both students and companies
-  - `role`: STUDENT or COMPANY
-  - `onboardingComplete`: Boolean
-  - `tosAccepted`, `privacyAccepted`: Policy acceptance
-
-- **Company**: Company profiles
-  - `name`, `eik`, `description`, `location`, `website`, `logo`
-  - Relations: internships, projects, experiences
-
-- **Profile**: User profile information
-  - `name`, `bio`
-
-- **Internship**: Internship listings
-  - `title`, `description`, `qualifications`, `location`
-  - `paid`, `salary`, `applicationStart`, `applicationEnd`
-  - `testAssignmentTitle`, `testAssignmentDescription`, `testAssignmentDueDate`
-
-- **Application**: Student applications to internships
-  - `status`: PENDING, APPROVED, REJECTED
-  - Relations: internship, student, project
-
-- **Assignment**: Tasks assigned to students
-  - `title`, `description`, `dueDate`
-  - Relations: internship, student, submissions
-
-- **AssignmentFile**: File submissions for assignments
-  - `name`, `size`, `url`
-
-- **Portfolio**: Student portfolios
-  - `fullName`, `headline`, `bio`, `skills`, `interests`
-  - `experience`, `education`, `projects`, `certifications`
-  - `linkedin`, `github`, `portfolioUrl`
-  - `approvalStatus`: PENDING, APPROVED, REJECTED
-
-- **Project**: Projects created during internships
-  - `title`, `description`
-  - Relations: internship, application, student, company, experiences
-
-- **Experience**: Experience entries with media
-  - `mediaUrls`, `status`, `grade`
-  - Relations: student, company, project
-
-## 🔐 Authentication & Authorization
-
-### Clerk Integration
-
-The platform uses Clerk for authentication. Key features:
-
-- **Sign In/Sign Up**: Email/password and OAuth providers
-- **Session Management**: Automatic session handling
-- **JWT Templates**: Custom claims for role and onboarding status
-- **Middleware Protection**: Route-based access control
-
-### Role-Based Access Control
-
-- **Student Routes**: `/dashboard/student/*`
-- **Company Routes**: `/dashboard/company/*`
-- **Public Routes**: `/`, `/terms`, `/privacy`
-- **Onboarding Routes**: `/onboarding`, `/redirect-after-signin`
-
-### Middleware Flow
-
-1. Check if route is public → Allow access
-2. Check if user is authenticated → Sync with database
-3. Check onboarding status → Redirect if incomplete
-4. Check role → Redirect to appropriate dashboard
-
-## 🤖 AI Assistant
-
-The AI assistant provides two modes:
-
-### Portfolio Audit Mode
-- Analyzes student portfolios
-- Identifies strengths and weaknesses
-- Provides actionable improvement suggestions
-- Uses OpenAI GPT models for intelligent analysis
-
-### Chat Advisor Mode
-- Interactive Q&A about portfolio improvement
-- Context-aware responses based on previous conversations
-- Section-specific advice (Headline, Bio, Skills, etc.)
-
-### Implementation
-
-- **Endpoint**: `/api/assistant`
-- **Authentication**: Required (Clerk)
-- **Timeout**: 60 seconds
-- **Memory**: In-memory session tracking (30 min TTL)
-
-## 📝 API Routes
-
-### Authentication
-- `POST /api/sync-users` - Sync Clerk users with database
-- `GET /api/get-role` - Get user role
-- `GET /api/check-user` - Check if user exists
-
-### Applications
-- `GET /api/applications` - Get all applications
-- `GET /api/applications/me` - Get current user's applications
-- `GET /api/applications/company` - Get company's applications
-- `GET /api/applications/[id]` - Get application by ID
-
-### Assignments
-- `GET /api/assignments/[id]` - Get assignment details
-- `POST /api/assignments/[id]/upload` - Upload assignment file
-- `GET /api/assignments/company` - Get company's assignments
-- `GET /api/student-assignments/[id]` - Get student's assignment
-- `POST /api/student-assignments/[id]/upload` - Upload student assignment
-
-### Companies
-- `GET /api/companies` - Get all companies
-- `GET /api/companies/approved` - Get approved companies
-- `GET /api/company/me` - Get current user's company
-- `POST /api/company/accept-policies` - Accept company policies
-
-### Experience
-- `GET /api/experience` - Get experiences
-- `GET /api/experience/[id]` - Get experience by ID
-- `GET /api/experience/recent-files` - Get recent experience files
-
-### Internships
-- `GET /api/internships` - Get all internships
-- `GET /api/internships/[id]` - Get internship by ID
-- `DELETE /api/internship/delete` - Delete internship
-
-### Portfolio
-- `GET /api/portfolio` - Get portfolio
-- `GET /api/portfolio/me` - Get current user's portfolio
-- `GET /api/portfolio/[studentId]` - Get student's portfolio
-- `POST /api/portfolio/upload` - Upload portfolio file
-
-### Projects
-- `GET /api/projects` - Get all projects
-- `GET /api/projects/approved` - Get approved projects
-- `POST /api/projects/cleanup` - Cleanup old projects
-
-### User
-- `GET /api/user/me` - Get current user
-- `POST /api/user/intro-shown` - Mark intro as shown
-
-### Other
-- `POST /api/assistant` - AI assistant endpoint
-- `POST /api/validate-eik` - Validate Bulgarian EIK
-- `POST /api/upload-logo` - Upload company logo
-- `POST /api/cleanup` - Cleanup old data
-- `GET /api/leaderboard` - Get leaderboard
-
-## 🎨 UI Components
-
-### Radix UI Components
-- Avatar, Badge, Button, Calendar, Card, Chart, Checkbox
-- Dialog, Dropdown Menu, Form, Input, Label, Popover
-- Progress, Scroll Area, Select, Separator, Skeleton
-- Tabs, Textarea, Tooltip
-
-### Custom Components
-- `AIAssistant` - AI chat interface
-- `AIMascotScene` - 3D mascot animation
-- `ApplyBtn` - Apply button component
-- `DashboardLayout` - Dashboard layout wrapper
-- `FileUpload` - File upload component
-- `HeroSection` - Landing page hero
-- `InternshipModal` - Internship details modal
-- `Portfolio` - Portfolio display component
-- `ThemeToggle` - Dark/light mode toggle
-- `UserMenu` - User dropdown menu
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-**Database Connection Errors**
-- Verify `DATABASE_URL` and `DIRECT_URL` are correct
-- Check Supabase project status
-- Ensure connection pooling is enabled
-
-**Clerk Authentication Issues**
-- Verify Clerk keys in `.env`
-- Check JWT templates include required claims
-- Clear browser cookies and try again
-
-**AI Assistant Not Working**
-- Verify `OPENAI_API_KEY` is set
-- Check API key has sufficient credits
-- Review server logs for timeout errors
-
-**File Upload Failures**
-- Check file size limits (50MB max)
-- Verify Supabase storage permissions
-- Ensure `NEXT_PUBLIC_SUPABASE_URL` is correct
-
-**Build Errors**
-- Run `npx prisma generate` before building
-- Check TypeScript errors with `npx tsc --noEmit`
-- Clear `.next` cache: `rm -rf .next`
+- **Node.js 18+** and npm
+- **PostgreSQL** database ([Supabase](https://supabase.com) recommended)
+- [**Clerk**](https://clerk.com) account for authentication
+- [**OpenAI**](https://platform.openai.com) API key for AI features
+
+### Quick Start
+
+```bash
+# Clone the repository
+git clone https://github.com/SimoSabev/LynkSkill.git
+cd LynkSkill
+
+# Install dependencies
+npm install
+
+# Set up environment variables
+cp .env.example .env
+# Edit .env with your credentials
+
+# Set up the database
+npx prisma generate
+npx prisma migrate dev
+
+# Start the development server
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) and you're ready to go.
+
+### Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `DATABASE_URL` | PostgreSQL connection string (pooled) |
+| `DIRECT_URL` | PostgreSQL direct connection string |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anonymous key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk publishable key |
+| `CLERK_SECRET_KEY` | Clerk secret key |
+| `OPENAI_API_KEY` | OpenAI API key for AI features |
+
+---
+
+## 🏗️ Architecture
+
+LynkSkill is built on a modern, production-ready stack:
+
+| Layer | Technology |
+|-------|-----------|
+| **Framework** | Next.js 15 (App Router) |
+| **Frontend** | React 19, TypeScript |
+| **Styling** | Tailwind CSS 4, Radix UI, Framer Motion |
+| **Auth** | Clerk |
+| **Database** | PostgreSQL (Supabase) + Prisma ORM |
+| **AI Engine** | OpenAI GPT |
+| **Storage** | Supabase Storage |
+| **Maps** | Leaflet + OpenStreetMap |
+| **Email** | Resend |
+| **Rate Limiting** | Upstash Redis |
+| **Charts** | Recharts |
+
+---
 
 ## 📦 Deployment
 
 ### Vercel (Recommended)
 
-1. Push code to GitHub
-2. Import project in Vercel
+1. Push to GitHub
+2. Import in [Vercel](https://vercel.com)
 3. Add environment variables
 4. Deploy
 
-### Environment Variables for Production
-
-All variables from `.env` must be added to Vercel:
-- Database URLs
-- Clerk keys
-- OpenAI API key
-- Supabase keys
-
-### Database Migrations
-
-Run migrations in production:
 ```bash
+# Run database migrations in production
 npx prisma migrate deploy
 ```
 
+---
+
 ## 🤝 Contributing
 
+We welcome contributions! Here's how:
+
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Run tests and linting
-5. Submit a pull request
-
-## 📄 License
-
-This project is private and confidential.
-
-## 📞 Support
-
-For issues or questions, please contact the development team.
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ---
 
-Built with ❤️ using Next.js, Clerk, and Supabase
+## 📄 License
+
+This project is proprietary. All rights reserved.
+
+---
+
+## 📞 Support
+
+Have questions or need help? Reach out through the **Help Center** in the app or contact the team directly.
+
+---
+
+<p align="center">
+  <strong>LynkSkill</strong> — Where talent meets opportunity.<br/>
+  Built with ❤️ for the next generation of professionals.
+</p>

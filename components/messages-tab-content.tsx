@@ -421,7 +421,7 @@ export function MessagesTabContent({ userType }: MessagesTabContentProps) {
                                     <Button
                                         type="submit"
                                         disabled={!newMessage.trim() || isSending}
-                                        className="rounded-xl px-6 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600"
+                                        className="rounded-xl px-6 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white"
                                     >
                                         {isSending ? (
                                             <Loader2 className="h-4 w-4 animate-spin" />

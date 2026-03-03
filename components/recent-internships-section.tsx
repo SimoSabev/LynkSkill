@@ -14,6 +14,18 @@ import { BookmarkButton } from "@/components/bookmark-button"
 import { InternshipFiltersComponent, type InternshipFilters } from "@/components/internship-filters"
 import { useDashboard } from "@/lib/dashboard-context"
 import { useTranslation } from "@/lib/i18n"
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+    DialogFooter,
+} from "@/components/ui/dialog"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Calendar as CalendarPicker } from "@/components/ui/calendar"
+import { cn } from "@/lib/utils"
+import { format, formatDistanceToNow } from "date-fns"
 
 interface Application {
     id: string
@@ -56,6 +68,10 @@ export function RecentInternshipsSection({ userType, setActiveTab: _setActiveTab
     const [filter, setFilter] = useState<"all" | "recent">("all")
     const [displayCount, setDisplayCount] = useState(6)
     const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
+    const [renewModalOpen, setRenewModalOpen] = useState(false)
+    const [renewTarget, setRenewTarget] = useState<Internship | null>(null)
+    const [renewDate, setRenewDate] = useState<Date | undefined>(undefined)
+    const [renewing, setRenewing] = useState(false)
 
     // Use context data instead of local state
     const internships = contextInternships as Internship[]
@@ -90,6 +106,44 @@ export function RecentInternshipsSection({ userType, setActiveTab: _setActiveTab
                 onDismiss: () => setPendingDeleteId(null),
                 onAutoClose: () => setPendingDeleteId(null),
             })
+        }
+    }
+
+    const openRenewModal = (internship: Internship) => {
+        setRenewTarget(internship)
+        const d = new Date()
+        d.setDate(d.getDate() + 30)
+        setRenewDate(d)
+        setRenewModalOpen(true)
+    }
+
+    const handleRenew = async () => {
+        if (!renewTarget || !renewDate) return
+        setRenewing(true)
+        try {
+            const res = await fetch("/api/internships/renew", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    internshipId: renewTarget.id,
+                    newEndDate: renewDate.toISOString(),
+                }),
+            })
+            if (res.ok) {
+                toast.success(t("recentInternships.renewedSuccessfully", { title: renewTarget.title }))
+                setRenewModalOpen(false)
+                setRenewTarget(null)
+                setRenewDate(undefined)
+                mutateInternships()
+                window.dispatchEvent(new CustomEvent("internshipRenewed"))
+            } else {
+                const data = await res.json()
+                toast.error(data.error || t("expiringBanner.failedToRenew"))
+            }
+        } catch {
+            toast.error(t("expiringBanner.failedToRenew"))
+        } finally {
+            setRenewing(false)
         }
     }
 
@@ -545,18 +599,31 @@ export function RecentInternshipsSection({ userType, setActiveTab: _setActiveTab
                                                             </Button>
                                                         </>
                                                     ) : (
-                                                        <Button
-                                                            size="default"
-                                                            className="flex-1 gap-2 h-11 rounded-xl bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white font-medium transition-all shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40"
-                                                            onClick={() => {
-                                                                setSelectedInternship(item)
-                                                                setManageOpen(true)
-                                                            }}
-                                                        >
-                                                            <Settings className="h-4 w-4" />
-                                                            {t("recentInternships.manage")}
-                                                            <ArrowRight className="h-4 w-4 ml-auto" />
-                                                        </Button>
+                                                        <div className="flex gap-2 w-full">
+                                                            {isExpired && (
+                                                                <Button
+                                                                    size="default"
+                                                                    variant="outline"
+                                                                    className="gap-1.5 h-11 rounded-xl border-purple-500/30 text-purple-600 dark:text-purple-400 hover:bg-purple-500/10 hover:border-purple-500/50 transition-all"
+                                                                    onClick={() => openRenewModal(item)}
+                                                                >
+                                                                    <RefreshCw className="h-3.5 w-3.5" />
+                                                                    {t("recentInternships.renew")}
+                                                                </Button>
+                                                            )}
+                                                            <Button
+                                                                size="default"
+                                                                className="flex-1 gap-2 h-11 rounded-xl bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white font-medium transition-all shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40"
+                                                                onClick={() => {
+                                                                    setSelectedInternship(item)
+                                                                    setManageOpen(true)
+                                                                }}
+                                                            >
+                                                                <Settings className="h-4 w-4" />
+                                                                {t("recentInternships.manage")}
+                                                                <ArrowRight className="h-4 w-4 ml-auto" />
+                                                            </Button>
+                                                        </div>
                                                     )}
                                                 </div>
                                             </div>
@@ -596,6 +663,133 @@ export function RecentInternshipsSection({ userType, setActiveTab: _setActiveTab
                 internship={selectedInternship}
                 onUpdate={() => mutateInternships()}
             />
+
+            {/* Renew Modal */}
+            <Dialog open={renewModalOpen} onOpenChange={setRenewModalOpen}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500 to-blue-500 shadow-lg">
+                                <RefreshCw className="h-4 w-4 text-white" />
+                            </div>
+                            {t("expiringBanner.renewInternship")}
+                        </DialogTitle>
+                        <DialogDescription>
+                            {t("expiringBanner.chooseNewEndDate")} &quot;{renewTarget?.title}&quot;
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-4 py-4">
+                        {renewTarget && (
+                            <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+                                <div className="flex items-center gap-2 text-sm">
+                                    <Building2 className="h-4 w-4 text-muted-foreground" />
+                                    <span className="font-medium">{renewTarget.title}</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                    <Calendar className="h-3 w-3" />
+                                    {t("expiringBanner.currentEnd")}: {renewTarget.applicationEnd ? format(new Date(renewTarget.applicationEnd), "MMM d, yyyy") : "—"}
+                                    {renewTarget.applicationEnd && (
+                                        <span className="text-amber-500 font-medium">
+                                            ({formatDistanceToNow(new Date(renewTarget.applicationEnd), { addSuffix: true })})
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-foreground">{t("expiringBanner.quickExtend")}</label>
+                            <div className="grid grid-cols-3 gap-2">
+                                {[
+                                    { days: 14, label: t("expiringBanner.twoWeeks") },
+                                    { days: 30, label: t("expiringBanner.oneMonth") },
+                                    { days: 60, label: t("expiringBanner.twoMonths") },
+                                ].map(({ days, label }) => {
+                                    const d = new Date()
+                                    d.setDate(d.getDate() + days)
+                                    return (
+                                        <Button
+                                            key={days}
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => setRenewDate(d)}
+                                            className={cn(
+                                                "h-10 text-xs rounded-lg transition-all",
+                                                renewDate && Math.abs(renewDate.getTime() - d.getTime()) < 86400000
+                                                    ? "border-purple-500 bg-purple-500/10 text-purple-600 dark:text-purple-400"
+                                                    : "hover:border-purple-500/40"
+                                            )}
+                                        >
+                                            <Sparkles className="h-3 w-3 mr-1" />
+                                            {label}
+                                        </Button>
+                                    )
+                                })}
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-foreground">{t("expiringBanner.pickDate")}</label>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        className={cn(
+                                            "w-full justify-start text-left font-normal rounded-lg h-10",
+                                            !renewDate && "text-muted-foreground"
+                                        )}
+                                    >
+                                        <Calendar className="mr-2 h-4 w-4" />
+                                        {renewDate ? format(renewDate, "MMMM d, yyyy") : t("expiringBanner.selectDate")}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                    <CalendarPicker
+                                        mode="single"
+                                        selected={renewDate}
+                                        onSelect={setRenewDate}
+                                        disabled={(date) => date <= new Date()}
+                                        initialFocus
+                                    />
+                                </PopoverContent>
+                            </Popover>
+                        </div>
+
+                        {renewDate && (
+                            <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3">
+                                <p className="text-sm text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
+                                    <CheckCircle2 className="h-4 w-4" />
+                                    {t("expiringBanner.newDeadline")}: <strong>{format(renewDate, "MMMM d, yyyy")}</strong>
+                                </p>
+                            </div>
+                        )}
+                    </div>
+
+                    <DialogFooter className="gap-2">
+                        <Button variant="outline" onClick={() => setRenewModalOpen(false)} className="rounded-lg">
+                            {t("common.cancel")}
+                        </Button>
+                        <Button
+                            onClick={handleRenew}
+                            disabled={!renewDate || renewing}
+                            className="rounded-lg gap-2 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white shadow-lg shadow-purple-500/25"
+                        >
+                            {renewing ? (
+                                <>
+                                    <RefreshCw className="h-4 w-4 animate-spin" />
+                                    {t("expiringBanner.renewing")}
+                                </>
+                            ) : (
+                                <>
+                                    <RefreshCw className="h-4 w-4" />
+                                    {t("expiringBanner.renewInternship")}
+                                </>
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </section>
     )
 }

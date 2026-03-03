@@ -574,7 +574,7 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                                                                 size="sm"
                                                                 variant="outline"
                                                                 onClick={() => viewPortfolio(app.studentId)}
-                                                                className="flex-1 border-primary/20 text-primary hover:bg-primary hover:text-white font-semibold"
+                                                                className="flex-1 border-primary/20 text-primary hover:bg-primary hover:text-primary-foreground font-semibold"
                                                             >
                                                                 <Eye className="w-4 h-4 mr-2" />
                                                                 {t('applyTab.viewPortfolio')}

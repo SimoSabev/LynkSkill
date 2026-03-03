@@ -1577,7 +1577,7 @@ export default function CompanyDashboardPagee() {
                                             <Card className="overflow-hidden rounded-3xl border-2 hover:border-primary/50 transition-all duration-300">
                                                 <CardHeader className="pb-2">
                                                     <div className="flex items-center justify-between">
-                                                        <Badge className="rounded-xl bg-blue-500">{t("dashboardCompany.beginner")}</Badge>
+                                                        <Badge className="rounded-xl bg-blue-500 text-white">{t("dashboardCompany.beginner")}</Badge>
                                                         <Award className="h-5 w-5 text-amber-500" />
                                                     </div>
                                                     <CardTitle className="mt-2">{t("dashboardCompany.uiuxFundamentals")}</CardTitle>
@@ -1629,7 +1629,7 @@ export default function CompanyDashboardPagee() {
                                             <Card className="overflow-hidden rounded-3xl border-2 hover:border-primary/50 transition-all duration-300">
                                                 <CardHeader className="pb-2">
                                                     <div className="flex items-center justify-between">
-                                                        <Badge className="rounded-xl bg-red-500">{t("dashboardCompany.advanced")}</Badge>
+                                                        <Badge className="rounded-xl bg-red-500 text-white">{t("dashboardCompany.advanced")}</Badge>
                                                         <Award className="h-5 w-5 text-amber-500" />
                                                     </div>
                                                     <CardTitle className="mt-2">{t("dashboardCompany.motionGraphics")}</CardTitle>

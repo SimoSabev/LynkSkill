@@ -375,7 +375,7 @@ export default function StudentGuidePage() {
                     Can&apos;t find what you&apos;re looking for? Our support team is here to help.
                 </p>
                 <Link href="/dashboard/company/help">
-                    <Button className="bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600">
+                    <Button className="bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 text-white">
                         <MessageCircle className="h-4 w-4 mr-2" />
                         Contact Support
                     </Button>

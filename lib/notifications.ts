@@ -240,6 +240,84 @@ export async function notifyCoverLetterReminder(
 }
 
 /**
+ * Creates notification when an internship is about to expire (for company users)
+ */
+export async function notifyInternshipExpiringSoon(
+    userId: string,
+    internshipTitle: string,
+    companyName: string,
+    daysRemaining: number,
+    internshipId: string
+) {
+    return createNotification({
+        userId,
+        type: "INTERNSHIP_EXPIRING_SOON",
+        title: "Internship Expiring Soon ⚠️",
+        message: `Your internship "${internshipTitle}" at ${companyName} will expire in ${daysRemaining} day${daysRemaining > 1 ? "s" : ""}. Renew it to keep it active.`,
+        link: "/dashboard/company/internships",
+        metadata: {
+            internshipId,
+            internshipTitle,
+            companyName,
+            daysRemaining
+        }
+    })
+}
+
+/**
+ * Creates notification when an internship has expired and been auto-deleted
+ */
+export async function notifyInternshipExpired(
+    userId: string,
+    internshipTitle: string,
+    companyName: string,
+    internshipId?: string
+) {
+    return createNotification({
+        userId,
+        type: "INTERNSHIP_EXPIRED",
+        title: "Internship Expired & Removed",
+        message: `Your internship "${internshipTitle}" at ${companyName} has expired and been automatically removed.`,
+        link: "/dashboard/company/internships",
+        metadata: {
+            internshipId,
+            internshipTitle,
+            companyName
+        }
+    })
+}
+
+/**
+ * Creates notification when an internship is successfully renewed
+ */
+export async function notifyInternshipRenewed(
+    userId: string,
+    internshipTitle: string,
+    companyName: string,
+    newEndDate: Date,
+    internshipId: string
+) {
+    const formattedDate = newEndDate.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric"
+    })
+    return createNotification({
+        userId,
+        type: "INTERNSHIP_RENEWED",
+        title: "Internship Renewed ✅",
+        message: `Your internship "${internshipTitle}" at ${companyName} has been renewed until ${formattedDate}.`,
+        link: "/dashboard/company/internships",
+        metadata: {
+            internshipId,
+            internshipTitle,
+            companyName,
+            newEndDate: newEndDate.toISOString()
+        }
+    })
+}
+
+/**
  * Gets the human-readable role display name
  */
 function getRoleDisplayName(role: string): string {

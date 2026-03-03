@@ -303,7 +303,7 @@ export function CommunityHighlights({ setActiveTab, userType = "Student" }: Comm
                             {t('common.cancel')}
                         </Button>
                         {scanStatus === "safe" && (
-                            <Button onClick={confirmDownload} className="bg-green-600 hover:bg-green-700">
+                            <Button onClick={confirmDownload} className="bg-green-600 hover:bg-green-700 text-white">
                                 {t('communityHighlights.download')}
                             </Button>
                         )}

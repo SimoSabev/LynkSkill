@@ -5,6 +5,7 @@ import { RecentInternshipsSection } from "@/components/recent-internships-sectio
 import { RecentApplicationsSection } from "@/components/recent-applications-section"
 import { ActiveAssignmentsSection } from "@/components/active-assignments-section"
 import { CommunityHighlights } from "@/components/community-highlights-section"
+import { ExpiringInternshipsBanner } from "@/components/expiring-internships-banner"
 
 interface HomeContentProps {
     userType: "Student" | "Company"
@@ -15,6 +16,9 @@ export function HomeContent({ userType }: HomeContentProps) {
         <div className="space-y-8 pb-8">
             {/* Hero section with welcome message */}
             <DashboardHero userType={userType} />
+            
+            {/* Expiring internships alert for company users */}
+            {userType === "Company" && <ExpiringInternshipsBanner />}
             
             {/* Main internships section - full width for better visibility */}
             <RecentInternshipsSection userType={userType} />

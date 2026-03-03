@@ -30,7 +30,7 @@ const CopyButton: React.FC<{ text: string }> = ({ text }) => {
     return (
         <button
             onClick={handleCopy}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md transition-all duration-200 bg-white/10 hover:bg-white/20 text-gray-300 hover:text-white border border-white/10 hover:border-white/20"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md transition-all duration-200 bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground border border-border dark:bg-white/10 dark:hover:bg-white/20 dark:text-gray-300 dark:hover:text-white dark:border-white/10 dark:hover:border-white/20"
         >
             {copied ? (
                 <>
@@ -50,16 +50,16 @@ const CopyButton: React.FC<{ text: string }> = ({ text }) => {
 // Example block component for bio/text examples with special styling
 const ExampleBlock: React.FC<{ children: React.ReactNode; text: string }> = ({ children, text }) => {
     return (
-        <div className="my-4 rounded-xl overflow-hidden border border-purple-500/30 bg-gradient-to-br from-purple-950/50 via-indigo-950/50 to-blue-950/50 shadow-lg shadow-purple-500/10">
+        <div className="my-4 rounded-xl overflow-hidden border border-purple-300/30 dark:border-purple-500/30 bg-purple-50 dark:bg-gradient-to-br dark:from-purple-950/50 dark:via-indigo-950/50 dark:to-blue-950/50 shadow-lg shadow-purple-500/10">
             <div className="flex items-center justify-between px-4 py-2.5 bg-gradient-to-r from-purple-600/20 to-indigo-600/20 border-b border-purple-500/20">
                 <div className="flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-purple-400" />
-                    <span className="text-xs font-semibold text-purple-300 uppercase tracking-wide">Example</span>
+                    <span className="text-xs font-semibold text-purple-700 dark:text-purple-300 uppercase tracking-wide">Example</span>
                 </div>
                 <CopyButton text={text} />
             </div>
             <div className="p-4">
-                <div className="text-sm text-gray-200 leading-relaxed font-medium whitespace-pre-wrap break-words">
+                <div className="text-sm text-foreground dark:text-gray-200 leading-relaxed font-medium whitespace-pre-wrap break-words">
                     {children}
                 </div>
             </div>

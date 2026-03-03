@@ -147,7 +147,7 @@ export default function ApplyButton({ internshipId, internshipTitle, companyName
                                 setShowIncompleteModal(false)
                                 router.push('/dashboard/student/portfolio')
                             }}
-                            className="w-full sm:w-auto rounded-lg sm:rounded-xl bg-gradient-to-r text-foreground from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 py-2.5 sm:py-2"
+                            className="w-full sm:w-auto rounded-lg sm:rounded-xl bg-gradient-to-r text-white from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 py-2.5 sm:py-2"
                         >
                             {t('apply.goToPortfolio')}
                         </Button>

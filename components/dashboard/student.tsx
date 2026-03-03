@@ -1577,7 +1577,7 @@ export default function StudentDashboardPage() {
                                             <Card className="overflow-hidden rounded-3xl border-2 hover:border-primary/50 transition-all duration-300">
                                                 <CardHeader className="pb-2">
                                                     <div className="flex items-center justify-between">
-                                                        <Badge className="rounded-xl bg-blue-500">Beginner</Badge>
+                                                        <Badge className="rounded-xl bg-blue-500 text-white">Beginner</Badge>
                                                         <Award className="h-5 w-5 text-amber-500" />
                                                     </div>
                                                     <CardTitle className="mt-2">UI/UX Design Fundamentals</CardTitle>
@@ -1629,7 +1629,7 @@ export default function StudentDashboardPage() {
                                             <Card className="overflow-hidden rounded-3xl border-2 hover:border-primary/50 transition-all duration-300">
                                                 <CardHeader className="pb-2">
                                                     <div className="flex items-center justify-between">
-                                                        <Badge className="rounded-xl bg-red-500">Advanced</Badge>
+                                                        <Badge className="rounded-xl bg-red-500 text-white">Advanced</Badge>
                                                         <Award className="h-5 w-5 text-amber-500" />
                                                     </div>
                                                     <CardTitle className="mt-2">Motion Graphics & Animation</CardTitle>

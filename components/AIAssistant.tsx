@@ -213,7 +213,7 @@ export default function AIAssistant({ portfolio, studentId }: AIAssistantProps) 
                 {mode === 'chat' && (
                     <button
                         onClick={handleResetAudit}
-                        className="text-sm text-gray-500 hover:text-gray-700 underline"
+                        className="text-sm text-muted-foreground hover:text-foreground underline"
                     >
                         {t("aiAssistant.generateNewAudit")}
                     </button>
@@ -230,7 +230,7 @@ export default function AIAssistant({ portfolio, studentId }: AIAssistantProps) 
                     >
                         {loading ? t("aiAssistant.generatingReport") : t("aiAssistant.generatePortfolioReport")}
                     </button>
-                    <p className="text-sm text-gray-500 mt-3">
+                    <p className="text-sm text-muted-foreground mt-3">
                         {t("aiAssistant.comprehensiveAnalysis")}
                     </p>
                 </div>
@@ -240,7 +240,7 @@ export default function AIAssistant({ portfolio, studentId }: AIAssistantProps) 
                     {/* Chat messages display */}
                     <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 max-h-96 overflow-y-auto">
                         {messages.length === 0 ? (
-                            <p className="text-gray-500 text-center py-4">
+                            <p className="text-muted-foreground text-center py-4">
                                 {t("aiAssistant.noMessagesYet")}
                             </p>
                         ) : (

@@ -420,7 +420,7 @@ export function InterviewsTabContent({ userType }: InterviewsTabContentProps) {
                                                                     size="sm"
                                                                     onClick={() => updateInterviewStatus(interview.id, "CONFIRMED")}
                                                                     disabled={updatingId === interview.id}
-                                                                    className="flex-1 bg-green-600 hover:bg-green-700"
+                                                                    className="flex-1 bg-green-600 hover:bg-green-700 text-white"
                                                                 >
                                                                     {updatingId === interview.id ? (
                                                                         <Loader2 className="h-4 w-4 animate-spin" />

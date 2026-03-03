@@ -222,6 +222,12 @@ export function NotificationBell() {
                 return "👥"
             case "TEAM_INVITATION_ACCEPTED":
                 return "🤝"
+            case "INTERNSHIP_EXPIRING_SOON":
+                return "⚠️"
+            case "INTERNSHIP_EXPIRED":
+                return "🗑️"
+            case "INTERNSHIP_RENEWED":
+                return "🔄"
             default:
                 return "🔔"
         }

@@ -94,7 +94,7 @@ export function DashboardShell({ children, userType, memberPermissions = [] }: D
                 />
 
                 {/* Sidebar Skeleton */}
-                <div className="fixed inset-y-0 left-0 z-30 hidden w-72 border-r bg-background md:block">
+                <div className="fixed inset-y-0 left-0 z-30 hidden w-64 sm:block sm:w-72 border-r bg-background">
                     <div className="flex h-full flex-col">
                         <div className="p-4 border-b">
                             <div className="flex items-center gap-3">
@@ -121,10 +121,10 @@ export function DashboardShell({ children, userType, memberPermissions = [] }: D
                 </div>
 
                 {/* Main Content Skeleton */}
-                <div className="min-h-screen md:pl-72">
+                <div className="min-h-screen sm:pl-72">
                     <header className="sticky top-0 z-10 flex h-16 items-center gap-3 border-b bg-background/95 px-4 backdrop-blur">
-                        <Skeleton className="h-8 w-8 rounded md:hidden" />
-                        <Skeleton className="h-8 w-8 rounded hidden md:block" />
+                        <Skeleton className="h-8 w-8 rounded sm:hidden" />
+                        <Skeleton className="h-8 w-8 rounded hidden sm:block" />
                         <div className="flex flex-1 items-center justify-between">
                             <Skeleton className="h-6 w-48" />
                             <div className="flex items-center gap-3">
@@ -193,14 +193,14 @@ export function DashboardShell({ children, userType, memberPermissions = [] }: D
             {/* Main Content */}
             <div className={cn(
                 "min-h-screen transition-[padding] duration-150 ease-in-out",
-                sidebarOpen ? "md:pl-72" : "md:pl-0"
+                sidebarOpen ? "sm:pl-72" : "sm:pl-0"
             )}>
                 {/* Header */}
                 <header className="sticky top-0 z-10 flex h-16 w-full items-center gap-3 border-b border-border/50 bg-background/95 px-4 backdrop-blur-sm">
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="md:hidden rounded-xl hover:bg-primary/10"
+                        className="sm:hidden rounded-xl hover:bg-primary/10"
                         onClick={() => setMobileMenuOpen(true)}
                     >
                         <Menu className="h-5 w-5" />
@@ -209,7 +209,7 @@ export function DashboardShell({ children, userType, memberPermissions = [] }: D
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="hidden md:flex rounded-xl hover:bg-purple-500/10"
+                        className="hidden sm:flex rounded-xl hover:bg-purple-500/10"
                         onClick={() => setSidebarOpen(!sidebarOpen)}
                     >
                         <PanelLeft className="h-5 w-5" />

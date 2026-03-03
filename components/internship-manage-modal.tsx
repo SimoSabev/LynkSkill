@@ -262,7 +262,7 @@ export function InternshipManageModal({ open, onClose, internship, onUpdate }: I
 
     return (
         <Dialog open={open} onOpenChange={handleClose}>
-            <DialogContent className="max-w-4xl max-h-[92vh] overflow-hidden p-0 gap-0 border-0 bg-gradient-to-b from-background to-background/95 rounded-3xl shadow-2xl">
+            <DialogContent className="w-[95vw] max-w-5xl sm:max-w-5xl md:max-w-6xl max-h-[92vh] overflow-hidden p-0 gap-0 border-0 bg-gradient-to-b from-background to-background/95 rounded-2xl sm:rounded-3xl shadow-2xl">
                 {/* Dynamic Gradient Header based on internship data */}
                 <div className="relative overflow-hidden">
                     {/* Subtle gradient background - less flashy */}
@@ -271,21 +271,21 @@ export function InternshipManageModal({ open, onClose, internship, onUpdate }: I
                     <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl translate-x-1/2 -translate-y-1/2" />
                     <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl -translate-x-1/2 translate-y-1/2" />
                     
-                    <div className="relative z-10 p-8">
+                    <div className="relative z-10 p-4 sm:p-6 md:p-8">
                         {/* Close Button */}
                         <button
                             onClick={handleClose}
-                            className="absolute top-4 right-4 p-2 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-sm transition-all border border-white/20"
+                            className="absolute top-3 right-3 sm:top-4 sm:right-4 p-2 rounded-xl bg-white/10 hover:bg-white/20 backdrop-blur-sm transition-all border border-white/20"
                         >
                             <X className="h-5 w-5 text-white" />
                         </button>
 
                         {/* Header Content */}
-                        <div className="flex items-start gap-5">
+                        <div className="flex items-start gap-3 sm:gap-5">
                             {/* Company Icon/Avatar */}
-                            <div className="relative">
-                                <div className="h-20 w-20 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 shadow-xl">
-                                    <Building2 className="h-10 w-10 text-white" />
+                            <div className="relative shrink-0">
+                                <div className="h-14 w-14 sm:h-20 sm:w-20 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 shadow-xl">
+                                    <Building2 className="h-7 w-7 sm:h-10 sm:w-10 text-white" />
                                 </div>
                                 {internship.paid && (
                                     <div className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full bg-emerald-500 flex items-center justify-center border-2 border-white shadow-lg">
@@ -404,7 +404,7 @@ export function InternshipManageModal({ open, onClose, internship, onUpdate }: I
                 </div>
 
                 {/* Navigation Tabs */}
-                <div className="flex items-center gap-1 px-6 py-3 border-b bg-muted/30">
+                <div className="flex items-center gap-1 px-3 sm:px-6 py-3 border-b bg-muted/30 overflow-x-auto">
                     {[
                         { id: "overview", label: t("manageInternship.overview"), icon: Eye },
                         { id: "applications", label: t("manageInternship.applications"), icon: Users, badge: pendingCount },
@@ -414,7 +414,7 @@ export function InternshipManageModal({ open, onClose, internship, onUpdate }: I
                             key={tab.id}
                             onClick={() => setActiveView(tab.id as typeof activeView)}
                             className={cn(
-                                "flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all",
+                                "flex items-center gap-2 px-3 sm:px-4 py-2.5 rounded-xl text-sm font-medium transition-all whitespace-nowrap",
                                 activeView === tab.id
                                     ? "bg-gradient-to-r from-purple-500/20 to-blue-500/20 text-primary border border-purple-500/30"
                                     : "text-muted-foreground hover:text-foreground hover:bg-muted"
@@ -432,7 +432,7 @@ export function InternshipManageModal({ open, onClose, internship, onUpdate }: I
                 </div>
 
                 {/* Content Area */}
-                <div className="flex-1 overflow-y-auto max-h-[45vh]">
+                <div className="flex-1 overflow-y-auto max-h-[50vh] sm:max-h-[55vh]">
                     <AnimatePresence mode="wait">
                         {activeView === "overview" && (
                             <motion.div
@@ -624,7 +624,7 @@ export function InternshipManageModal({ open, onClose, internship, onUpdate }: I
                                                                 </Button>
                                                                 <Button
                                                                     size="sm"
-                                                                    className="gap-1.5 bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 rounded-xl shadow-lg shadow-emerald-500/20"
+                                                                    className="gap-1.5 bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white rounded-xl shadow-lg shadow-emerald-500/20"
                                                                     onClick={() => handleApplicationAction(app.id, "APPROVED")}
                                                                 >
                                                                     <UserCheck className="h-4 w-4" />
@@ -892,7 +892,7 @@ export function InternshipManageModal({ open, onClose, internship, onUpdate }: I
                                     <Button
                                         onClick={handleSave}
                                         disabled={isSaving}
-                                        className="min-w-[140px] h-11 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 gap-2 rounded-xl shadow-lg shadow-purple-500/20"
+                                        className="min-w-[140px] h-11 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white gap-2 rounded-xl shadow-lg shadow-purple-500/20"
                                     >
                                         {isSaving ? (
                                             <>
