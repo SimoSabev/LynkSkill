@@ -4,7 +4,7 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Plus, Home, Briefcase, FileText, Award, Trophy, Bookmark, MessageSquare, CalendarDays } from "lucide-react"
-import { InternshipModal } from "@/components/internship-modal"
+import dynamic from "next/dynamic"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -12,27 +12,36 @@ import { cn } from "@/lib/utils"
 import { DashboardSidebar } from "./dashboard-sidebar"
 import { DashboardHeader } from "./dashboard-header"
 import { DashboardHero } from "./dashboard-hero"
-import { RecentInternshipsSection } from "./recent-internships-section"
-import { RecentApplicationsSection } from "./recent-applications-section"
-import { ActiveAssignmentsSection } from "./active-assignments-section"
-import { CommunityHighlights } from "./community-highlights-section"
-import { Portfolio } from "./portfolio"
-import { ApplicationsTabContent } from "./apply-tab-content"
-import { AssignmentsTabContent } from "./assignments-tab-content"
-import MyExperienceTabContent from "./my-experience-tab-content"
 import type { Internship } from "@/app/types"
-// import {AnalyticsTabContent} from "@/components/analytics-tab-content";
-import { LeaderboardTabContent } from "@/components/leaderboard-tab-content"
-import { SavedInternshipsTab } from "@/components/saved-internships-tab"
-import { MessagesTabContent } from "@/components/messages-tab-content"
-import { InterviewsTabContent } from "@/components/interviews-tab-content"
-import { MascotScene } from "@/components/MascotScene"
-import { StudentAIChat } from "@/components/student-ai-chat"
-import { CompanyAIChat } from "@/components/company-ai-chat"
-import { TeamTabContent } from "@/components/team-tab-content"
 import { useDashboard } from "@/lib/dashboard-context"
 import { useAIMode } from "@/lib/ai-mode-context"
 import { useTranslation } from "@/lib/i18n"
+
+// ── Lazy-loaded heavy components (code-split per tab) ──
+const TabSkeleton = () => (
+    <div className="space-y-4 p-4">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-64 w-full rounded-2xl" />
+    </div>
+)
+
+const InternshipModal = dynamic(() => import("@/components/internship-modal").then(m => m.InternshipModal), { ssr: false })
+const RecentInternshipsSection = dynamic(() => import("@/components/recent-internships-section").then(m => m.RecentInternshipsSection))
+const RecentApplicationsSection = dynamic(() => import("@/components/recent-applications-section").then(m => m.RecentApplicationsSection))
+const ActiveAssignmentsSection = dynamic(() => import("@/components/active-assignments-section").then(m => m.ActiveAssignmentsSection))
+const CommunityHighlights = dynamic(() => import("@/components/community-highlights-section").then(m => m.CommunityHighlights))
+const Portfolio = dynamic(() => import("@/components/portfolio").then(m => m.Portfolio), { loading: TabSkeleton })
+const ApplicationsTabContent = dynamic(() => import("@/components/apply-tab-content").then(m => m.ApplicationsTabContent), { loading: TabSkeleton })
+const AssignmentsTabContent = dynamic(() => import("@/components/assignments-tab-content").then(m => m.AssignmentsTabContent), { loading: TabSkeleton })
+const MyExperienceTabContent = dynamic(() => import("@/components/my-experience-tab-content"), { loading: TabSkeleton })
+const LeaderboardTabContent = dynamic(() => import("@/components/leaderboard-tab-content").then(m => m.LeaderboardTabContent), { loading: TabSkeleton })
+const SavedInternshipsTab = dynamic(() => import("@/components/saved-internships-tab").then(m => m.SavedInternshipsTab), { loading: TabSkeleton })
+const MessagesTabContent = dynamic(() => import("@/components/messages-tab-content").then(m => m.MessagesTabContent), { loading: TabSkeleton })
+const InterviewsTabContent = dynamic(() => import("@/components/interviews-tab-content").then(m => m.InterviewsTabContent), { loading: TabSkeleton })
+const StudentAIChat = dynamic(() => import("@/components/student-ai-chat").then(m => m.StudentAIChat), { ssr: false, loading: TabSkeleton })
+const CompanyAIChat = dynamic(() => import("@/components/company-ai-chat").then(m => m.CompanyAIChat), { ssr: false, loading: TabSkeleton })
+const TeamTabContent = dynamic(() => import("@/components/team-tab-content").then(m => m.TeamTabContent), { loading: TabSkeleton })
+const MascotScene = dynamic(() => import("@/components/MascotScene").then(m => m.MascotScene), { ssr: false })
 
 interface DashboardLayoutProps {
     userType: "Student" | "Company"

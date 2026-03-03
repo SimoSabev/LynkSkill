@@ -21,7 +21,26 @@ const nextConfig: NextConfig = {
             },
         ],
     },
+    // ── Performance optimizations ──
     experimental: {
+        // Tree-shake heavy packages by auto-converting barrel imports to direct file imports
+        optimizePackageImports: [
+            "lucide-react",
+            "framer-motion",
+            "recharts",
+            "date-fns",
+            "@radix-ui/react-dialog",
+            "@radix-ui/react-tooltip",
+            "@radix-ui/react-tabs",
+            "@radix-ui/react-popover",
+            "@radix-ui/react-dropdown-menu",
+            "@radix-ui/react-accordion",
+            "@radix-ui/react-select",
+            "@radix-ui/react-scroll-area",
+            "react-markdown",
+            "rehype-highlight",
+            "highlight.js",
+        ],
         serverActions: {
             bodySizeLimit: "50mb", // allow up to 50MB uploads
         },
@@ -32,7 +51,40 @@ const nextConfig: NextConfig = {
         },
     },
     // Fallback for fonts - use CDN directly instead of Turbopack optimization
-    webpack: (config) => {
+    webpack: (config, { isServer }) => {
+        // Enable persistent caching for faster rebuilds
+        if (!isServer) {
+            config.optimization = {
+                ...config.optimization,
+                splitChunks: {
+                    ...config.optimization?.splitChunks,
+                    cacheGroups: {
+                        ...(typeof config.optimization?.splitChunks === 'object' 
+                            ? config.optimization.splitChunks.cacheGroups 
+                            : {}),
+                        // Split heavy vendor chunks
+                        clerkVendor: {
+                            test: /[\\/]node_modules[\\/]@clerk[\\/]/,
+                            name: 'clerk-vendor',
+                            chunks: 'all' as const,
+                            priority: 20,
+                        },
+                        framerMotion: {
+                            test: /[\\/]node_modules[\\/](framer-motion|motion)[\\/]/,
+                            name: 'framer-motion-vendor',
+                            chunks: 'all' as const,
+                            priority: 20,
+                        },
+                        radixVendor: {
+                            test: /[\\/]node_modules[\\/]@radix-ui[\\/]/,
+                            name: 'radix-vendor',
+                            chunks: 'all' as const,
+                            priority: 15,
+                        },
+                    },
+                },
+            };
+        }
         return config;
     },
     // Cache configuration for SEO optimization

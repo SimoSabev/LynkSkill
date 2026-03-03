@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { usePathname } from "next/navigation"
+import dynamic from "next/dynamic"
 import { Menu, PanelLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -12,9 +13,6 @@ import { LynkSkillUserButton } from "@/components/clerk-theme"
 import { NotificationBell } from "@/components/notification-bell"
 import { LanguageSwitcher } from "@/components/language-switcher"
 import { SidebarNav } from "@/components/dashboard/sidebar-nav"
-import { StudentAIChat } from "@/components/student-ai-chat"
-import { CompanyAIChat } from "@/components/company-ai-chat"
-import { MascotScene } from "@/components/MascotScene"
 import { useDashboard } from "@/lib/dashboard-context"
 import { useAIMode } from "@/lib/ai-mode-context"
 import { useTranslation } from "@/lib/i18n"
@@ -22,6 +20,11 @@ import { useSettings } from "@/lib/settings-context"
 import { useTeamMemberPermissions } from "@/lib/team-member-permissions-context"
 import { cn } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
+
+// ── Lazy-loaded heavy components ──
+const StudentAIChat = dynamic(() => import("@/components/student-ai-chat").then(m => m.StudentAIChat), { ssr: false })
+const CompanyAIChat = dynamic(() => import("@/components/company-ai-chat").then(m => m.CompanyAIChat), { ssr: false })
+const MascotScene = dynamic(() => import("@/components/MascotScene").then(m => m.MascotScene), { ssr: false })
 
 // Page transition variants - optimized for speed
 const pageVariants = {

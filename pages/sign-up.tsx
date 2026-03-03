@@ -1,4 +1,13 @@
-import { LynkSkillSignUp } from '@/components/clerk-theme'
+import dynamic from 'next/dynamic'
+import type { GetServerSideProps } from 'next'
+
+const LynkSkillSignUp = dynamic(
+  () => import('@/components/clerk-theme').then(m => m.LynkSkillSignUp),
+  { ssr: false }
+)
+
+// Force SSR — skips static generation at build time
+export const getServerSideProps: GetServerSideProps = async () => ({ props: {} })
 
 export default function SignUpPage() {
   return (
