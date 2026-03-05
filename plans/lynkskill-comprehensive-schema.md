@@ -1,0 +1,711 @@
+# LynkSkill Platform Comprehensive Schema
+
+## Table of Contents
+1. [System Architecture Overview](#system-architecture-overview)
+2. [Frontend Components](#frontend-components)
+3. [Backend Services](#backend-services)
+4. [Database Schema](#database-schema)
+5. [AI Integration Architecture](#ai-integration-architecture)
+6. [User Journey Workflows](#user-journey-workflows)
+7. [API Architecture](#api-architecture)
+8. [Security & Authentication](#security--authentication)
+9. [Performance & Optimization](#performance--optimization)
+
+---
+
+## System Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                           LYNKSKILL PLATFORM ARCHITECTURE                        │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐           │
+│  │   FRONTEND      │    │   BACKEND       │    │   DATABASE      │           │
+│  │   (Next.js)     │◄──►│   (Next.js)     │◄──►│  (PostgreSQL)  │           │
+│  │                 │    │   API Routes    │    │                 │           │
+│  │ • React UI      │    │ • Auth Layer    │    │ • User Data     │           │
+│  │ • Components    │    │ • Business Logic│    │ • Company Data  │           │
+│  │ • State Mgmt    │    │ • AI Services   │    │ • Internships   │           │
+│  └─────────────────┘    └─────────────────┘    └─────────────────┘           │
+│           │                       │                       │                 │
+│           │              ┌─────────────────┐              │                 │
+│           └──────────────►│  AI SERVICES    │◄─────────────┘                 │
+│                          │                 │                              │
+│                          │ • OpenAI GPT-4  │                              │
+│                          │ • Chat Engine   │                              │
+│                          │ • Portfolio Gen │                              │
+│                          │ • Matching AI   │                              │
+│                          └─────────────────┘                              │
+│                                                                                 │
+│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐           │
+│  │   AUTH SERVICE  │    │  NOTIFICATIONS  │    │   FILE STORAGE  │           │
+│  │   (Clerk)       │    │   SYSTEM        │    │                 │           │
+│  │                 │    │                 │    │ • Logos         │           │
+│  │ • User Mgmt     │    │ • Email Alerts  │    │ • Documents     │           │
+│  │ • Sessions      │    │ • In-App Notif  │    │ • Media Files   │           │
+│  │ • Permissions  │    │ • Push Notif    │    │                 │           │
+│  └─────────────────┘    └─────────────────┘    └─────────────────┘           │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Frontend Components
+
+### Core UI Structure
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        FRONTEND ARCHITECTURE                     │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
+│  │   LANDING PAGE  │  │   DASHBOARD     │  │   ONBOARDING    │ │
+│  │                 │  │                 │  │                 │ │
+│  │ • Hero Section  │  │ • Student View  │  │ • Role Selection│ │
+│  │ • Features      │  │ • Company View  │  │ • Profile Setup │ │
+│  │ • How It Works  │  │ • Team Mgmt     │  │ • Policy Accept │ │
+│  │ • Testimonials  │  │ • Analytics     │  │ • AI Intro      │ │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
+│                                                                 │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
+│  │   INTERNSHIPS   │  │   PORTFOLIO     │  │   AI CHAT       │ │
+│  │                 │  │                 │  │                 │ │
+│  │ • Listings      │  │ • Builder       │  │ • Student Mode  │ │
+│  │ • Filters       │  │ • AI Assistant  │  │ • Company Mode  │ │
+│  │ • Applications  │  │ • Skills Mgmt   │  │ • Career Advice │ │
+│  │ • Saved Items   │  │ • Projects      │  │ • Talent Scout  │ │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
+│                                                                 │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
+│  │   MESSAGING     │  │   TEAM MGMT      │  │   SETTINGS      │ │
+│  │                 │  │                 │  │                 │ │
+│  │ • Conversations │  │ • Member Invites │  │ • Profile       │ │
+│  │ • Notifications │  │ • Role Mgmt     │  │ • Permissions   │ │
+│  │ • File Sharing  │  │ • Code System   │  │ • Preferences   │ │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Component Hierarchy
+```
+app/
+├── layout.tsx                    # Root layout with auth providers
+├── page.tsx                      # Landing page
+├── onboarding/                   # Onboarding flow
+│   ├── layout.tsx
+│   ├── page.tsx
+│   └── _actions.ts
+├── dashboard/                    # Main dashboard
+├── invitations/                  # Team invitations
+├── privacy/                      # Privacy policy
+├── terms/                        # Terms of service
+└── redirect-after-signin/        # Post-auth redirect
+
+components/
+├── ui/                           # Base UI components (shadcn/ui)
+├── landing/                      # Landing page components
+├── dashboard/                    # Dashboard components
+├── team/                         # Team management components
+└── [feature-components]          # Feature-specific components
+```
+
+---
+
+## Backend Services
+
+### API Route Structure
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        BACKEND API ARCHITECTURE                 │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
+│  │   USER APIs      │  │   COMPANY APIs  │  │   AI APIs       │ │
+│  │                 │  │                 │  │                 │ │
+│  │ • /api/users    │  │ • /api/company  │  │ • /api/assistant│ │
+│  │ • /api/profile  │  │ • /api/teams    │  │ • /api/chat     │ │
+│  │ • /api/settings │  │ • /api/roles    │  │ • /api/ai-mode  │ │
+│  │ • /api/portfolio│  │ • /api/invites  │  │ • /api/matching │ │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
+│                                                                 │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
+│  │ INTERNSHIP APIs │  │ APPLICATION APIs│  │   MESSAGING     │ │
+│  │                 │  │                 │  │                 │ │
+│  │ • /api/interns  │  │ • /api/apply    │  │ • /api/messages │ │
+│  │ • /api/projects │  │ • /api/offers   │  │ • /api/convs    │ │
+│  │ • /api/assign   │  │ • /api/reviews  │  │ • /api/notify   │ │
+│  │ • /api/experience│ │ • /api/interview│  │                 │ │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
+│                                                                 │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
+│  │   PUBLIC APIs    │  │   ADMIN APIs    │  │   CRON JOBS     │ │
+│  │                 │  │                 │  │                 │ │
+│  │ • /api/public   │  │ • /api/admin    │  │ • Expire Inters │ │
+│  │ • /api/companies│  │ • /api/analytics│  │ • Clean Up Data │ │
+│  │ • /api/projects │  │ • /api/reports  │  │ • Send Reminders│ │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Service Layer Architecture
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                      SERVICE LAYER DESIGN                      │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
+│  │   AUTH LAYER    │  │  BUSINESS LOGIC │  │   DATA LAYER     │ │
+│  │                 │  │                 │  │                 │ │
+│  │ • Clerk Auth    │  │ • User Mgmt     │  │ • Prisma ORM    │ │
+│  │ • Session Mgmt  │  │ • Company Mgmt  │  │ • PostgreSQL    │ │
+│  │ • Permission    │  │ • Internship    │  │ • Redis Cache   │ │
+│  │ • Rate Limiting │  │ • Application   │  │ • File Storage  │ │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
+│                                                                 │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
+│  │   AI SERVICES    │  │ NOTIFICATION    │  │   INTEGRATIONS  │ │
+│  │                 │  │   SERVICES      │  │                 │ │
+│  │ • OpenAI Client  │  │ • Email Service │  │ • Resend Email  │ │
+│  │ • Chat Engine    │  │ • In-App Notif  │  │ • Clerk Webhooks│ │
+│  │ • Portfolio Gen  │  │ • Push Service  │  │ • File Upload   │ │
+│  │ • Matching AI    │  │ • Queue System  │  │ • Rate Limiting │ │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Database Schema
+
+### Entity Relationship Diagram
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                      DATABASE RELATIONSHIPS                     │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌─────────────┐      ┌─────────────┐      ┌─────────────┐     │
+│  │    USER     │◄────►│   COMPANY   │◄────►│ INTERNSHIP  │     │
+│  │             │      │             │      │             │     │
+│  │ • id        │      │ • id        │      │ • id        │     │
+│  │ • clerkId   │      │ • name      │      │ • title     │     │
+│  │ • role      │      │ • ownerId   │      │ • desc      │     │
+│  │ • email     │      │ • location  │      │ • skills    │     │
+│  │ • profile   │      │ • logo      │      │ • dates     │     │
+│  └─────────────┘      └─────────────┘      └─────────────┘     │
+│         │                       │                       │       │
+│         │              ┌─────────────┐      ┌─────────────┐     │
+│         │              │ COMPANY     │      │ APPLICATION │     │
+│         │              │ MEMBER      │      │             │     │
+│         │              │             │      │ • id        │     │
+│         │              │ • id        │      │ • status    │     │
+│         │              │ • userId    │      │ • coverLetter│     │
+│         │              │ • companyId │      │ • createdAt  │     │
+│         │              │ • role      │      └─────────────┘     │
+│         │              └─────────────┘              │           │
+│         │                       │                   │           │
+│  ┌─────────────┐      ┌─────────────┐      ┌─────────────┐     │
+│  │  PORTFOLIO  │      │ CONVERSATION│      │   PROJECT   │     │
+│  │             │      │             │      │             │     │
+│  │ • id        │      │ • id        │      │ • id        │     │
+│  │ • studentId │      │ • appId     │      │ • title     │     │
+│  │ • skills    │      │ • studentId │      │ • desc      │     │
+│  │ • interests │      │ • companyId │      │ • tech      │     │
+│  │ • bio       │      └─────────────┘      └─────────────┘     │
+│  └─────────────┘              │                   │           │
+│         │              ┌─────────────┐      ┌─────────────┐     │
+│         │              │   MESSAGE   │      │ EXPERIENCE  │     │
+│         │              │             │      │             │     │
+│         │              │ • id        │      │ • id        │     │
+│         │              │ • convId    │      │ • studentId │     │
+│         │              │ • content   │      │ • companyId │     │
+│         │              │ • sender    │      │ • projectId │     │
+│         │              └─────────────┘      │ • media     │     │
+│         │                       │           │ • rating    │     │
+│  ┌─────────────┐      ┌─────────────┐      └─────────────┘     │
+│  │ NOTIFICATION│      │ ASSIGNMENT  │                           │
+│  │             │      │             │                           │
+│  │ • id        │      │ • id        │                           │
+│  │ • userId    │      │ • internId  │                           │
+│  │ • type      │      │ • studentId │                           │
+│  │ • title     │      │ • title     │                           │
+│  │ • message   │      │ • dueDate   │                           │
+│  └─────────────┘      └─────────────┘                           │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Key Database Models
+
+#### User & Authentication
+```sql
+User {
+  id: String (PK)
+  clerkId: String (Unique)
+  email: String
+  role: Enum(STUDENT | COMPANY | TEAM_MEMBER)
+  onboardingComplete: Boolean
+  profile: Profile (1:1)
+  companies: Company[] (1:M)
+  portfolio: Portfolio (1:1)
+  notifications: Notification[]
+  conversations: Conversation[]
+}
+
+Profile {
+  id: String (PK)
+  userId: String (FK)
+  name: String
+  bio: String?
+  settings: Json?
+}
+```
+
+#### Company & Team Management
+```sql
+Company {
+  id: String (PK)
+  name: String
+  eik: String?
+  description: String
+  location: String
+  ownerId: String (FK)
+  internships: Internship[]
+  members: CompanyMember[]
+  invitationCode: String? (Unique)
+  codeEnabled: Boolean
+}
+
+CompanyMember {
+  id: String (PK)
+  companyId: String (FK)
+  userId: String (FK, Unique)
+  defaultRole: DefaultCompanyRole?
+  customRoleId: String?
+  status: MemberStatus
+  extraPermissions: Permission[]
+}
+```
+
+#### Internships & Applications
+```sql
+Internship {
+  id: String (PK)
+  companyId: String (FK)
+  title: String
+  description: String
+  skills: String[]
+  applicationStart: DateTime
+  applicationEnd: DateTime
+  applications: Application[]
+  projects: Project[]
+}
+
+Application {
+  id: String (PK)
+  internshipId: String (FK)
+  studentId: String (FK)
+  status: ApplicationStatus
+  coverLetter: String?
+  coverLetterGeneratedByAI: Boolean
+  project: Project?
+  conversation: Conversation?
+}
+```
+
+---
+
+## AI Integration Architecture
+
+### AI Service Components
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        AI INTEGRATION LAYER                     │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
+│  │   AI CHAT       │  │ PORTFOLIO AI    │  │ MATCHING AI     │ │
+│  │   ENGINE        │  │   ASSISTANT     │  │   ENGINE        │ │
+│  │                 │  │                 │  │                 │ │
+│  │ • Student Mode  │  │ • Profile Gen   │  │ • Skill Matching│ │
+│  │ • Company Mode  │  │ • Bio Writing   │  │ • Score Calc    │ │
+│  │ • Career Advice │  │ • Skills Extract│  │ • Recommendation│ │
+│  │ • Session Mgmt  │  │ • Interest Detect│  │ • Ranking      │ │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
+│                                                                 │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
+│  │  OPENAI GPT-4   │  │  PROMPT ENGINE   │  │  RESPONSE       │ │
+│  │   INTEGRATION   │  │                 │  │  PROCESSING     │ │
+│  │                 │  │ • System Prompts │  │                 │ │
+│  │ • Chat API      │  │ • Context Mgmt  │  │ • JSON Parsing  │ │
+│  │ • Completion    │  │ • Phase Control │  │ • Error Handling│ │
+│  │ • Rate Limits   │  │ • Skill Extraction│ │ • Response Cache│ │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
+│                                                                 │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
+│  │  CONVERSATION   │  │   SKILL &       │  │   AI ANALYTICS  │ │
+│  │   MANAGEMENT    │  │   CONTEXT       │  │                 │ │
+│  │                 │  │                 │  │ • Usage Tracking │ │
+│  │ • Session Cache │  │ • Skill Keywords │  │ • Performance  │ │
+│  │ • History       │  │ • Field Mapping │  │ • Success Rate  │ │
+│  │ • Context       │  │ • Interest Tags │  │ • Cost Monitoring│ │
+│  │ • Phase Tracking│  │ • Experience    │  │ • User Feedback │ │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### AI Chat Flow Architecture
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                      AI CHAT WORKFLOW                           │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  USER INPUT → API ROUTE → AUTH CHECK → AI PROCESSING → RESPONSE  │
+│                                                                 │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐         │
+│  │   STUDENT   │    │   COMPANY   │    │   SYSTEM    │         │
+│  │   MODE      │    │   MODE      │    │   PROMPTS   │         │
+│  │             │    │             │    │             │         │
+│  │ • Intro     │    │ • Talent    │    │ • Role Def  │         │
+│  │ • Gathering │    │ • Search    │    │ • Context   │         │
+│  │ • Portfolio │    │ • Matching  │    │ • Rules     │         │
+│  │ • Matching  │    │ • Results   │    │ • Limits    │         │
+│  └─────────────┘    └─────────────┘    └─────────────┘         │
+│                                                                 │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐         │
+│  │  PHASE      │    │   SKILL      │    │   JSON       │         │
+│  │  CONTROL    │    │ EXTRACTION  │    │   PARSING    │         │
+│  │             │    │             │    │             │         │
+│  │ • State Mgmt│    │ • Keywords  │    │ • Portfolio │         │
+│  │ • Transitions│   │ • Context   │    │ • Search    │         │
+│  │ • Triggers  │    │ • Matching  │    │ • Commands  │         │
+│  │ • Validation│   │ • Scoring   │    │ • Response  │         │
+│  └─────────────┘    └─────────────┘    └─────────────┘         │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## User Journey Workflows
+
+### Student Registration & Onboarding
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                   STUDENT ONBOARDING JOURNEY                     │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐         │
+│  │   SIGN UP   │ →  │  ROLE SELECT │ →  │  PROFILE    │         │
+│  │             │    │             │    │  SETUP      │         │
+│  │ • Clerk Auth│    │ • Student   │    │ • Basic Info│         │
+│  │ • Email     │    │ • Company   │    │ • Interests│         │
+│  │ • Password  │    │ • Team Mbr  │    │ • Skills    │         │
+│  └─────────────┘    └─────────────┘    └─────────────┘         │
+│                                                                 │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐         │
+│  │   POLICY    │ →  │   AI INTRO  │ →  │  DASHBOARD  │         │
+│  │  ACCEPT     │    │             │    │             │         │
+│  │ • Terms     │    │ • Linky Intro│    │ • Welcome  │         │
+│  │ • Privacy   │    │ • AI Demo    │    │ • Quick Tour│         │
+│  │ • Consent   │    │ • Capabilities│   │ • Next Steps│         │
+│  └─────────────┘    └─────────────┘    └─────────────┘         │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Portfolio Creation & AI Assistance
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                   PORTFOLIO CREATION WORKFLOW                   │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐         │
+│  │   PORTFOLIO │ →  │   AI CHAT   │ →  │   AI GEN    │         │
+│  │   BUILDER   │    │   ASSISTANT │    │   CONTENT   │         │
+│  │             │    │             │    │             │         │
+│  │ • Manual    │    │ • Questions │    │ • Headline  │         │
+│  │ • Templates │    │ • Context   │    │ • Bio       │         │
+│  │ • Sections  │    │ • Guidance  │    │ • Skills    │         │
+│  └─────────────┘    └─────────────┘    └─────────────┘         │
+│                                                                 │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐         │
+│  │   REVIEW    │ →  │   EDIT      │ →  │   PUBLISH   │         │
+│  │   & APPROVE │    │   & REFINE  │    │   & SHARE   │         │
+│  │             │    │             │    │             │         │
+│  │ • AI Review │    │ • Manual Edits│   │ • Public    │         │
+│  │ • Suggestions│   │ • Refinement │   │ • Private   │         │
+│  │ • Feedback  │    │ • Finalize   │   │ • Link Share│         │
+│  └─────────────┘    └─────────────┘    └─────────────┘         │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Internship Application & Matching
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                INTERNSHIP APPLICATION WORKFLOW                  │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐         │
+│  │   BROWSE    │ →  │   FILTER    │ →  │   APPLY     │         │
+│  │   LISTINGS  │    │   & SEARCH  │    │   & SUBMIT  │         │
+│  │             │    │             │    │             │         │
+│  │ • All Jobs  │    │ • Skills    │    │ • Application│         │
+│  │ • Featured  │    │ • Location  │    │ • Cover Letter│        │
+│  │ • Recommended│   │ • Company   │    │ • Portfolio │         │
+│  └─────────────┘    └─────────────┘    └─────────────┘         │
+│                                                                 │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐         │
+│  │   AI MATCH  │ →  │   COMPANY   │ →  │   INTERVIEW │         │
+│  │   & SCORE   │    │   REVIEW    │    │   SCHEDULE  │         │
+│  │             │    │             │    │             │         │
+│  │ • Skill Match│   │ • Application│   │ • Calendar  │         │
+│  │ • Score     │    │ • Portfolio │   │ • Location  │         │
+│  │ • Ranking   │    │ • Decision  │   │ • Preparation│         │
+│  └─────────────┘    └─────────────┘    └─────────────┘         │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Company Team Management
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                COMPANY TEAM MANAGEMENT WORKFLOW                 │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐         │
+│  │   COMPANY   │ →  │   TEAM      │ →  │   ROLES     │         │
+│  │   SETUP     │    │   INVITE    │    │   & PERMS   │         │
+│  │             │    │             │    │             │         │
+│  │ • Profile   │    │ • Email Inv │    │ • Default   │         │
+│  │ • Settings  │    │ • Code Join │    │ • Custom    │         │
+│  │ • Policies  │    │ • Approval  │    │ • Permissions│         │
+│  └─────────────┘    └─────────────┘    └─────────────┘         │
+│                                                                 │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐         │
+│  │   MEMBER    │ →  │   WORKFLOW  │ →  │   ANALYTICS │         │
+│  │   MGMT      │    │   CONTROL   │    │   & REPORTS │         │
+│  │             │    │             │    │             │         │
+│  │ • Add/Remove│   │ • Approval  │    │ • Activity  │         │
+│  │ • Role Change│   │ • Permissions│   │ • Performance│         │
+│  │ • Status    │    │ • Access    │    │ • Metrics   │         │
+│  └─────────────┘    └─────────────┘    └─────────────┘         │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## API Architecture
+
+### API Route Categories
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        API ARCHITECTURE                          │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
+│  │  AUTHENTICATION │  │   USER MGMT     │  │  COMPANY MGMT   │ │
+│  │   MIDDLEWARE    │  │   APIS          │  │   APIS          │ │
+│  │                 │  │                 │  │                 │ │
+│  │ • Clerk Auth    │  │ • /api/users    │  │ • /api/company  │ │
+│  │ • Session Valid │  │ • /api/profile  │  │ • /api/teams    │ │
+│  │ • Permission    │  │ • /api/settings │  │ • /api/roles    │ │
+│  │ • Rate Limiting │  │ • /api/portfolio│  │ • /api/invites  │ │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
+│                                                                 │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
+│  │  INTERNSHIP     │  │  APPLICATION    │  │   AI SERVICES    │ │
+│  │  APIS           │  │  APIS           │  │   APIS           │ │
+│  │                 │  │                 │  │                 │ │
+│  │ • /api/interns  │  │ • /api/apply    │  │ • /api/assistant│ │
+│  │ • /api/projects │  │ • /api/offers   │  │ • /api/chat     │ │
+│  │ • /api/assign   │  │ • /api/reviews  │  │ • /api/ai-mode  │ │
+│  │ • /api/experience│ │ • /api/interview│  │ • /api/matching │ │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
+│                                                                 │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
+│  │  COMMUNICATION  │  │   CONTENT       │  │   SYSTEM        │ │
+│  │  APIS           │  │   MANAGEMENT    │  │   APIS          │ │
+│  │                 │  │   APIS          │  │                 │ │
+│  │ • /api/messages │  │ • /api/upload   │  │ • /api/health   │ │
+│  │ • /api/convs    │  │ • /api/media    │  │ • /api/cron     │ │
+│  │ • /api/notify   │  │ • /api/public   │  │ • /api/admin    │ │
+│  │ • /api/saved    │  │ • /api/analytics│  │ • /api/logs     │ │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### API Request Flow
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                      API REQUEST FLOW                           │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  CLIENT REQUEST → MIDDLEWARE → AUTH → VALIDATION → BUSINESS LOGIC │
+│                                                                 │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐         │
+│  │   REQUEST   │ →  │   AUTH      │ →  │   VALIDATE  │         │
+│  │   INBOUND   │    │   CHECK     │    │   INPUT     │         │
+│  │             │    │             │    │             │         │
+│  │ • HTTP      │    │ • Clerk JWT │    │ • Schema    │         │
+│  │ • Headers   │    │ • Session   │    │ • Type      │         │
+│  │ • Body      │    │ • Permissions│   │ • Sanitize  │         │
+│  │ • Params    │    │ • Rate Limit│   │ • Security  │         │
+│  └─────────────┘    └─────────────┘    └─────────────┘         │
+│                                                                 │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐         │
+│  │   BUSINESS  │ →  │   DATABASE  │ →  │   RESPONSE  │         │
+│  │   LOGIC     │    │   OPERATIONS│    │   OUTBOUND  │         │
+│  │             │    │             │    │             │         │
+│  │ • Services  │    │ • Prisma    │    │ • JSON      │         │
+│  │ • AI Calls  │    │ • Queries   │    │ • Status    │         │
+│  │ • External  │    │ • Transactions│   │ • Headers   │         │
+│  │ • Processing│    │ • Caching   │    │ • Error     │         │
+│  └─────────────┘    └─────────────┘    └─────────────┘         │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Security & Authentication
+
+### Authentication Flow
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    AUTHENTICATION ARCHITECTURE                  │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
+│  │   CLERK AUTH    │  │   SESSION       │  │   PERMISSION    │ │
+│  │   PROVIDER      │  │   MANAGEMENT    │  │   SYSTEM        │ │
+│  │                 │  │                 │  │                 │ │
+│  │ • Sign Up/In    │  │ • JWT Tokens    │  │ • Role-Based   │ │
+│  │ • Social Login  │  │ • Session Store │  │ • Granular     │ │
+│  │ • MFA Support   │  │ • Refresh Logic │  │ • Company      │ │
+│  │ • Passwordless  │  │ • Expiry       │  │ • Custom Roles  │ │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
+│                                                                 │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
+│  │   SECURITY      │  │   RATE LIMITING  │  │   DATA          │ │
+│  │   MIDDLEWARE    │  │   & THROTTLING   │  │   PROTECTION    │ │
+│  │                 │  │                 │  │                 │ │
+│  │ • CORS          │  │ • Upstash Redis │  │ • Encryption    │ │
+│  │ • CSRF          │  │ • Per User      │  │ • Hashing      │ │
+│  │ • XSS           │  │ • Per Endpoint  │  │ • PII Masking  │ │
+│  │ • SQL Injection │  │ • Burst Control │  │ • Audit Logs   │ │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Permission Matrix
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                      ROLE PERMISSIONS MATRIX                   │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ROLE          │ USER │ COMPANY │ TEAM │ ADMIN │ OWNER          │
+│  ──────────────┼─────┼─────────┼──────┼───────┼───────         │
+│  Profile       │  ✓  │    ✓    │  ✓   │   ✓   │   ✓            │
+│  Settings      │  ✓  │    ✓    │  ✓   │   ✓   │   ✓            │
+│  Internships   │  ✓  │    ✓    │  ✓   │   ✓   │   ✓            │
+│  Applications  │  ✓  │    ✓    │  ✓   │   ✓   │   ✓            │
+│  Team Mgmt     │  ✗  │    ✗    │  ✗   │   ✓   │   ✓            │
+│  Role Mgmt     │  ✗  │    ✗    │  ✗   │   ✓   │   ✓            │
+│  Company Edit  │  ✗  │    ✓    │  ✗   │   ✓   │   ✓            │
+│  Company Delete │  ✗  │    ✗    │  ✗   │   ✗   │   ✓            │
+│  Analytics     │  ✗  │    ✓    │  ✓   │   ✓   │   ✓            │
+│  AI Features   │  ✓  │    ✓    │  ✓   │   ✓   │   ✓            │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Performance & Optimization
+
+### Caching Strategy
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                      CACHING ARCHITECTURE                       │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
+│  │   CLIENT SIDE   │  │   EDGE CACHE    │  │   SERVER SIDE   │ │
+│  │   CACHING       │  │   (CDN)         │  │   CACHING       │ │
+│  │                 │  │                 │  │                 │ │
+│  │ • Browser Cache │  │ • Static Assets │  │ • Redis Cache  │ │
+│  │ • Local Storage │  │ • API Responses │  │ • Memory Cache │ │
+│  │ • SWR Cache    │  │ • Images        │  │ • Query Cache  │ │
+│  │ • Component    │  │ • Documents     │  │ • Session Cache│ │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
+│                                                                 │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
+│  │   DATABASE      │  │   AI RESPONSE   │  │   FILE STORAGE  │ │
+│  │   CACHING       │  │   CACHING       │  │   CACHING       │ │
+│  │                 │  │                 │  │                 │ │
+│  │ • Query Plan    │  │ • Chat Sessions │  │ • CDN Storage  │ │
+│  │ • Index Cache   │  │ • Generated     │  │ • Image Cache  │ │
+│  │ • Connection    │  │ • Matching      │  │ • Document     │ │
+│  │ • Result Cache  │  │ • Portfolio     │  │ • Media Cache  │ │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Performance Monitoring
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                  PERFORMANCE MONITORING STACK                   │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
+│  │   FRONTEND      │  │   BACKEND       │  │   INFRASTRUCTURE │ │
+│  │   METRICS       │  │   METRICS       │  │   METRICS        │ │
+│  │                 │  │                 │  │                 │ │
+│  │ • Core Web Vitals│ │ • Response Time │  │ • Server Load   │ │
+│  │ • Bundle Size   │  │ • API Latency   │  │ • Memory Usage  │ │
+│  │ • Render Time   │  │ • DB Query Time │  │ • CPU Usage     │ │
+│  │ • User Interactions│ │ • AI Response  │  │ • Network I/O   │ │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
+│                                                                 │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐ │
+│  │   ERROR         │  │   BUSINESS      │  │   AI SERVICE    │ │
+│  │   TRACKING      │  │   METRICS       │  │   METRICS       │ │
+│  │                 │  │                 │  │                 │ │
+│  │ • JS Errors     │  │ • User Actions  │  │ • Token Usage   │ │
+│  │ • API Failures  │  │ • Conversion    │  │ • Response Time │ │
+│  │ • Network Errors│  │ • Feature Usage │  │ • Success Rate  │ │
+│  │ • Crash Reports │  │ • Engagement    │  │ • Cost Tracking │ │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘ │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Conclusion
+
+This comprehensive schema documentation provides a complete overview of the LynkSkill platform's architecture, from the frontend components to the database schema, AI integration, and security measures. The platform is designed with scalability, security, and user experience in mind, featuring:
+
+- **Modern Tech Stack**: Next.js, TypeScript, PostgreSQL, Prisma ORM
+- **AI-Powered Features**: OpenAI integration for portfolio generation and matching
+- **Role-Based Access**: Granular permissions for students, companies, and team members
+- **Real-time Communication**: Messaging and notification systems
+- **Performance Optimization**: Multi-layer caching and monitoring
+- **Security First**: Authentication, authorization, and data protection
+
+The architecture supports the platform's core mission of connecting students with internship opportunities while providing AI-powered assistance for both students and companies.
+
+---
+
+*This schema documentation is designed to be a living document that evolves with the platform. Regular updates should be made as new features are added and architectural decisions are made.*
