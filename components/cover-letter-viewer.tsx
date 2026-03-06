@@ -169,7 +169,7 @@ export function CoverLetterViewer({
 
     return (
         <Dialog open={open} onOpenChange={onClose}>
-            <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden p-0 gap-0 border-0 rounded-2xl">
+            <DialogContent showCloseButton={false} className="max-w-2xl max-h-[85vh] overflow-hidden p-0 gap-0 border-0 rounded-2xl flex flex-col">
                 {/* Header */}
                 <div className="relative overflow-hidden bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600 p-6">
                     <div className="absolute -top-24 -right-24 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
@@ -206,7 +206,7 @@ export function CoverLetterViewer({
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 overflow-y-auto p-6">
+                <div className="flex-1 overflow-y-auto p-6 min-h-0">
                     {loading ? (
                         <div className="space-y-4 animate-pulse">
                             <div className="h-4 bg-muted rounded w-3/4" />

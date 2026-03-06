@@ -783,6 +783,8 @@
     "hrManagerDesc": "Manage internships & applications",
     "hrRecruiterDesc": "View & manage applications",
     "viewerDesc": "Read-only access",
+    "roleMember": "Member",
+    "memberDesc": "Basic team access, view & communicate",
     "permCategoryCompany": "Company Management",
     "permCategoryMember": "Member Management",
     "permCategoryInternship": "Internship Management",
@@ -1148,7 +1150,28 @@
     "skip": "Skip",
     "submitting": "Submitting...",
     "applyWithCoverLetter": "Apply with Cover Letter",
-    "applyWithoutCoverLetter": "Apply Without Cover Letter"
+    "applyWithoutCoverLetter": "Apply Without Cover Letter",
+    "draft": "Draft",
+    "submitted": "Submitted",
+    "reviewed": "Reviewed",
+    "updatedSuccess": "Cover letter updated successfully",
+    "failedToSave": "Failed to save cover letter",
+    "reviewSubmitted": "Review submitted successfully",
+    "failedToSubmitReview": "Failed to submit review",
+    "failedToLoad": "Failed to load cover letter",
+    "tryAgain": "Try Again",
+    "noCoverLetter": "No Cover Letter",
+    "noLetterStudent": "You haven't written a cover letter for this application yet.",
+    "noLetterCompany": "The student has not submitted a cover letter.",
+    "cancel": "Cancel",
+    "save": "Save",
+    "reviewerFeedback": "Reviewer Feedback",
+    "reviewNoteInternal": "Review Note (Internal)",
+    "reviewPlaceholder": "Add your review notes here...",
+    "submitReview": "Submit Review",
+    "editCoverLetter": "Edit Cover Letter",
+    "updateReview": "Update Review",
+    "addReview": "Add Review"
   },
   "internshipDetails": {
     "failedToLoad": "Failed to Load",
@@ -2414,5 +2437,12 @@
     "renew": "Renew",
     "chooseNewDate": "Choose new end date",
     "extend30Days": "Extend 30 days"
+  },
+  "studentSummary": {
+    "professionalScore": "Professional Score",
+    "experiences": "Experiences",
+    "skillScore": "Skill Score",
+    "companies": "Companies",
+    "topEndorsed": "Top Endorsed"
   }
 }

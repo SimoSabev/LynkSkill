@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useMemo } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import type { Application, Portfolio } from "@/app/types"
@@ -45,6 +46,7 @@ interface ApplicationsTabContentProps {
 
 export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps) {
     const { t } = useTranslation()
+    const router = useRouter()
     
     // Use context for initial data
     const { applications: contextApplications, isLoadingApplications, mutateApplications } = useDashboard()
@@ -178,9 +180,11 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
             })
             
             if (res.ok) {
-                // Navigate to messages tab - dispatch custom event
-                const event = new CustomEvent("navigateToTab", { detail: "messages" })
-                window.dispatchEvent(event)
+                // Navigate to the messages page
+                const messagesPath = userType === "Company" 
+                    ? "/dashboard/company/messages" 
+                    : "/dashboard/student/messages"
+                router.push(messagesPath)
                 toast.success(t("applyTab.openingConversation"))
             } else {
                 const data = await res.json()

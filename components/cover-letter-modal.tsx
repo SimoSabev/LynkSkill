@@ -121,7 +121,7 @@ export function CoverLetterModal({
 
     return (
         <Dialog open={open} onOpenChange={handleClose}>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden p-0 gap-0 border-0 rounded-2xl">
+            <DialogContent showCloseButton={false} className="max-w-2xl max-h-[90vh] overflow-hidden p-0 gap-0 border-0 rounded-2xl flex flex-col">
                 {/* Header */}
                 <div className="relative overflow-hidden bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600 p-6">
                     <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10" />
@@ -211,7 +211,7 @@ export function CoverLetterModal({
                 </div>
 
                 {/* Content */}
-                <div className="flex-1 overflow-y-auto p-6">
+                <div className="flex-1 overflow-y-auto p-6 min-h-0">
                     {view === "write" ? (
                         <div className="space-y-3">
                             <Textarea
