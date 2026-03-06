@@ -38,8 +38,7 @@ const LeaderboardTabContent = dynamic(() => import("@/components/leaderboard-tab
 const SavedInternshipsTab = dynamic(() => import("@/components/saved-internships-tab").then(m => m.SavedInternshipsTab), { loading: TabSkeleton })
 const MessagesTabContent = dynamic(() => import("@/components/messages-tab-content").then(m => m.MessagesTabContent), { loading: TabSkeleton })
 const InterviewsTabContent = dynamic(() => import("@/components/interviews-tab-content").then(m => m.InterviewsTabContent), { loading: TabSkeleton })
-const StudentAIChat = dynamic(() => import("@/components/student-ai-chat").then(m => m.StudentAIChat), { ssr: false, loading: TabSkeleton })
-const CompanyAIChat = dynamic(() => import("@/components/company-ai-chat").then(m => m.CompanyAIChat), { ssr: false, loading: TabSkeleton })
+const AIAgentView = dynamic(() => import("@/components/ai-agent-view").then(m => m.AIAgentView), { ssr: false, loading: TabSkeleton })
 const TeamTabContent = dynamic(() => import("@/components/team-tab-content").then(m => m.TeamTabContent), { loading: TabSkeleton })
 const MascotScene = dynamic(() => import("@/components/MascotScene").then(m => m.MascotScene), { ssr: false })
 
@@ -429,11 +428,7 @@ export function DashboardLayout({ userType }: DashboardLayoutProps) {
                                     transition={{ duration: 0.15 }}
                                     className="min-h-[calc(100vh-200px)]"
                                 >
-                                    {userType === "Student" ? (
-                                        <StudentAIChat />
-                                    ) : (
-                                        <CompanyAIChat />
-                                    )}
+                                    <AIAgentView userType={userType} />
                                 </motion.div>
                             ) : (
                                 <div

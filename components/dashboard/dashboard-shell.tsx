@@ -22,8 +22,7 @@ import { cn } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
 
 // ── Lazy-loaded heavy components ──
-const StudentAIChat = dynamic(() => import("@/components/student-ai-chat").then(m => m.StudentAIChat), { ssr: false })
-const CompanyAIChat = dynamic(() => import("@/components/company-ai-chat").then(m => m.CompanyAIChat), { ssr: false })
+const AIAgentView = dynamic(() => import("@/components/ai-agent-view").then(m => m.AIAgentView), { ssr: false })
 const MascotScene = dynamic(() => import("@/components/MascotScene").then(m => m.MascotScene), { ssr: false })
 
 // Page transition variants - optimized for speed
@@ -266,13 +265,7 @@ export function DashboardShell({ children, userType, memberPermissions = [] }: D
                                 transition={{ duration: 0.3 }}
                                 className="min-h-[calc(100vh-120px)]"
                             >
-                                {userType === "Student" ? (
-                                    <StudentAIChat />
-                                ) : userType === "Company" ? (
-                                    <CompanyAIChat />
-                                ) : (
-                                    <CompanyAIChat />
-                                )}
+                                <AIAgentView userType={userType === "Student" ? "Student" : "Company"} />
                             </motion.div>
                         ) : (
                             <motion.div

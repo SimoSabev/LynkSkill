@@ -924,3 +924,20 @@ select:disabled,
 .compact-view .text-3xl {
   font-size: 1.5rem !important;
 }
+
+/* AI Mode Specific Styles */
+.ai-gradient-text {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500;
+}
+
+.ai-panel-glass {
+    @apply bg-background/80 backdrop-blur-xl border-l border-white/10 shadow-2xl;
+}
+
+.ai-bubble-user {
+    @apply bg-violet-600 text-white rounded-2xl rounded-br-sm shadow-lg;
+}
+
+.ai-bubble-bot {
+    @apply bg-muted/50 border border-border/50 rounded-2xl rounded-bl-sm;
+}

@@ -49,8 +49,17 @@ interface AIMessage {
     content: string
     timestamp: Date
     metadata?: {
-        type?: "portfolio" | "match" | "question" | "search"
+        type?: "portfolio" | "match" | "question" | "search" | "agent-response"
         data?: unknown
+        toolResults?: Array<{
+            tool: string
+            cardType: string
+            title: string
+            data: unknown
+            success?: boolean
+            error?: string
+        }>
+        suggestions?: string[]
     }
 }
 
@@ -108,6 +117,11 @@ interface AIModeContextType {
     startNewSession: (userType: "student" | "company") => void
     loadSession: (sessionId: string) => void
     deleteSession: (sessionId: string) => void
+    // Panel & tab tracking
+    activeTab: string
+    setActiveTab: (tab: string) => void
+    isPanelMinimized: boolean
+    setPanelMinimized: (minimized: boolean) => void
 }
 
 const AIModeContext = createContext<AIModeContextType | undefined>(undefined)
@@ -127,6 +141,10 @@ export function AIModeProvider({ children }: { children: ReactNode }) {
     const [sessions, setSessions] = useState<ChatSession[]>([])
     const [currentUserType, setCurrentUserType] = useState<"student" | "company">("student")
     const isInitialized = useRef(false)
+
+    // Panel & tab tracking
+    const [activeTab, setActiveTab] = useState("home")
+    const [isPanelMinimized, setPanelMinimized] = useState(false)
 
     // Load sessions from localStorage on mount
     useEffect(() => {
@@ -214,15 +232,9 @@ export function AIModeProvider({ children }: { children: ReactNode }) {
 
     const toggleAIMode = useCallback(() => {
         setIsAIMode(prev => {
-            if (prev) {
-                // Resetting when turning off
-                setMessages([])
-                setChatPhase("intro")
-                setInternshipMatches([])
-                setStudentMatches([])
-                setGeneratedPortfolio(null)
-                setWelcomeSent(false)
-                setCurrentSessionId(generateSessionId())
+            if (!prev) {
+                // Opening AI mode - restore from minimized if needed
+                setPanelMinimized(false)
             }
             return !prev
         })
@@ -348,7 +360,11 @@ export function AIModeProvider({ children }: { children: ReactNode }) {
             sessions,
             startNewSession,
             loadSession,
-            deleteSession
+            deleteSession,
+            activeTab,
+            setActiveTab,
+            isPanelMinimized,
+            setPanelMinimized
         }}>
             {children}
         </AIModeContext.Provider>
