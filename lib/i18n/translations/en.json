@@ -1593,7 +1593,10 @@
     "submissionSuccessful": "Submission Successful!",
     "submissionSuccessfulDesc": "Your assignment has been submitted successfully.",
     "filesSubmittedForReview": "{count} file(s) submitted for review",
-    "done": "Done"
+    "done": "Done",
+    "fileTypeNotAllowed": "File type not allowed",
+    "fileTooLarge": "File too large (max 25MB)",
+    "clearAll": "Clear all"
   },
   "assignmentProgress": {
     "dashboardTitle": "Assignment Progress Dashboard",
@@ -1627,6 +1630,9 @@
     "createdLabel": "Created",
     "submissions": "Submissions",
     "noSubmissionsYet": "No submissions yet",
+    "awaitingStudent": "Waiting for student to submit files",
+    "backToList": "Back to list",
+    "loading": "Loading...",
     "close": "Close"
   },
   "applyTab": {
@@ -2067,7 +2073,15 @@
     "progress": "Progress",
     "invalidApiResponse": "Invalid API response",
     "failedToLoad": "Failed to load assignments",
-    "quickView": "Quick View"
+    "quickView": "Quick View",
+    "pendingTasksBanner": "You have tasks that require your attention",
+    "pending": "pending",
+    "overdue": "overdue",
+    "completeToGetApproved": "Complete these to get approved for your applications",
+    "taskOverdue": "Task overdue!",
+    "taskRequired": "Task required for approval",
+    "taskCompleted": "Task completed",
+    "due": "Due"
   },
   "recentApplications": {
     "recentApplications": "Recent Applications",

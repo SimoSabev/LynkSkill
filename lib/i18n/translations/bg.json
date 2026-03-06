@@ -1420,7 +1420,10 @@
     "submissionSuccessful": "Успешно предаване!",
     "submissionSuccessfulDesc": "Вашето задание беше предадено успешно.",
     "filesSubmittedForReview": "{count} файл(а) предадени за преглед",
-    "done": "Готово"
+    "done": "Готово",
+    "fileTypeNotAllowed": "Типът файл не е разрешен",
+    "fileTooLarge": "Файлът е твърде голям (макс. 25MB)",
+    "clearAll": "Изчисти всички"
   },
   "assignmentProgress": {
     "dashboardTitle": "Табло за напредък по заданията",
@@ -1454,6 +1457,9 @@
     "createdLabel": "Създадено",
     "submissions": "Предавания",
     "noSubmissionsYet": "Все още няма предавания",
+    "awaitingStudent": "Изчакване ученикът да предаде файлове",
+    "backToList": "Назад към списъка",
+    "loading": "Зареждане...",
     "close": "Затвори"
   },
   "applyTab": {
@@ -1894,7 +1900,15 @@
     "progress": "Напредък",
     "invalidApiResponse": "Невалиден отговор от API",
     "failedToLoad": "Неуспешно зареждане на заданията",
-    "quickView": "Бърз преглед"
+    "quickView": "Бърз преглед",
+    "pendingTasksBanner": "Имате задачи, които изискват вашето внимание",
+    "pending": "чакащи",
+    "overdue": "просрочени",
+    "completeToGetApproved": "Изпълнете ги, за да бъдете одобрени за кандидатурите си",
+    "taskOverdue": "Задачата е просрочена!",
+    "taskRequired": "Задача, необходима за одобрение",
+    "taskCompleted": "Задачата е завършена",
+    "due": "Краен срок"
   },
   "teamMemberDashboard": {
     "welcomeBack": "Добре дошъл отново, {name}!",
