@@ -307,8 +307,8 @@ export function InterviewsTabContent({ userType }: InterviewsTabContentProps) {
                                             )}>
                                                 <CardHeader className="pb-2">
                                                     <div className="flex items-start justify-between">
-                                                        <div className="space-y-1">
-                                                            <CardTitle className="text-lg">
+                                                        <div className="space-y-1 min-w-0 flex-1 mr-3">
+                                                            <CardTitle className="text-lg truncate">
                                                                 {interview.application.internship.title}
                                                             </CardTitle>
                                                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -498,8 +498,8 @@ export function InterviewsTabContent({ userType }: InterviewsTabContentProps) {
                                         <Card key={interview.id} className="border-border/50">
                                             <CardContent className="p-4">
                                                 <div className="flex items-center justify-between">
-                                                    <div>
-                                                        <p className="font-medium">{interview.application.internship.title}</p>
+                                                    <div className="min-w-0 flex-1 mr-3">
+                                                        <p className="font-medium truncate">{interview.application.internship.title}</p>
                                                         <p className="text-sm text-muted-foreground">
                                                             {format(scheduledDate, "MMM d, yyyy 'at' h:mm a")}
                                                         </p>

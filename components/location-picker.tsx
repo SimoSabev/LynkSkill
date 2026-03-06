@@ -262,7 +262,7 @@ export function LocationPicker({
     }
 
     return (
-        <div ref={containerRef} className={cn("space-y-2.5", className)}>
+        <div ref={containerRef} className={cn("space-y-2.5 overflow-hidden", className)}>
             {/* Quick City Buttons */}
             <div className="flex flex-wrap gap-1.5">
                 {BG_CITIES.map((city) => {
@@ -327,7 +327,7 @@ export function LocationPicker({
 
                 {/* Search Results Dropdown */}
                 {showResults && searchResults.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-xl shadow-xl z-[1000] max-h-52 overflow-y-auto">
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-xl shadow-xl z-[1000] max-h-52 overflow-y-auto overflow-x-hidden">
                         {searchResults.map((result, idx) => (
                             <button
                                 key={`${result.lat}-${result.lon}-${idx}`}
@@ -336,7 +336,7 @@ export function LocationPicker({
                                 onClick={() => handleSelectResult(result)}
                             >
                                 <MapPin className="h-3.5 w-3.5 text-blue-500 mt-0.5 shrink-0" />
-                                <span className="text-xs leading-snug">{result.display_name}</span>
+                                <span className="text-xs leading-snug break-words whitespace-normal">{result.display_name}</span>
                             </button>
                         ))}
                     </div>
@@ -356,7 +356,7 @@ export function LocationPicker({
                     ) : (
                         <MapPin className="h-4 w-4 text-blue-500 shrink-0" />
                     )}
-                    <p className="text-sm font-medium text-foreground flex-1 min-w-0 truncate">
+                    <p className="text-sm font-medium text-foreground flex-1 min-w-0 break-words">
                         {value!.address}
                     </p>
                     <Button

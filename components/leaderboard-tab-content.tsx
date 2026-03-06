@@ -146,7 +146,7 @@ export function LeaderboardTabContent() {
                                         initial={{ opacity: 0, y: 40 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: visualIndex * 0.15, type: "spring", stiffness: 100 }}
-                                        className={`w-full ${getPodiumOrder(actualRank)} ${isFirst ? "md:scale-105" : ""}`}
+                                        className={`w-full ${getPodiumOrder(actualRank)} ${isFirst ? "md:scale-105 origin-center" : ""}`}
                                     >
                                         <Card
                                             className={`bg-gradient-to-br ${getRankColor(

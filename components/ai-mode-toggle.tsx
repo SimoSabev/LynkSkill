@@ -7,121 +7,81 @@ import { cn } from "@/lib/utils"
 import { useTranslation } from "@/lib/i18n"
 
 export function AIModeToggle() {
-    const { isAIMode, toggleAIMode } = useAIMode()
+    const { isAIMode, toggleAIMode, isPanelMinimized, setPanelMinimized } = useAIMode()
     const { t } = useTranslation()
+
+    const handleClick = () => {
+        if (isAIMode && isPanelMinimized) {
+            // If AI mode is on but panel is minimized, restore it
+            setPanelMinimized(false)
+        } else {
+            toggleAIMode()
+        }
+    }
 
     return (
         <motion.button
-            onClick={toggleAIMode}
+            onClick={handleClick}
             className={cn(
-                "relative group flex items-center gap-2 px-4 py-2.5 rounded-2xl font-bold text-sm transition-all duration-500 overflow-hidden",
+                "relative group flex items-center gap-2 px-3 py-2 rounded-xl font-semibold text-sm transition-all duration-300 overflow-hidden",
                 isAIMode
-                    ? "bg-gradient-to-r from-purple-600 via-violet-600 to-indigo-600 text-white shadow-lg shadow-purple-500/30"
-                    : "bg-gradient-to-r from-purple-500/10 via-violet-500/10 to-indigo-500/10 text-purple-600 dark:text-purple-400 hover:from-purple-500/20 hover:via-violet-500/20 hover:to-indigo-500/20 border border-purple-500/30"
+                    ? "bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40"
+                    : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground border border-border/50 hover:border-violet-500/30"
             )}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
         >
-            {/* Animated background glow */}
+            {/* Subtle animated glow when active */}
             {isAIMode && (
                 <motion.div
-                    className="absolute inset-0 bg-gradient-to-r from-purple-400/20 via-violet-400/20 to-indigo-400/20"
+                    className="absolute inset-0 bg-gradient-to-r from-white/10 via-white/5 to-white/10"
                     animate={{
-                        opacity: [0.3, 0.6, 0.3],
+                        backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
                     }}
                     transition={{
-                        duration: 2,
+                        duration: 3,
                         repeat: Infinity,
                         ease: "easeInOut"
                     }}
+                    style={{ backgroundSize: "200% 200%" }}
                 />
-            )}
-
-            {/* Sparkle particles when active */}
-            {isAIMode && (
-                <>
-                    <motion.div
-                        className="absolute top-1 left-2 w-1 h-1 bg-white rounded-full"
-                        animate={{
-                            opacity: [0, 1, 0],
-                            scale: [0, 1.5, 0],
-                            y: [0, -10, -20],
-                        }}
-                        transition={{
-                            duration: 1.5,
-                            repeat: Infinity,
-                            delay: 0,
-                        }}
-                    />
-                    <motion.div
-                        className="absolute bottom-2 right-4 w-1 h-1 bg-white rounded-full"
-                        animate={{
-                            opacity: [0, 1, 0],
-                            scale: [0, 1.2, 0],
-                            y: [0, -8, -16],
-                        }}
-                        transition={{
-                            duration: 1.5,
-                            repeat: Infinity,
-                            delay: 0.5,
-                        }}
-                    />
-                    <motion.div
-                        className="absolute top-2 right-8 w-0.5 h-0.5 bg-white rounded-full"
-                        animate={{
-                            opacity: [0, 1, 0],
-                            scale: [0, 1.3, 0],
-                            y: [0, -12, -24],
-                        }}
-                        transition={{
-                            duration: 1.5,
-                            repeat: Infinity,
-                            delay: 1,
-                        }}
-                    />
-                </>
             )}
 
             <motion.div
                 animate={isAIMode ? { rotate: [0, 360] } : { rotate: 0 }}
-                transition={{ duration: 3, repeat: isAIMode ? Infinity : 0, ease: "linear" }}
+                transition={{ duration: 4, repeat: isAIMode ? Infinity : 0, ease: "linear" }}
                 className="relative z-10"
             >
                 {isAIMode ? (
-                    <Zap className="h-4 w-4" />
+                    <Zap className="h-3.5 w-3.5" />
                 ) : (
-                    <Sparkles className="h-4 w-4" />
+                    <Sparkles className="h-3.5 w-3.5" />
                 )}
             </motion.div>
 
-            <span className="relative z-10 whitespace-nowrap">
-                {t('aiMode.title')}
+            <span className="relative z-10 whitespace-nowrap hidden sm:inline">
+                {isAIMode ? "Linky AI" : t('aiMode.title')}
             </span>
 
-            {/* Status badge: Beta or ON */}
-            {isAIMode ? (
-                <span className="relative z-10 px-1.5 py-0.5 text-[10px] font-bold leading-none uppercase tracking-wider rounded-md bg-green-500 text-white shadow-sm">
-                    ON
-                </span>
-            ) : (
-                <span className="relative z-10 px-1.5 py-0.5 text-[10px] font-bold leading-none uppercase tracking-wider rounded-md bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-sm">
-                    Beta
+            {/* Keyboard shortcut hint - only when inactive */}
+            {!isAIMode && (
+                <span className="relative z-10 hidden md:flex items-center gap-0.5 text-[9px] text-muted-foreground/60 font-mono">
+                    <kbd className="px-1 py-0.5 rounded bg-background/50 border border-border/50">Ctrl+K</kbd>
                 </span>
             )}
 
-            {/* Pulsing ring when active */}
+            {/* Status indicator when active */}
+            {isAIMode && (
+                <span className="relative z-10 w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+            )}
+
+            {/* Pulsing ring on first render when active */}
             {isAIMode && (
                 <motion.div
-                    className="absolute inset-0 rounded-2xl border-2 border-white/30"
-                    animate={{
-                        scale: [1, 1.05, 1],
-                        opacity: [0.5, 0.2, 0.5],
-                    }}
-                    transition={{
-                        duration: 2,
-                        repeat: Infinity,
-                        ease: "easeInOut"
-                    }}
+                    className="absolute inset-0 rounded-xl border border-white/20"
+                    initial={{ scale: 1, opacity: 0.5 }}
+                    animate={{ scale: [1, 1.08, 1], opacity: [0.3, 0, 0.3] }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
                 />
             )}
         </motion.button>

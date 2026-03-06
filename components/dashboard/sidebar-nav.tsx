@@ -141,11 +141,6 @@ export function SidebarNav({
             href: `${basePath}/interviews`,
             icon: <Calendar className="h-5 w-5" />,
         },
-        {
-            label: t('navigation.help'),
-            href: `${basePath}/help`,
-            icon: <HelpCircle className="h-5 w-5" />,
-        },
     ]
 
     const companyNavItems: NavItem[] = [
@@ -205,11 +200,6 @@ export function SidebarNav({
             label: t('navigation.interviews'),
             href: `${basePath}/interviews`,
             icon: <Calendar className="h-5 w-5" />,
-        },
-        {
-            label: t('navigation.help'),
-            href: `${basePath}/help`,
-            icon: <HelpCircle className="h-5 w-5" />,
         },
     ]
 
@@ -275,11 +265,6 @@ export function SidebarNav({
             label: t('navigation.team'),
             href: `${basePath}/team`,
             icon: <Users className="h-5 w-5" />,
-        },
-        {
-            label: t('navigation.help'),
-            href: `${basePath}/help`,
-            icon: <HelpCircle className="h-5 w-5" />,
         },
     ]
 
@@ -501,7 +486,7 @@ export function SidebarNav({
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <button
-                            onClick={() => navigateTo("/help")}
+                            onClick={() => navigateTo(`${basePath}/help`)}
                             className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
                         >
                             <HelpCircle className="h-5 w-5" />

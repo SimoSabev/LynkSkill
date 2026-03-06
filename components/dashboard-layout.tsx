@@ -27,8 +27,7 @@ import { SavedInternshipsTab } from "@/components/saved-internships-tab"
 import { MessagesTabContent } from "@/components/messages-tab-content"
 import { InterviewsTabContent } from "@/components/interviews-tab-content"
 import { MascotScene } from "@/components/MascotScene"
-import { StudentAIChat } from "@/components/student-ai-chat"
-import { CompanyAIChat } from "@/components/company-ai-chat"
+import { AIAgentView } from "@/components/ai-agent-view"
 import { TeamTabContent } from "@/components/team-tab-content"
 import { useDashboard } from "@/lib/dashboard-context"
 import { useAIMode } from "@/lib/ai-mode-context"
@@ -41,7 +40,7 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ userType }: DashboardLayoutProps) {
     const { t } = useTranslation()
-    const { isAIMode } = useAIMode()
+    const { isAIMode, setActiveTab: setAIActiveTab } = useAIMode()
     const [activeTab, setActiveTab] = useState("home")
     const [sidebarOpen, setSidebarOpen] = useState(true)
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -79,6 +78,11 @@ export function DashboardLayout({ userType }: DashboardLayoutProps) {
         //     setShowMascot(true)
         // }
     }, [user])
+
+    // Sync active tab to AI context for contextual quick actions
+    useEffect(() => {
+        setAIActiveTab(activeTab)
+    }, [activeTab, setAIActiveTab])
 
     function handleCreateInternship(newInternship: Internship) {
         setLocalInternships((prev) => [newInternship, ...prev])
@@ -223,6 +227,9 @@ export function DashboardLayout({ userType }: DashboardLayoutProps) {
                 />
 
                 <main className="flex-1 p-4 md:p-6 text-foreground">
+                    {isAIMode ? (
+                        <AIAgentView userType={userType} />
+                    ) : (
                     <Tabs defaultValue="home" value={activeTab} onValueChange={setActiveTab} className="w-full">
                         <div className="mb-6 md:mb-8 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                             <motion.div
@@ -409,24 +416,8 @@ export function DashboardLayout({ userType }: DashboardLayoutProps) {
                         {/* Modal */}
                         <InternshipModal open={modalOpen} onClose={() => setModalOpen(false)} onCreate={handleCreateInternship} />
 
-                        {/* AI Mode Content */}
+                        {/* All tab content is ALWAYS visible - AI mode no longer replaces content */}
                         <AnimatePresence mode="wait">
-                            {isAIMode ? (
-                                <motion.div
-                                    key="ai-mode"
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    exit={{ opacity: 0 }}
-                                    transition={{ duration: 0.15 }}
-                                    className="min-h-[calc(100vh-200px)]"
-                                >
-                                    {userType === "Student" ? (
-                                        <StudentAIChat />
-                                    ) : (
-                                        <CompanyAIChat />
-                                    )}
-                                </motion.div>
-                            ) : (
                                 <div
                                     key={activeTab}
                                 >
@@ -482,9 +473,9 @@ export function DashboardLayout({ userType }: DashboardLayoutProps) {
                                         </TabsContent>
                                     )}
                                 </div>
-                            )}
                         </AnimatePresence>
                     </Tabs>
+                    )}
                 </main>
             </div>
             {showMascot && (

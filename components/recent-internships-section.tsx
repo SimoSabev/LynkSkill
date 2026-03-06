@@ -371,7 +371,7 @@ export function RecentInternshipsSection({ userType, setActiveTab: _setActiveTab
                                                                 <Building2 className="h-7 w-7 text-white" />
                                                             </div>
                                                             <div className="min-w-0 space-y-1">
-                                                                <h3 className="font-bold text-lg text-foreground group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors duration-200">
+                                                                <h3 className="font-bold text-lg text-foreground group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors duration-200 line-clamp-2">
                                                                     {item.title}
                                                                 </h3>
                                                                 {item.company && (
@@ -470,12 +470,12 @@ export function RecentInternshipsSection({ userType, setActiveTab: _setActiveTab
 
                                                     {/* Info Grid - Key details at a glance */}
                                                     <div className="grid grid-cols-3 gap-2">
-                                                        <div className="p-2.5 rounded-lg bg-muted/50 text-center">
+                                                        <div className="p-2.5 rounded-lg bg-muted/50 text-center overflow-hidden">
                                                             <MapPin className="h-4 w-4 text-purple-500 mx-auto mb-1" />
-                                                            <p className="text-xs font-medium text-foreground truncate">{item.location || t("internships.remote")}</p>
+                                                            <p className="text-xs font-medium text-foreground truncate" title={item.location || t("internships.remote")}>{item.location || t("internships.remote")}</p>
                                                             <p className="text-[10px] text-muted-foreground">{t("internships.location")}</p>
                                                         </div>
-                                                        <div className="p-2.5 rounded-lg bg-muted/50 text-center">
+                                                        <div className="p-2.5 rounded-lg bg-muted/50 text-center overflow-hidden">
                                                             <Euro className="h-4 w-4 text-blue-500 mx-auto mb-1" />
                                                             <p className="text-xs font-medium text-foreground">{item.paid ? `€${item.salary || t("common.paid")}` : t("common.unpaid")}</p>
                                                             <p className="text-[10px] text-muted-foreground">{t("internships.salary")}</p>

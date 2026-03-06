@@ -12,8 +12,7 @@ import { LynkSkillUserButton } from "@/components/clerk-theme"
 import { NotificationBell } from "@/components/notification-bell"
 import { LanguageSwitcher } from "@/components/language-switcher"
 import { SidebarNav } from "@/components/dashboard/sidebar-nav"
-import { StudentAIChat } from "@/components/student-ai-chat"
-import { CompanyAIChat } from "@/components/company-ai-chat"
+import { AIAgentView } from "@/components/ai-agent-view"
 import { MascotScene } from "@/components/MascotScene"
 import { useDashboard } from "@/lib/dashboard-context"
 import { useAIMode } from "@/lib/ai-mode-context"
@@ -49,7 +48,7 @@ interface DashboardShellProps {
 
 export function DashboardShell({ children, userType, memberPermissions = [] }: DashboardShellProps) {
     const { t } = useTranslation()
-    const { isAIMode } = useAIMode()
+    const { isAIMode, setActiveTab: setAIActiveTab } = useAIMode()
     const pathname = usePathname()
     const [sidebarOpen, setSidebarOpen] = useState(true)
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -77,6 +76,14 @@ export function DashboardShell({ children, userType, memberPermissions = [] }: D
         //     setShowMascot(true)
         // }
     }, [user])
+
+    // Sync pathname to AI context for contextual quick actions
+    useEffect(() => {
+        // Extract tab name from pathname for AI context
+        const segments = (pathname || "").split("/").filter(Boolean)
+        const lastSegment = segments[segments.length - 1] || "home"
+        setAIActiveTab(lastSegment)
+    }, [pathname, setAIActiveTab])
 
     if (isInitialLoading) {
         return (
@@ -253,25 +260,10 @@ export function DashboardShell({ children, userType, memberPermissions = [] }: D
 
                 {/* Main Content Area */}
                 <main className="flex-1 p-4 md:p-6">
+                    {isAIMode ? (
+                        <AIAgentView userType={userType === "TeamMember" ? "Company" : userType} />
+                    ) : (
                     <AnimatePresence mode="wait">
-                        {isAIMode ? (
-                            <motion.div
-                                key="ai-mode"
-                                initial={{ opacity: 0, scale: 0.95 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.95 }}
-                                transition={{ duration: 0.3 }}
-                                className="min-h-[calc(100vh-120px)]"
-                            >
-                                {userType === "Student" ? (
-                                    <StudentAIChat />
-                                ) : userType === "Company" ? (
-                                    <CompanyAIChat />
-                                ) : (
-                                    <CompanyAIChat />
-                                )}
-                            </motion.div>
-                        ) : (
                             <motion.div
                                 key={pathname}
                                 initial={animationsEnabled ? "initial" : false}
@@ -282,8 +274,8 @@ export function DashboardShell({ children, userType, memberPermissions = [] }: D
                             >
                                 {children}
                             </motion.div>
-                        )}
                     </AnimatePresence>
+                    )}
                 </main>
             </div>
 

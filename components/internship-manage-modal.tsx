@@ -262,7 +262,7 @@ export function InternshipManageModal({ open, onClose, internship, onUpdate }: I
 
     return (
         <Dialog open={open} onOpenChange={handleClose}>
-            <DialogContent className="max-w-4xl max-h-[92vh] overflow-hidden p-0 gap-0 border-0 bg-gradient-to-b from-background to-background/95 rounded-3xl shadow-2xl">
+            <DialogContent className="w-[95vw] max-w-5xl sm:max-w-5xl max-h-[92vh] overflow-hidden p-0 gap-0 border-0 bg-gradient-to-b from-background to-background/95 rounded-3xl shadow-2xl">
                 {/* Dynamic Gradient Header based on internship data */}
                 <div className="relative overflow-hidden">
                     {/* Subtle gradient background - less flashy */}
@@ -299,16 +299,16 @@ export function InternshipManageModal({ open, onClose, internship, onUpdate }: I
                                 <DialogTitle className="text-2xl md:text-3xl font-bold text-white leading-tight mb-2">
                                     {internship.title}
                                 </DialogTitle>
-                                <div className="flex flex-wrap items-center gap-3 text-white/80">
+                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-white/80">
                                     {internship.company?.name && (
                                         <span className="flex items-center gap-1.5 text-sm">
-                                            <Briefcase className="h-4 w-4" />
+                                            <Briefcase className="h-4 w-4 shrink-0" />
                                             {internship.company.name}
                                         </span>
                                     )}
-                                    <span className="flex items-center gap-1.5 text-sm">
-                                        <MapPin className="h-4 w-4" />
-                                        {internship.location}
+                                    <span className="flex items-center gap-1.5 text-sm break-words">
+                                        <MapPin className="h-4 w-4 shrink-0" />
+                                        <span className="break-words">{internship.location}</span>
                                     </span>
                                     {internship.duration && (
                                         <span className="flex items-center gap-1.5 text-sm">
@@ -432,7 +432,7 @@ export function InternshipManageModal({ open, onClose, internship, onUpdate }: I
                 </div>
 
                 {/* Content Area */}
-                <div className="flex-1 overflow-y-auto max-h-[45vh]">
+                <div className="flex-1 overflow-y-auto max-h-[50vh]">
                     <AnimatePresence mode="wait">
                         {activeView === "overview" && (
                             <motion.div

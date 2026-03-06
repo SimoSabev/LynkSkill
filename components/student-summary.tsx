@@ -55,7 +55,7 @@ export function StudentSummary({ summary }: { summary: Summary | null }) {
     ]
 
     return (
-        <div className="flex items-center gap-8 text-white/90">
+        <div className="flex flex-wrap items-center gap-4 sm:gap-8 text-white/90">
             {/* Professional Score - Compact inline version */}
             <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-white/10 backdrop-blur-sm">
@@ -71,11 +71,11 @@ export function StudentSummary({ summary }: { summary: Summary | null }) {
 
             </div>
 
-            {/* Vertical divider */}
-            <div className="h-8 w-px bg-white/20" />
+            {/* Vertical divider - hidden on small screens */}
+            <div className="hidden sm:block h-8 w-px bg-white/20" />
 
             {/* Individual Stats - Compact inline version */}
-            <div className="flex items-center gap-6">
+            <div className="flex flex-wrap items-center gap-4 sm:gap-6">
                 {stats.map((stat) => (
                     <div key={stat.label} className="flex items-center gap-2">
                         <stat.icon className="h-4 w-4 text-white/80" />

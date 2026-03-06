@@ -182,7 +182,7 @@ export default function InternshipDetailsModal({internshipId, open, onClose}: In
 
     return (
         <Dialog open={open} onOpenChange={onClose}>
-            <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden p-0 gap-0 border-0">
+            <DialogContent className="w-[95vw] max-w-4xl sm:max-w-4xl max-h-[85vh] overflow-hidden p-0 gap-0 border-0">
                 <AnimatePresence mode="wait">
                     {loading ? (
                         <SkeletonLoader key="loading" />
@@ -209,15 +209,15 @@ export default function InternshipDetailsModal({internshipId, open, onClose}: In
                                         <DialogTitle className="text-xl font-bold text-white leading-tight">
                                             {internship.title}
                                         </DialogTitle>
-                                        <div className="flex flex-wrap items-center gap-2 text-sm text-white/80">
+                                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-white/80">
                                             <span className="flex items-center gap-1">
-                                                <Building2 className="h-4 w-4"/>
+                                                <Building2 className="h-4 w-4 shrink-0"/>
                                                 {internship.company.name}
                                             </span>
-                                            <span className="text-white/50">•</span>
-                                            <span className="flex items-center gap-1">
-                                                <MapPin className="h-4 w-4"/>
-                                                {internship.location}
+                                            <span className="text-white/50 hidden sm:inline">•</span>
+                                            <span className="flex items-center gap-1 break-words">
+                                                <MapPin className="h-4 w-4 shrink-0"/>
+                                                <span className="break-words">{internship.location}</span>
                                             </span>
                                             {internship.paid && internship.salary && (
                                                 <>

@@ -164,7 +164,7 @@ export function ScheduleInterviewModal({
                             </div>
 
                             {/* Date and Time */}
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="date">{t('interviewModal.date')}</Label>
                                     <Input
@@ -198,7 +198,7 @@ export function ScheduleInterviewModal({
                                     <MapPin className="h-4 w-4 text-blue-500" />
                                     {t('interviewModal.interviewLocation')}
                                 </Label>
-                                <div className="grid grid-cols-2 gap-2">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                     <Button
                                         type="button"
                                         variant={locationType === "video" ? "default" : "outline"}

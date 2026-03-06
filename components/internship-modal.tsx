@@ -684,7 +684,7 @@ export function InternshipModal({ open, onClose, onCreate }: InternshipModalProp
 
     return (
         <Dialog open={open} onOpenChange={handleClose}>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl border-2 p-0">
+            <DialogContent className="w-[95vw] max-w-4xl sm:max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl border-2 p-0">
                 {/* Header */}
                 <div className="sticky top-0 z-10 bg-gradient-to-br from-purple-600 to-blue-600 px-8 py-6 rounded-t-3xl">
                     <DialogHeader className="relative">

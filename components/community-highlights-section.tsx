@@ -95,23 +95,23 @@ export function CommunityHighlights({ setActiveTab, userType = "Student" }: Comm
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
-                className="overflow-hidden rounded-2xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 backdrop-blur-sm shadow-lg text-white p-8 relative"
+                className="overflow-hidden rounded-2xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 backdrop-blur-sm shadow-lg p-8 relative"
             >
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <div className="space-y-2">
-                        <h2 className="text-3xl font-bold text-balance">{t('communityHighlights.title')}</h2>
-                        <p className="max-w-[600px] text-pretty">
+                        <h2 className="text-3xl font-bold text-balance text-foreground">{t('communityHighlights.title')}</h2>
+                        <p className="max-w-[600px] text-pretty text-muted-foreground">
                             {t('communityHighlights.description')}
                         </p>
                     </div>
-                    <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2 bg-white/20 rounded-full px-3 py-1.5">
-                            <Sparkles className="h-4 w-4" />
-                            <span className="text-sm font-medium">{experiences.length} {t('communityHighlights.submissions')}</span>
+                    <div className="flex flex-wrap items-center gap-3">
+                        <div className="flex items-center gap-2 bg-purple-500/20 dark:bg-white/20 rounded-full px-3 py-1.5">
+                            <Sparkles className="h-4 w-4 text-purple-600 dark:text-purple-300" />
+                            <span className="text-sm font-medium text-foreground">{experiences.length} {t('communityHighlights.submissions')}</span>
                         </div>
-                        <div className="flex items-center gap-2 bg-white/20 rounded-full px-3 py-1.5">
-                            <TrendingUp className="h-4 w-4" />
-                            <span className="text-sm font-medium">{t('communityHighlights.recentActivity')}</span>
+                        <div className="flex items-center gap-2 bg-blue-500/20 dark:bg-white/20 rounded-full px-3 py-1.5">
+                            <TrendingUp className="h-4 w-4 text-blue-600 dark:text-blue-300" />
+                            <span className="text-sm font-medium text-foreground">{t('communityHighlights.recentActivity')}</span>
                         </div>
                     </div>
                 </div>
@@ -186,8 +186,8 @@ export function CommunityHighlights({ setActiveTab, userType = "Student" }: Comm
                                             <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                                                 <Button
                                                     size="sm"
-                                                    variant="ghost"
-                                                    className="h-8 w-8 p-0 text-white hover:bg-white/20"
+                                                    variant="secondary"
+                                                    className="h-8 w-8 p-0 text-white bg-white/20 hover:bg-white/30 border border-white/30"
                                                     onClick={(e) => {
                                                         e.preventDefault()
                                                         e.stopPropagation()

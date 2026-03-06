@@ -235,7 +235,7 @@ export function MessagesTabContent({ userType }: MessagesTabContentProps) {
             </div>
 
             {/* Chat Interface */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-[600px]">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-[400px] md:min-h-[600px]">
                 {/* Conversations List */}
                 <div className={cn(
                     "lg:col-span-1 rounded-2xl border-2 border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden",
