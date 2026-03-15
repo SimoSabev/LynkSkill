@@ -743,7 +743,13 @@
     "copyCode": "Копирай код",
     "codeCopied": "Кодът за покана е копиран!",
     "copyCodeFailed": "Неуспешно копиране на кода",
-    "checkEmailInvitation": "Моля, проверете имейла си за линка за покана или помолете компанията да изпрати поканата отново."
+    "checkEmailInvitation": "Моля, проверете имейла си за линка за покана или помолете компанията да изпрати поканата отново.",
+    "adminDesc": "Пълен достъп без собственост",
+    "hrManagerDesc": "Управление на стажове и кандидатури",
+    "hrRecruiterDesc": "Преглед и управление на кандидатури",
+    "viewerDesc": "Само за четене",
+    "roleMember": "Член",
+    "memberDesc": "Основен достъп, преглед и комуникация"
   },
   "activeAssignments": {
     "title": "Активни задания",
@@ -971,7 +977,28 @@
     "skip": "Пропусни",
     "submitting": "Изпращане...",
     "applyWithCoverLetter": "Кандидатствай с мотивационно писмо",
-    "applyWithoutCoverLetter": "Кандидатствай без мотивационно писмо"
+    "applyWithoutCoverLetter": "Кандидатствай без мотивационно писмо",
+    "draft": "Чернова",
+    "submitted": "Изпратено",
+    "reviewed": "Прегледано",
+    "updatedSuccess": "Мотивационното писмо е актуализирано успешно",
+    "failedToSave": "Неуспешно запазване на мотивационното писмо",
+    "reviewSubmitted": "Прегледът е изпратен успешно",
+    "failedToSubmitReview": "Неуспешно изпращане на прегледа",
+    "failedToLoad": "Неуспешно зареждане на мотивационното писмо",
+    "tryAgain": "Опитай отново",
+    "noCoverLetter": "Няма мотивационно писмо",
+    "noLetterStudent": "Все още не сте написали мотивационно писмо за тази кандидатура.",
+    "noLetterCompany": "Ученикът не е изпратил мотивационно писмо.",
+    "cancel": "Отказ",
+    "save": "Запази",
+    "reviewerFeedback": "Обратна връзка от рецензента",
+    "reviewNoteInternal": "Бележка за преглед (Вътрешна)",
+    "reviewPlaceholder": "Добавете вашите бележки тук...",
+    "submitReview": "Изпрати преглед",
+    "editCoverLetter": "Редактирай мотивационно писмо",
+    "updateReview": "Актуализирай преглед",
+    "addReview": "Добави преглед"
   },
   "internshipDetails": {
     "failedToLoad": "Неуспешно зареждане",
@@ -1393,7 +1420,10 @@
     "submissionSuccessful": "Успешно предаване!",
     "submissionSuccessfulDesc": "Вашето задание беше предадено успешно.",
     "filesSubmittedForReview": "{count} файл(а) предадени за преглед",
-    "done": "Готово"
+    "done": "Готово",
+    "fileTypeNotAllowed": "Типът файл не е разрешен",
+    "fileTooLarge": "Файлът е твърде голям (макс. 25MB)",
+    "clearAll": "Изчисти всички"
   },
   "assignmentProgress": {
     "dashboardTitle": "Табло за напредък по заданията",
@@ -1427,6 +1457,9 @@
     "createdLabel": "Създадено",
     "submissions": "Предавания",
     "noSubmissionsYet": "Все още няма предавания",
+    "awaitingStudent": "Изчакване ученикът да предаде файлове",
+    "backToList": "Назад към списъка",
+    "loading": "Зареждане...",
     "close": "Затвори"
   },
   "applyTab": {
@@ -1867,7 +1900,15 @@
     "progress": "Напредък",
     "invalidApiResponse": "Невалиден отговор от API",
     "failedToLoad": "Неуспешно зареждане на заданията",
-    "quickView": "Бърз преглед"
+    "quickView": "Бърз преглед",
+    "pendingTasksBanner": "Имате задачи, които изискват вашето внимание",
+    "pending": "чакащи",
+    "overdue": "просрочени",
+    "completeToGetApproved": "Изпълнете ги, за да бъдете одобрени за кандидатурите си",
+    "taskOverdue": "Задачата е просрочена!",
+    "taskRequired": "Задача, необходима за одобрение",
+    "taskCompleted": "Задачата е завършена",
+    "due": "Краен срок"
   },
   "teamMemberDashboard": {
     "welcomeBack": "Добре дошъл отново, {name}!",
@@ -2237,5 +2278,12 @@
     "renew": "Поднови",
     "chooseNewDate": "Изберете нова крайна дата",
     "extend30Days": "Удължи с 30 дни"
+  },
+  "studentSummary": {
+    "professionalScore": "Професионален резултат",
+    "experiences": "Опит",
+    "skillScore": "Резултат от умения",
+    "companies": "Компании",
+    "topEndorsed": "Най-препоръчвани"
   }
 }

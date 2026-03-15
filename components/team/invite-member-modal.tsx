@@ -34,8 +34,16 @@ const DEFAULT_ROLES = [
   { value: "ADMIN", labelKey: "team.roleAdmin", descKey: "team.adminDesc", color: "text-red-500 bg-red-500/10" },
   { value: "HR_MANAGER", labelKey: "team.roleHRManager", descKey: "team.hrManagerDesc", color: "text-blue-500 bg-blue-500/10" },
   { value: "HR_RECRUITER", labelKey: "team.roleHRRecruiter", descKey: "team.hrRecruiterDesc", color: "text-emerald-500 bg-emerald-500/10" },
+  { value: "MEMBER", labelKey: "team.roleMember", descKey: "team.memberDesc", color: "text-sky-500 bg-sky-500/10" },
   { value: "VIEWER", labelKey: "team.roleViewer", descKey: "team.viewerDesc", color: "text-gray-500 bg-gray-500/10" },
 ]
+
+interface CustomRole {
+  id: string
+  name: string
+  description: string | null
+  color: string | null
+}
 
 export function InviteMemberModal({
   open,
@@ -46,6 +54,20 @@ export function InviteMemberModal({
   const [email, setEmail] = React.useState("")
   const [role, setRole] = React.useState<string>("VIEWER")
   const [loading, setLoading] = React.useState(false)
+  const [customRoles, setCustomRoles] = React.useState<CustomRole[]>([])
+
+  React.useEffect(() => {
+    if (open) {
+      fetch("/api/company/roles")
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+          if (data?.customRoles) {
+            setCustomRoles(data.customRoles)
+          }
+        })
+        .catch(() => {})
+    }
+  }, [open])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -65,10 +87,14 @@ export function InviteMemberModal({
     setLoading(true)
 
     try {
+      const isCustomRole = role.startsWith("custom:")
+      const customRoleId = isCustomRole ? role.replace("custom:", "") : undefined
+      const defaultRole = isCustomRole ? undefined : role
+
       const res = await fetch("/api/company/members", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, role }),
+        body: JSON.stringify({ email, role: defaultRole, customRoleId }),
       })
 
       const data = await res.json()
@@ -93,6 +119,9 @@ export function InviteMemberModal({
   }
 
   const selectedRole = DEFAULT_ROLES.find(r => r.value === role)
+  const selectedCustomRole = role.startsWith("custom:") 
+    ? customRoles.find(r => r.id === role.replace("custom:", "")) 
+    : null
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -160,6 +189,27 @@ export function InviteMemberModal({
                     </div>
                   </SelectItem>
                 ))}
+                {customRoles.length > 0 && (
+                  <>
+                    <div className="px-2 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                      {t("team.customRole")}
+                    </div>
+                    {customRoles.map((cr) => (
+                      <SelectItem key={cr.id} value={`custom:${cr.id}`} className="rounded-lg py-2.5">
+                        <div className="flex items-center gap-2.5">
+                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-semibold border-0" style={cr.color ? { backgroundColor: `${cr.color}20`, color: cr.color } : undefined}>
+                            {cr.name}
+                          </Badge>
+                          {cr.description && (
+                            <span className="text-xs text-muted-foreground">
+                              {cr.description}
+                            </span>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </>
+                )}
               </SelectContent>
             </Select>
             {/* Selected role preview */}
@@ -168,6 +218,14 @@ export function InviteMemberModal({
                 <Sparkles className="h-3.5 w-3.5 text-indigo-500 mt-0.5 shrink-0" />
                 <p className="text-xs text-muted-foreground leading-relaxed">
                   <span className="font-medium text-foreground">{t(selectedRole.labelKey)}</span> — {t(selectedRole.descKey)}. {t("team.canChangeAnytime")}
+                </p>
+              </div>
+            )}
+            {selectedCustomRole && (
+              <div className="flex items-start gap-2 p-2.5 rounded-lg bg-indigo-50/50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/30">
+                <Sparkles className="h-3.5 w-3.5 text-indigo-500 mt-0.5 shrink-0" />
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  <span className="font-medium text-foreground">{selectedCustomRole.name}</span>{selectedCustomRole.description ? ` — ${selectedCustomRole.description}` : ""}. {t("team.canChangeAnytime")}
                 </p>
               </div>
             )}

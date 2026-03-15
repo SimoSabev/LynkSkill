@@ -32,7 +32,10 @@ import {
   Building2,
   Calendar,
   TrendingUp,
-  Eye
+  Eye,
+  AlertTriangle,
+  ArrowRight,
+  CheckCircle2
 } from "lucide-react"
 
 import { Input } from "@/components/ui/input"
@@ -256,6 +259,55 @@ export function AssignmentsTabContent() {
         </Button>
       </div>
 
+      {/* Pending Assignments Banner */}
+      {(() => {
+        const pendingCount = filteredProjects.filter(p => {
+          if (!p.assignment) return false
+          const due = safeDate(p.assignment.dueDate)
+          return due && due.getTime() > Date.now() && p.status !== "COMPLETED"
+        }).length
+        const overdueCount = filteredProjects.filter(p => {
+          if (!p.assignment) return false
+          const due = safeDate(p.assignment.dueDate)
+          return due && due.getTime() <= Date.now() && p.status !== "COMPLETED"
+        }).length
+
+        if (pendingCount === 0 && overdueCount === 0) return null
+
+        return (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-2xl border-2 border-violet-500/30 bg-gradient-to-r from-violet-500/10 via-indigo-500/10 to-purple-500/10 p-4"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-violet-500/15">
+                <AlertTriangle className="h-5 w-5 text-violet-500" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-semibold">
+                  {t('assignments.pendingTasksBanner') || "You have tasks that require your attention"}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {pendingCount > 0 && (
+                    <span className="text-violet-600 dark:text-violet-400 font-medium">
+                      {pendingCount} {t('assignments.pending') || 'pending'}
+                    </span>
+                  )}
+                  {pendingCount > 0 && overdueCount > 0 && " · "}
+                  {overdueCount > 0 && (
+                    <span className="text-red-500 font-medium">
+                      {overdueCount} {t('assignments.overdue') || 'overdue'}
+                    </span>
+                  )}
+                  {" — "}{t('assignments.completeToGetApproved') || "Complete these to get approved for your applications"}
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )
+      })()}
+
       {/* Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {filteredProjects.map(proj => {
@@ -264,6 +316,14 @@ export function AssignmentsTabContent() {
             proj.internship.endDate
           )
 
+          // Assignment urgency
+          const hasDue = proj.assignment && proj.assignment.dueDate
+          const dueDate = hasDue ? safeDate(proj.assignment!.dueDate) : null
+          const isOverdue = dueDate ? dueDate.getTime() <= Date.now() && proj.status !== "COMPLETED" : false
+          const isUrgent = dueDate && !isOverdue
+            ? (dueDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24) <= 3 && proj.status !== "COMPLETED"
+            : false
+
           return (
             <motion.div
               key={proj.id}
@@ -271,7 +331,13 @@ export function AssignmentsTabContent() {
               transition={{ type: "spring", stiffness: 300, damping: 20 }}
             >
               <Card
-                className="group rounded-3xl cursor-pointer border-2 relative overflow-hidden"
+                className={`group rounded-3xl cursor-pointer border-2 relative overflow-hidden transition-colors ${
+                  isOverdue
+                    ? "border-red-500/40 bg-red-500/[0.02]"
+                    : isUrgent
+                      ? "border-amber-500/40 bg-amber-500/[0.02]"
+                      : ""
+                }`}
                 onClick={() => {
                   setNavigating(proj.id)
                   setTimeout(
@@ -292,7 +358,7 @@ export function AssignmentsTabContent() {
                   <Eye className="w-4 h-4" />
                 </button>
 
-                <CardHeader>
+                <CardHeader className="pb-2">
                   <div className="flex items-start justify-between gap-2">
                     <CardTitle className="line-clamp-2 text-lg">
                       {proj.internship.title}
@@ -302,7 +368,7 @@ export function AssignmentsTabContent() {
                       variant={
                         proj.status === "ONGOING" ? "secondary" : "default"
                       }
-                      className="rounded-xl"
+                      className="rounded-xl shrink-0"
                     >
                       {proj.status}
                     </Badge>
@@ -310,30 +376,66 @@ export function AssignmentsTabContent() {
                 </CardHeader>
 
                 <CardContent className="space-y-3 relative z-10">
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-center">
-                      <span className="font-medium">{t('assignments.company')}:</span>
-                      <span className="ml-1">
-                        {proj.internship.company?.name ?? "Unknown"}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center">
-                      <Users className="w-4 h-4 mr-2" />
-                      <span className="font-medium">{t('assignments.student')}:</span>
-                      <span className="ml-1 truncate">{proj.student.name}</span>
-                    </div>
+                  <div className="flex items-center text-sm text-muted-foreground">
+                    <Building2 className="w-4 h-4 mr-1.5 shrink-0" />
+                    <span className="truncate">{proj.internship.company?.name ?? "Unknown"}</span>
                   </div>
 
+                  {/* Assignment task notice */}
+                  {proj.assignment && proj.status !== "COMPLETED" && (
+                    <div className={`rounded-xl p-3 border ${
+                      isOverdue
+                        ? "bg-red-500/10 border-red-500/30"
+                        : isUrgent
+                          ? "bg-amber-500/10 border-amber-500/30"
+                          : "bg-violet-500/10 border-violet-500/30"
+                    }`}>
+                      <div className="flex items-start gap-2">
+                        {isOverdue ? (
+                          <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
+                        ) : (
+                          <FileText className="w-4 h-4 text-violet-500 mt-0.5 shrink-0" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-xs font-semibold ${isOverdue ? "text-red-600 dark:text-red-400" : isUrgent ? "text-amber-600 dark:text-amber-400" : "text-violet-600 dark:text-violet-400"}`}>
+                            {isOverdue
+                              ? (t('assignments.taskOverdue') || "Task overdue!")
+                              : (t('assignments.taskRequired') || "Task required for approval")}
+                          </p>
+                          <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">
+                            {proj.assignment.title}
+                          </p>
+                          {dueDate && (
+                            <p className={`text-[10px] mt-1 ${isOverdue ? "text-red-500" : "text-muted-foreground"}`}>
+                              <Clock className="w-3 h-3 inline mr-1" />
+                              {t('assignments.due') || "Due"}: {dueDate.toLocaleDateString()}
+                            </p>
+                          )}
+                        </div>
+                        <ArrowRight className={`w-4 h-4 shrink-0 mt-0.5 ${isOverdue ? "text-red-400" : "text-violet-400"}`} />
+                      </div>
+                    </div>
+                  )}
+
+                  {proj.status === "COMPLETED" && proj.assignment && (
+                    <div className="rounded-xl p-3 border bg-emerald-500/10 border-emerald-500/30">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                        <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                          {t('assignments.taskCompleted') || "Task completed"}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="pt-2 border-t">
-                    <div className="flex items-center text-xs">
-                      <Clock className="w-4 h-4 mr-2" />
-                      <span className="font-medium">{t('assignments.period')}:</span>
-                      <span className="ml-1">
+                    <div className="flex items-center text-xs text-muted-foreground">
+                      <Clock className="w-3.5 h-3.5 mr-1.5" />
+                      <span>
                         {proj.internship.startDate
                           ? safeDate(proj.internship.startDate)!.toLocaleDateString()
                           : "N/A"}
-                        {" - "}
+                        {" — "}
                         {proj.internship.endDate
                           ? safeDate(proj.internship.endDate)!.toLocaleDateString()
                           : "N/A"}
@@ -345,7 +447,9 @@ export function AssignmentsTabContent() {
                 {/* Progress bar */}
                 <div className="absolute bottom-0 left-0 w-full h-1 bg-background/30">
                   <div
-                    className="h-full transition-all duration-500"
+                    className={`h-full transition-all duration-500 ${
+                      isOverdue ? "bg-red-500" : isUrgent ? "bg-amber-500" : "bg-violet-500"
+                    }`}
                     style={{ width: `${progress}%` }}
                   />
                 </div>
