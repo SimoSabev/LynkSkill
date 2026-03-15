@@ -20,6 +20,7 @@ model User {
   onboardingComplete Boolean       @default(false)
   introShown         Boolean       @default(false)
   profile            Profile?
+  aiProfile          AIProfile?    @relation("StudentAIProfile")
   companies          Company[]     @relation("UserCompanies")
   applications       Application[] @relation("StudentApplications")
   portfolio          Portfolio?
@@ -750,4 +751,58 @@ model CompanyCodeJoin {
   @@index([companyId])
   @@index([userId])
   @@index([joinedAt])
+}
+
+//
+// ---------------------
+// AI PROFILING & CONFIDENCE SCORE
+// ---------------------
+
+model AIProfile {
+  id                    String   @id @default(cuid())
+  studentId             String   @unique
+  student               User     @relation("StudentAIProfile", fields: [studentId], references: [id], onDelete: Cascade)
+  
+  // Profiling Q&A data (structured JSON)
+  personalInfo          Json?    // {location, age, environment, lifestyle}
+  careerGoals           Json?    // {shortTerm, longTerm, dreamJob, industries}
+  personalityTraits     Json?    // {workStyle, teamPreference, communication}
+  skillsAssessment      Json?    // {technical:[], soft:[], selfRated:{}, aiAssessed:{}}
+  educationDetails      Json?    // {current, planned, interests}
+  availability          Json?    // {startDate, hoursPerWeek, remote/onsite}
+  preferences           Json?    // {salary, location, companySize, culture}
+  
+  // Raw conversation log
+  profilingConversation Json?    // Array of {question, answer, category, timestamp}
+  
+  // Profiling progress
+  questionsAsked        Int      @default(0)
+  questionsAnswered     Int      @default(0)
+  profilingComplete     Boolean  @default(false)
+  lastProfilingAt       DateTime?
+  
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  
+  confidenceScore       ConfidenceScore?
+}
+
+model ConfidenceScore {
+  id                  String    @id @default(cuid())
+  aiProfileId         String    @unique
+  aiProfile           AIProfile @relation(fields: [aiProfileId], references: [id], onDelete: Cascade)
+  
+  // Score dimensions (0-100 each)
+  overallScore        Int       @default(0)
+  profileCompleteness Int       @default(0)  // Portfolio fields filled
+  profilingDepth      Int       @default(0)  // AI profiling Q&A completeness
+  endorsementQuality  Int       @default(0)  // From existing Experience model
+  activityScore       Int       @default(0)  // Login frequency, response rate
+  
+  // Metadata
+  lastCalculatedAt    DateTime  @default(now())
+  scoreHistory        Json?      // Array of {score, date, reason}
+  
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 }

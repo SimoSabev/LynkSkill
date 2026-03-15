@@ -94,8 +94,8 @@ export function AIModeToggle() {
                 )}
             </motion.div>
 
-            <span className="relative z-10 whitespace-nowrap">
-                {t('aiMode.title')}
+            <span className="relative z-10 whitespace-nowrap font-extrabold tracking-wide">
+                AI Profiler
             </span>
 
             {/* Status badge: Beta or ON */}

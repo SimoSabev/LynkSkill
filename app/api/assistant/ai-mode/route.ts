@@ -7,7 +7,7 @@ const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 })
 
-type ChatPhase = "intro" | "gathering" | "portfolio" | "matching" | "results"
+type ChatPhase = "intro" | "profiling" | "deepDive" | "complete"
 
 interface ConversationMessage {
     role: "user" | "assistant"
@@ -50,53 +50,51 @@ function extractSkillsFromText(text: string): string[] {
 }
 
 // System prompts for different modes
-const STUDENT_SYSTEM_PROMPT = `You are Linky, the friendly AI Career Assistant for LynkSkill - a platform that connects students with internship opportunities.
+const STUDENT_SYSTEM_PROMPT = `You are Linky, the AI Middleman and Career Profiler for LynkSkill.
 
 ⚠️ CRITICAL RULE - MUST FOLLOW:
-You are ONLY allowed to answer questions related to LynkSkill, internships, career development, job searching, skills, portfolios, resumes, interviews, professional development, and educational/career guidance.
-
-If a user asks about ANYTHING unrelated to LynkSkill or career/internship topics (e.g., general knowledge questions, coding problems, math, recipes, entertainment, news, personal advice unrelated to careers, etc.), you MUST politely decline and redirect them:
-
-Example response: "I appreciate your curiosity! 😊 However, I'm Linky - your dedicated LynkSkill career assistant. I'm here specifically to help you with internship searches, building your portfolio, career guidance, and making the most of LynkSkill's features. Is there anything career-related I can help you with today? 🚀"
-
-DO NOT answer off-topic questions under any circumstances. This is a non-negotiable rule.
+You are ONLY allowed to answer questions related to LynkSkill, internships, career development, and candidate profiling. If a user asks about anything else, politely decline.
 
 Your personality:
-- Your name is Linky and you should introduce yourself as such
-- You're friendly, encouraging, and supportive
-- You use casual but professional language
-- Add occasional emojis to be engaging 💡🚀✨
-- You're part of the LynkSkill team, helping students succeed
+- Friendly, encouraging, and supportive but highly analytical
+- Use casual but professional language with occasional emojis 💡🚀✨
 
-Your tasks:
-1. GATHERING PHASE: Ask questions to understand the student better:
-   - What are their skills (programming languages, tools, frameworks)?
-   - What field are they interested in (web development, data science, design, etc.)?
-   - What is their educational background?
-   - Do they have any projects or experience?
-   - What are their career goals?
+Your task: You are building a comprehensive "Confidence Score" profile for this student through conversation.
+You need to ask targeted questions to gather data across these categories:
+1. Personal Info (location, environment, lifestyle)
+2. Career Goals (short-term, long-term, dream job, industries)
+3. Personality Traits (work style, team preference, communication)
+4. Skills Assessment (technical, soft, self-rated levels)
+5. Education Details (current, planned, degree)
+6. Availability (start date, hours/week, remote/onsite preference)
+7. Preferences (salary expectations, company size, culture)
 
-2. PORTFOLIO PHASE: Once you have enough info, generate a professional portfolio including:
-   - A compelling headline (e.g., "Aspiring Full-Stack Developer | React & Node.js Enthusiast")
-   - An about section (2-3 sentences, professional and engaging)
-   - List of key skills
-   - Career interests
+WORKFLOW & PHASES:
+- Current phase: {phase}
+- PROFILING PHASE: Ask 1 question at a time to gather the above data. Don't overwhelm them. Acknowledge their previous answer nicely before asking the next question.
+- DEEP DIVE PHASE: Once you have basic info across most categories, ask a few scenario-based questions to assess their soft skills or technical depth.
+- COMPLETE PHASE: When you have sufficient info across all 7 categories (usually after 10-15 answers), wrap up the conversation.
 
-3. MATCHING PHASE: After portfolio is generated, you'll help match them with internships on LynkSkill.
+JSON OUTPUT REQUIREMENT:
+Whenever the student's answer provides useful profiling data, you MUST extract it and output a JSON block at the very end of your message. The JSON block must be wrapped in \`\`\`json ... \`\`\`.
+Format:
+\`\`\`json
+{
+  "type": "profile_update",
+  "data": {
+    "personalInfo": { "location": "...", "lifestyle": "..." }, // only include if new info found
+    "careerGoals": { "industries": ["..."], "shortTerm": "..." }, // only include if new info found
+    "skillsAssessment": { "technical": ["..."], "soft": ["..."] }, // only include if new info found
+    // ... same for other categories
+  },
+  "confidenceDelta": 5 // Estimate how much this answer improves their profile (1-10)
+}
+\`\`\`
 
-IMPORTANT:
-- Always remember you are Linky from LynkSkill
-- Be friendly but professional
-- Ask follow-up questions if answers are vague
-- When you have enough information (at least: skills, interests, and some background), transition to portfolio generation
-- Output JSON when generating portfolio with format: {"type": "portfolio", "data": {headline, about, skills: [], interests: []}}
-- When ready for matching, output: {"type": "ready_for_matching"}
-
-Current conversation phase: {phase}
-
-If you need to transition phases, include in your response:
-- To move to portfolio: Add [PHASE:portfolio] at the end
-- To move to matching: Add [PHASE:matching] at the end`
+If you want to transition to the next phase, output a special tag at the very end (outside JSON):
+- To move to deep dive: [PHASE:deepDive]
+- To complete profiling: [PHASE:complete]
+`
 
 const COMPANY_SYSTEM_PROMPT = `You are Linky, the AI Talent Scout for LynkSkill.
 
@@ -169,153 +167,51 @@ export async function POST(req: NextRequest) {
         let responseData: Record<string, unknown> = {}
 
         // Check for phase transitions
-        if (reply.includes("[PHASE:portfolio]")) {
-            newPhase = "portfolio"
-            reply = reply.replace("[PHASE:portfolio]", "").trim()
-        } else if (reply.includes("[PHASE:matching]")) {
-            newPhase = "matching"
-            reply = reply.replace("[PHASE:matching]", "").trim()
+        if (reply.includes("[PHASE:deepDive]")) {
+            newPhase = "deepDive" as ChatPhase
+            reply = reply.replace("[PHASE:deepDive]", "").trim()
+        } else if (reply.includes("[PHASE:complete]")) {
+            newPhase = "complete" as ChatPhase
+            reply = reply.replace("[PHASE:complete]", "").trim()
         }
 
-        // Check for [SEARCH] tag for companies (new format)
-        if (userType === "company") {
-            const searchTagRegex = /\[SEARCH\](.*?)\[\/SEARCH\]/s
-            const searchTagMatch = reply.match(searchTagRegex)
-            
-            if (searchTagMatch) {
-                try {
-                    const jsonStr = searchTagMatch[1].trim()
-                    const searchData = JSON.parse(jsonStr)
-                    
-                    // Clean the reply - remove the search tag
-                    let cleanReply = reply.replace(searchTagRegex, "").trim()
-                    if (!cleanReply || cleanReply.length < 5) {
-                        cleanReply = "Searching for the best candidates... 🔍"
-                    }
-                    
-                    // Fetch matching students
-                    const skills = searchData.skills || []
-                    const matches = await findMatchingStudents(skills, searchData.field || "")
-                    
-                    return NextResponse.json({
-                        reply: cleanReply,
-                        phase: "results",
-                        matches,
-                        type: "search_complete"
-                    })
-                } catch (e) {
-                    console.error("Search tag parse error:", e)
-                }
-            }
-            
-            // Also try old JSON format as fallback
-            const searchJsonRegex = /\{\s*"type"\s*:\s*"ready_for_search"\s*,\s*"criteria"\s*:\s*\{[^}]*\}\s*\}/g
-            const searchMatch = reply.match(searchJsonRegex)
-            if (searchMatch) {
-                try {
-                    const jsonData = JSON.parse(searchMatch[searchMatch.length - 1])
-                    if (jsonData.type === "ready_for_search") {
-                        newPhase = "results"
-                        
-                        // Fetch matching students immediately
-                        const matches = await findMatchingStudents(jsonData.criteria?.skills || [], jsonData.criteria?.field || "")
-                        
-                        // Clean the reply - remove ALL JSON patterns
-                        let cleanReply = reply
-                            .replace(searchJsonRegex, "")
-                            .replace(/\{[^{}]*"type"[^{}]*\}/g, "")
-                            .trim()
-                        
-                        // If reply is empty or just whitespace, provide a default
-                        if (!cleanReply || cleanReply.length < 10) {
-                            cleanReply = "Got it! Searching for the best candidates for you... ✨"
-                        }
-                        
-                        return NextResponse.json({
-                            reply: cleanReply,
-                            phase: "results",
-                            matches,
-                            type: "search_complete"
-                        })
-                    }
-                } catch (e) {
-                    console.error("JSON parse error for search:", e)
-                }
-            }
-            
-            // NO FALLBACK AUTO-SEARCH - Only search when AI explicitly triggers with JSON
-            // This ensures Linky finishes gathering context before searching
-            
-            // Smart fallback: If AI says it's searching, extract skills and search
-            const isSearchingNow = reply.toLowerCase().includes("searching") || 
-                                    reply.toLowerCase().includes("let me find") ||
-                                    reply.toLowerCase().includes("finding") ||
-                                    reply.toLowerCase().includes("looking for the best") ||
-                                    reply.toLowerCase().includes("find the best")
-            
-            if (isSearchingNow) {
-                // Extract skills from the entire conversation including current message
-                const fullConversation = conversationHistory.map(m => m.content).join(" ") + " " + message + " " + reply
-                const extractedSkills = extractSkillsFromText(fullConversation)
-                
-                console.log("Search triggered! Extracted skills:", extractedSkills)
-                
-                if (extractedSkills.length > 0) {
-                    const matches = await findMatchingStudents(extractedSkills, "")
-                    console.log("Found matches:", matches.length)
-                    
-                    return NextResponse.json({
-                        reply,
-                        phase: "results",
-                        matches,
-                        type: "search_complete"
-                    })
-                }
-            }
-        }
-
-        // Handle other JSON patterns
-        const jsonMatch = reply.match(/\{[\s\S]*?"type"[\s\S]*?\}/g)
-        if (jsonMatch) {
+        // Handle profile updates from the AI Middleman
+        const jsonBlockRegex = /```json\s*(\{[\s\S]*?\})\s*```/g;
+        let profileUpdateMatch = [...reply.matchAll(jsonBlockRegex)];
+        
+        if (profileUpdateMatch.length > 0 && userType === "student") {
             try {
-                const jsonData = JSON.parse(jsonMatch[jsonMatch.length - 1])
-                responseData = jsonData
+                // Get the last JSON block found
+                const jsonStr = profileUpdateMatch[profileUpdateMatch.length - 1][1];
+                const jsonData = JSON.parse(jsonStr);
                 
-                // Handle portfolio generation for students
-                if (jsonData.type === "portfolio" && userType === "student") {
-                    newPhase = "matching"
+                if (jsonData.type === "profile_update") {
+                    responseData = {
+                        profileUpdate: jsonData.data,
+                        confidenceDelta: jsonData.confidenceDelta || 1
+                    };
                     
-                    // Fetch matching internships
-                    const matches = await findMatchingInternships(jsonData.data?.skills || [], jsonData.data?.interests || [])
+                    // Clean the reply - remove the JSON blocks from what the user sees
+                    reply = reply.replace(jsonBlockRegex, "").trim();
                     
-                    return NextResponse.json({
-                        reply: reply.replace(jsonMatch[jsonMatch.length - 1], "").trim() + 
-                               "\n\n✨ I've generated your portfolio! Now let me find internships that match your profile...",
-                        phase: "results",
-                        portfolio: jsonData.data,
-                        matches,
-                        type: "portfolio_generated"
-                    })
+                    // Automatically transition to complete if confidence score is high enough 
+                    // This logic will be handled mostly on the frontend, but we pass the data here
                 }
-
-                // Handle ready for matching (student)
-                if (jsonData.type === "ready_for_matching" && userType === "student") {
-                    newPhase = "matching"
-                }
-            } catch (_e) {
-                // JSON parsing failed, continue normally
+            } catch (e) {
+                console.error("Profile JSON parse error:", e);
             }
         }
 
-        // If in matching phase and we have enough context, auto-fetch matches
-        if (newPhase === "matching" && userType === "student") {
+
+        // If in complete phase and we have enough context, auto-fetch matches
+        if (newPhase === "complete" && userType === "student") {
             // Extract skills from conversation
             const skills = extractSkillsFromConversation(conversationHistory, message)
             if (skills.length > 0) {
                 const matches = await findMatchingInternships(skills, [])
                 return NextResponse.json({
-                    reply: reply + "\n\n🎯 Based on your profile, I found some internships that might interest you!",
-                    phase: "results",
+                    reply: reply + "\n\n🎯 Based on your complete profile, I found some internships that might interest you!",
+                    phase: "complete",
                     matches,
                     type: "matches_found"
                 })

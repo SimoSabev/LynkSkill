@@ -98,8 +98,14 @@ interface AIModeContextType {
     setStudentMatches: (matches: StudentMatch[]) => void
     generatedPortfolio: Record<string, unknown> | null
     setGeneratedPortfolio: (portfolio: Record<string, unknown> | null) => void
-    chatPhase: "intro" | "gathering" | "portfolio" | "matching" | "results"
-    setChatPhase: (phase: "intro" | "gathering" | "portfolio" | "matching" | "results") => void
+    aiProfileData: Record<string, unknown> | null
+    setAiProfileData: React.Dispatch<React.SetStateAction<Record<string, unknown> | null>>
+    confidenceScore: number
+    setConfidenceScore: React.Dispatch<React.SetStateAction<number>>
+    profilingProgress: number
+    setProfilingProgress: (progress: number) => void
+    chatPhase: "intro" | "gathering" | "portfolio" | "matching" | "results" | "profiling" | "deepDive" | "complete"
+    setChatPhase: (phase: "intro" | "gathering" | "portfolio" | "matching" | "results" | "profiling" | "deepDive" | "complete") => void
     sendWelcomeMessage: (userType: "student" | "company") => void
     welcomeSent: boolean
     // Session management
@@ -119,7 +125,10 @@ export function AIModeProvider({ children }: { children: ReactNode }) {
     const [internshipMatches, setInternshipMatches] = useState<InternshipMatch[]>([])
     const [studentMatches, setStudentMatches] = useState<StudentMatch[]>([])
     const [generatedPortfolio, setGeneratedPortfolio] = useState<Record<string, unknown> | null>(null)
-    const [chatPhase, setChatPhase] = useState<"intro" | "gathering" | "portfolio" | "matching" | "results">("intro")
+    const [aiProfileData, setAiProfileData] = useState<Record<string, unknown> | null>(null)
+    const [confidenceScore, setConfidenceScore] = useState<number>(0)
+    const [profilingProgress, setProfilingProgress] = useState<number>(0)
+    const [chatPhase, setChatPhase] = useState<"intro" | "gathering" | "portfolio" | "matching" | "results" | "profiling" | "deepDive" | "complete">("intro")
     const [welcomeSent, setWelcomeSent] = useState(false)
     
     // Session management - initialize from localStorage
@@ -221,6 +230,9 @@ export function AIModeProvider({ children }: { children: ReactNode }) {
                 setInternshipMatches([])
                 setStudentMatches([])
                 setGeneratedPortfolio(null)
+                setAiProfileData(null)
+                setConfidenceScore(0)
+                setProfilingProgress(0)
                 setWelcomeSent(false)
                 setCurrentSessionId(generateSessionId())
             }
@@ -257,6 +269,9 @@ export function AIModeProvider({ children }: { children: ReactNode }) {
         setInternshipMatches([])
         setStudentMatches([])
         setGeneratedPortfolio(null)
+        setAiProfileData(null)
+        setConfidenceScore(0)
+        setProfilingProgress(0)
         
         // Update localStorage with new session reference
         localStorage.setItem(CURRENT_SESSION_KEY, JSON.stringify({
@@ -311,7 +326,7 @@ export function AIModeProvider({ children }: { children: ReactNode }) {
         
         const welcomeContent = userType === "company" 
             ? "👋 Hello! I'm Linky, your AI Talent Scout here at LynkSkill! I'm here to help you find the perfect candidates for your team without manually creating job postings.\n\nJust describe what kind of talent you're looking for - the skills needed, the type of role, experience level, or any specific requirements. I'll search through our student database and find the best matches for you!\n\n💡 Try something like: \"I need a React developer\" or \"Looking for a design intern with Figma skills\""
-            : "👋 Hey there! I'm Linky, your AI Career Assistant here at LynkSkill! 🚀\n\nI'm here to help you build an awesome professional portfolio and find the perfect internship match for your skills and interests.\n\nTell me about yourself - What's your name, what are you studying, and what kind of work excites you? The more you share, the better I can help you stand out!"
+            : "👋 Hey there! I'm Linky, your AI Career Profiler here at LynkSkill! 🚀\n\nI'm going to build your professional Confidence Score Profile so you can stand out to companies without needing to fill out long manual forms.\n\nTo get started, where are you currently based, and what kind of environment do you prefer to work in (remote, hybrid, or on-site)?"
         
         const newMessage: AIMessage = {
             id: `msg-welcome-${Date.now()}`,
@@ -322,7 +337,7 @@ export function AIModeProvider({ children }: { children: ReactNode }) {
         }
         
         setMessages([newMessage])
-        setChatPhase("gathering")
+        setChatPhase(userType === "student" ? "profiling" : "gathering")
     }, [welcomeSent])
 
     return (
@@ -340,6 +355,12 @@ export function AIModeProvider({ children }: { children: ReactNode }) {
             setStudentMatches,
             generatedPortfolio,
             setGeneratedPortfolio,
+            aiProfileData,
+            setAiProfileData,
+            confidenceScore,
+            setConfidenceScore,
+            profilingProgress,
+            setProfilingProgress,
             chatPhase,
             setChatPhase,
             sendWelcomeMessage,

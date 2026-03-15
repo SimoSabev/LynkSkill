@@ -44,6 +44,10 @@ export function StudentAIChat() {
         setInternshipMatches,
         generatedPortfolio,
         setGeneratedPortfolio,
+        aiProfileData,
+        setAiProfileData,
+        confidenceScore,
+        setConfidenceScore,
         chatPhase,
         setChatPhase,
         clearMessages: _clearMessages,
@@ -132,7 +136,16 @@ export function StudentAIChat() {
                 if (data.portfolio) {
                     setGeneratedPortfolio(data.portfolio)
                 }
-
+                if (data.profileUpdate) {
+                    // Update local state by merging
+                    setAiProfileData((prev: any) => ({
+                        ...(prev || {}),
+                        ...(data.profileUpdate || {})
+                    }))
+                }
+                if (data.confidenceDelta) {
+                    setConfidenceScore((prev: number) => Math.min(100, prev + data.confidenceDelta))
+                }
                 if (data.matches) {
                     setInternshipMatches(data.matches)
                 }
@@ -169,19 +182,16 @@ export function StudentAIChat() {
     const studentSessions = sessions.filter(s => s.userType === "student")
 
     const handleSavePortfolio = async () => {
-        if (!generatedPortfolio) return
-        
+        if (!aiProfileData) return
+
         setIsSavingPortfolio(true)
         try {
-            const response = await fetch("/api/portfolio/ai-save", {
+            const response = await fetch("/api/ai-profile", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    headline: generatedPortfolio.headline,
-                    about: generatedPortfolio.about,
-                    skills: generatedPortfolio.skills,
-                    interests: generatedPortfolio.interests,
-                    sessionId: currentSessionId
+                    ...(aiProfileData as any),
+                    profilingComplete: chatPhase === "complete"
                 })
             })
 
@@ -189,15 +199,19 @@ export function StudentAIChat() {
 
             if (data.success) {
                 setPortfolioSaved(true)
-                toast.success(t("ai.portfolioSavedToProfile"))
+                if (data.confidenceScore) {
+                    setConfidenceScore(data.confidenceScore.overall)
+                }
+                toast.success("Profile saved successfully")
             } else {
-                toast.error(data.error || t("ai.failedToSavePortfolio"))
+                toast.error(data.error || "Failed to save profile")
             }
         } catch (error) {
-            console.error("Error saving portfolio:", error)
-            toast.error(t("ai.failedToSavePortfolio"))
+            console.error("Error saving profile:", error)
+            toast.error("Failed to save profile")
         } finally {
             setIsSavingPortfolio(false)
+            setTimeout(() => setPortfolioSaved(false), 3000)
         }
     }
 
@@ -223,12 +237,12 @@ export function StudentAIChat() {
                                 <Zap className="h-6 w-6 text-violet-500" />
                             </div>
                             <h2 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 dark:from-violet-400 dark:via-purple-400 dark:to-fuchsia-400 bg-clip-text text-transparent">
-                                {t("ai.careerAssistant")}
+                                AI Middleman Profiler
                             </h2>
                         </div>
                         <p className="text-muted-foreground text-sm md:text-base font-medium flex items-center gap-2">
                             <Sparkles className="h-4 w-4 text-violet-500" />
-                            {t("ai.buildPortfolio")}
+                            Building your Confidence Score Profile
                         </p>
                     </div>
 
@@ -261,24 +275,23 @@ export function StudentAIChat() {
                 <div className="relative z-10 mt-6">
                     <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
                         <span className={cn("flex items-center gap-1 px-2 py-1 rounded-full transition-colors duration-150", chatPhase !== "intro" && "bg-violet-500/10 text-violet-600 dark:text-violet-400")}>
-                            <User className="h-3 w-3" /> {t("ai.aboutYou")}
+                            <User className="h-3 w-3" /> Intro
                         </span>
-                        <span className={cn("flex items-center gap-1 px-2 py-1 rounded-full transition-colors duration-150", ["portfolio", "matching", "results"].includes(chatPhase) && "bg-violet-500/10 text-violet-600 dark:text-violet-400")}>
-                            <FileText className="h-3 w-3" /> {t("ai.portfolio")}
+                        <span className={cn("flex items-center gap-1 px-2 py-1 rounded-full transition-colors duration-150", ["profiling", "deepDive", "complete"].includes(chatPhase) && "bg-violet-500/10 text-violet-600 dark:text-violet-400")}>
+                            <FileText className="h-3 w-3" /> Profiling
                         </span>
-                        <span className={cn("flex items-center gap-1 px-2 py-1 rounded-full transition-colors duration-150", ["matching", "results"].includes(chatPhase) && "bg-violet-500/10 text-violet-600 dark:text-violet-400")}>
-                            <Target className="h-3 w-3" /> {t("ai.matching")}
+                        <span className={cn("flex items-center gap-1 px-2 py-1 rounded-full transition-colors duration-150", ["deepDive", "complete"].includes(chatPhase) && "bg-violet-500/10 text-violet-600 dark:text-violet-400")}>
+                            <Target className="h-3 w-3" /> Deep Dive
                         </span>
-                        <span className={cn("flex items-center gap-1 px-2 py-1 rounded-full transition-colors duration-150", chatPhase === "results" && "bg-violet-500/10 text-violet-600 dark:text-violet-400")}>
-                            <CheckCircle2 className="h-3 w-3" /> {t("ai.results")}
+                        <span className={cn("flex items-center gap-1 px-2 py-1 rounded-full transition-colors duration-150", chatPhase === "complete" && "bg-violet-500/10 text-violet-600 dark:text-violet-400")}>
+                            <CheckCircle2 className="h-3 w-3" /> Complete
                         </span>
                     </div>
                     <Progress 
                         value={
                             chatPhase === "intro" ? 0 :
-                            chatPhase === "gathering" ? 25 :
-                            chatPhase === "portfolio" ? 50 :
-                            chatPhase === "matching" ? 75 : 100
+                            chatPhase === "profiling" ? 33 :
+                            chatPhase === "deepDive" ? 66 : 100
                         } 
                         className="h-2 bg-violet-500/20"
                     />
@@ -453,12 +466,45 @@ export function StudentAIChat() {
                 </div>
 
                 {/* Results Sidebar */}
-                <div className="space-y-4 overflow-auto">
-                    {/* Generated Portfolio Preview */}
-                    {generatedPortfolio && (
+                <div className="space-y-4 overflow-auto min-h-0 pb-4">
+                    {/* Live Confidence Score */}
+                    {aiProfileData && (
                         <motion.div
                             initial={{ opacity: 0, x: 20 }}
                             animate={{ opacity: 1, x: 0 }}
+                        >
+                            <Card className="border border-indigo-500/20 bg-gradient-to-br from-indigo-500/5 via-violet-500/5 to-purple-500/5 backdrop-blur-xl shadow-lg overflow-hidden">
+                                <CardHeader className="pb-2 border-b border-indigo-500/10">
+                                    <CardTitle className="text-lg flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <div className="p-1.5 rounded-lg bg-indigo-500/10">
+                                                <Target className="h-5 w-5 text-indigo-500" />
+                                            </div>
+                                            <span className="font-semibold text-indigo-700 dark:text-indigo-400">
+                                                Confidence Score
+                                            </span>
+                                        </div>
+                                        <span className="text-2xl font-black text-indigo-600 dark:text-indigo-400">
+                                            {confidenceScore || 0}%
+                                        </span>
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="pt-4 space-y-3">
+                                    <p className="text-sm text-muted-foreground leading-relaxed">
+                                        Your score updates live as you answer questions. Keep chatting to boost your visibility to companies!
+                                    </p>
+                                    <Progress value={confidenceScore || 0} className="h-2 bg-indigo-500/20" />
+                                </CardContent>
+                            </Card>
+                        </motion.div>
+                    )}
+
+                    {/* Extracted Profile Data Preview */}
+                    {aiProfileData && (
+                        <motion.div
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.1 }}
                         >
                             <Card className="border border-violet-500/20 bg-gradient-to-br from-violet-500/5 via-purple-500/5 to-fuchsia-500/5 backdrop-blur-xl shadow-lg overflow-hidden">
                                 <CardHeader className="pb-2 border-b border-violet-500/10">
@@ -467,35 +513,70 @@ export function StudentAIChat() {
                                             <FileText className="h-5 w-5 text-violet-500" />
                                         </div>
                                         <span className="bg-gradient-to-r from-violet-600 to-purple-600 dark:from-violet-400 dark:to-purple-400 bg-clip-text text-transparent font-semibold">
-                                            {t("ai.yourPortfolio")}
+                                            Captured Profile Data
                                         </span>
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent className="space-y-3">
-                                    {Boolean(generatedPortfolio.headline) && (
+                                <CardContent className="space-y-4 pt-4">
+                                    {/* Personal Info */}
+                                    {aiProfileData.personalInfo && Object.keys(aiProfileData.personalInfo as Record<string, any>).length > 0 && (
                                         <div>
-                                            <p className="text-xs text-muted-foreground">{t("ai.headline")}</p>
-                                            <p className="text-sm font-medium">{String(generatedPortfolio.headline)}</p>
-                                        </div>
-                                    )}
-                                    {Boolean(generatedPortfolio.skills) && Array.isArray(generatedPortfolio.skills) && (
-                                        <div>
-                                            <p className="text-xs text-muted-foreground mb-1">{t("portfolio.skills")}</p>
+                                            <p className="text-xs font-bold text-violet-600 dark:text-violet-400 uppercase tracking-wider mb-1">Personal Info</p>
                                             <div className="flex flex-wrap gap-1">
-                                                {(generatedPortfolio.skills as string[]).slice(0, 5).map((skill, i) => (
-                                                    <Badge key={i} variant="secondary" className="text-xs">
-                                                        {skill}
+                                                {Object.entries(aiProfileData.personalInfo as Record<string, any>).map(([k, v], i) => (
+                                                    <Badge key={i} variant="secondary" className="text-xs bg-violet-500/10 text-violet-700 dark:text-violet-300">
+                                                        {k}: {Array.isArray(v) ? (v as any).join(', ') : String(v as any)}
                                                     </Badge>
                                                 ))}
-                                                {(generatedPortfolio.skills as string[]).length > 5 && (
-                                                    <Badge variant="outline" className="text-xs">
-                                                        +{(generatedPortfolio.skills as string[]).length - 5}
-                                                    </Badge>
-                                                )}
                                             </div>
                                         </div>
                                     )}
-                                    <div className="flex gap-2 mt-2">
+
+                                    {/* Career Goals */}
+                                    {aiProfileData.careerGoals && Object.keys(aiProfileData.careerGoals as Record<string, any>).length > 0 && (
+                                        <div>
+                                            <p className="text-xs font-bold text-fuchsia-600 dark:text-fuchsia-400 uppercase tracking-wider mb-1">Career Goals</p>
+                                            <div className="flex flex-wrap gap-1">
+                                                {Object.entries(aiProfileData.careerGoals as Record<string, any>).map(([k, v], i) => (
+                                                    <Badge key={i} variant="outline" className="text-xs border-fuchsia-500/30 text-fuchsia-700 dark:text-fuchsia-300">
+                                                        {k}: {Array.isArray(v) ? (v as any).join(', ') : String(v as any)}
+                                                    </Badge>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Skills */}
+                                    {aiProfileData.skillsAssessment && Object.keys(aiProfileData.skillsAssessment as any).length > 0 && (
+                                        <div>
+                                            <p className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-1">Skills</p>
+                                            <div className="flex flex-wrap gap-1">
+                                                {((aiProfileData.skillsAssessment as any).technical || []).map((skill: string, i: number) => (
+                                                    <Badge key={i} variant="default" className="text-xs bg-blue-500/20 text-blue-700 dark:text-blue-300 border-none hover:bg-blue-500/30">
+                                                        {skill}
+                                                    </Badge>
+                                                ))}
+                                                {((aiProfileData.skillsAssessment as any).soft || []).map((skill: string, i: number) => (
+                                                    <Badge key={i} variant="secondary" className="text-xs bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border-none">
+                                                        {skill}
+                                                    </Badge>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Education & Availability */}
+                                    {aiProfileData.educationDetails && Object.keys(aiProfileData.educationDetails as any).length > 0 && (
+                                        <div className="text-sm">
+                                            <p className="text-xs font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider mb-1">Education & Setup</p>
+                                            <p className="text-muted-foreground mt-1 text-xs">
+                                                {JSON.stringify(aiProfileData.educationDetails).replace(/["{}]/g, '').replace(/:/g, ': ')}
+                                            </p>
+                                        </div>
+                                    )}
+
+                                    {/* Save Button */}
+                                    <div className="flex gap-2 mt-4 pt-2 border-t border-violet-500/10">
                                         <Button 
                                             variant={portfolioSaved ? "outline" : "default"}
                                             size="sm" 
@@ -515,7 +596,7 @@ export function StudentAIChat() {
                                             ) : (
                                                 <Save className="h-4 w-4 mr-2" />
                                             )}
-                                            {portfolioSaved ? t("ai.savedToProfile") : t("ai.saveToProfile")}
+                                            {portfolioSaved ? "Saved to Profile" : "Save to Profile"}
                                         </Button>
                                     </div>
                                     <Button 
@@ -523,7 +604,7 @@ export function StudentAIChat() {
                                         size="sm" 
                                         className="w-full mt-2 rounded-xl text-violet-600 dark:text-violet-400 border-violet-500/30 hover:bg-violet-500/10 hover:border-violet-500/50 transition-colors duration-150"
                                     >
-                                        {t("ai.viewFullPortfolio")}
+                                        View Full Profile
                                         <ArrowRight className="h-4 w-4 ml-2" />
                                     </Button>
                                 </CardContent>
@@ -538,18 +619,18 @@ export function StudentAIChat() {
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: 0.2 }}
                         >
-                            <Card className="border border-violet-500/20 bg-gradient-to-br from-violet-500/5 via-purple-500/5 to-fuchsia-500/5 backdrop-blur-xl shadow-lg overflow-hidden">
-                                <CardHeader className="pb-2 border-b border-violet-500/10">
+                            <Card className="border border-emerald-500/20 bg-gradient-to-br from-emerald-500/5 via-green-500/5 to-teal-500/5 backdrop-blur-xl shadow-lg overflow-hidden">
+                                <CardHeader className="pb-2 border-b border-emerald-500/10">
                                     <CardTitle className="text-lg flex items-center gap-2">
-                                        <div className="p-1.5 rounded-lg bg-violet-500/10">
-                                            <Briefcase className="h-5 w-5 text-violet-500" />
+                                        <div className="p-1.5 rounded-lg bg-emerald-500/10">
+                                            <Briefcase className="h-5 w-5 text-emerald-500" />
                                         </div>
-                                        <span className="bg-gradient-to-r from-violet-600 to-purple-600 dark:from-violet-400 dark:to-purple-400 bg-clip-text text-transparent font-semibold">
-                                            {t("ai.topMatches")}
+                                        <span className="bg-gradient-to-r from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-400 bg-clip-text text-transparent font-semibold">
+                                            Target Matches found
                                         </span>
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent className="space-y-3">
+                                <CardContent className="space-y-3 pt-4">
                                     {internshipMatches.slice(0, 5).map((match, index) => (
                                         <motion.div
                                             key={match.id}
@@ -585,14 +666,14 @@ export function StudentAIChat() {
                     )}
 
                     {/* Empty state */}
-                    {!generatedPortfolio && internshipMatches.length === 0 && (
+                    {!aiProfileData && internshipMatches.length === 0 && (
                         <Card className="border-dashed border-2 border-violet-500/20 bg-gradient-to-br from-violet-500/5 to-purple-500/5">
                             <CardContent className="flex flex-col items-center justify-center py-12 text-center">
                                 <div className="p-4 rounded-2xl bg-violet-500/10 mb-4">
                                     <TrendingUp className="h-8 w-8 text-violet-500" />
                                 </div>
                                 <p className="text-sm text-muted-foreground">
-                                    {t("ai.chatToDiscover")}
+                                    Chat with Linky to build your Confidence Score Profile in minutes.
                                 </p>
                             </CardContent>
                         </Card>

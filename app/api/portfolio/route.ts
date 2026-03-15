@@ -20,7 +20,15 @@ export async function GET() {
             where: { studentId: student.id },
         })
 
-        return NextResponse.json(portfolio ?? {})
+        const aiProfile = await prisma.aIProfile.findUnique({
+            where: { studentId: student.id },
+            include: { confidenceScore: true }
+        })
+
+        return NextResponse.json({
+            ...portfolio,
+            aiProfile: aiProfile || null
+        })
     } catch (err) {
         console.error(err)
         return NextResponse.json({ error: "Failed to fetch portfolio" }, { status: 500 })
