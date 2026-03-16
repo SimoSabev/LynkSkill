@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Image from "next/image"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
@@ -180,9 +181,11 @@ export function LeaderboardTabContent() {
                                                                     : "ring-orange-500/60 shadow-lg shadow-orange-500/30"
                                                         } overflow-hidden transition-all duration-300`}
                                                     >
-                                                        <img
+                                                        <Image
                                                             src={student.imageUrl || "/placeholder.png?height=128&width=128"}
                                                             alt={student.name}
+                                                            width={128}
+                                                            height={128}
                                                             className="w-full h-full object-cover"
                                                         />
                                                     </div>
@@ -309,9 +312,11 @@ export function LeaderboardTabContent() {
                                                         #{actualRank}
                                                     </Badge>
                                                     <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden ring-2 ring-border/50 shrink-0">
-                                                        <img
+                                                        <Image
                                                             src={student.imageUrl || "/placeholder.svg?height=48&width=48"}
                                                             alt={student.name}
+                                                            width={48}
+                                                            height={48}
                                                             className="w-full h-full object-cover"
                                                         />
                                                     </div>

@@ -7,7 +7,7 @@ import { useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
-    FileText, Clock, AlertCircle, Upload, CheckCircle2,
+    FileText, Clock as _Clock, AlertCircle, Upload, CheckCircle2,
     File, ArrowLeft, Shield, Trash2, ExternalLink,
     Loader2, AlertTriangle, PartyPopper, Info, Calendar
 } from "lucide-react"
@@ -166,7 +166,6 @@ export default function AssignmentPage() {
         })
         setFileErrors(prev => [...prev, ...errors])
         setFiles(prev => [...prev, ...valid])
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
     const handleDrag = (e: React.DragEvent) => {

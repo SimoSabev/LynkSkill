@@ -34,7 +34,7 @@ const SKILL_KEYWORDS = [
     "api", "rest", "graphql", "agile", "scrum"
 ]
 
-function extractSkillsFromText(text: string): string[] {
+function _extractSkillsFromText(text: string): string[] {
     const lowerText = text.toLowerCase()
     const foundSkills: string[] = []
     
@@ -177,7 +177,7 @@ export async function POST(req: NextRequest) {
 
         // Handle profile updates from the AI Middleman
         const jsonBlockRegex = /```json\s*(\{[\s\S]*?\})\s*```/g;
-        let profileUpdateMatch = [...reply.matchAll(jsonBlockRegex)];
+        const profileUpdateMatch = [...reply.matchAll(jsonBlockRegex)];
         
         if (profileUpdateMatch.length > 0 && userType === "student") {
             try {
@@ -301,7 +301,7 @@ async function findMatchingInternships(skills: string[], interests: string[]) {
 }
 
 // Helper function to find matching students for companies
-async function findMatchingStudents(requiredSkills: string[], field: string) {
+async function _findMatchingStudents(requiredSkills: string[], field: string) {
     try {
         const students = await prisma.user.findMany({
             where: {

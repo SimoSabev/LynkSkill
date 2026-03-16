@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { NextRequest, NextResponse } from "next/server"
 import { calculateAndSaveConfidenceScore } from "@/lib/confidence-score"
 
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
     try {
         const { userId } = await auth()
         if (!userId) {
@@ -65,23 +65,25 @@ export async function POST(req: NextRequest) {
          } = body
 
         // Deep merge logic to preserve existing fields not in the payload
-        const currentProfile = (student.aiProfile as any) || {}
+        const currentProfile = (student.aiProfile as Record<string, unknown>) || {}
         
-        const mergedPersonalInfo = { ...(currentProfile.personalInfo || {}), ...(personalInfo || {}) }
-        const mergedCareerGoals = { ...(currentProfile.careerGoals as any || {}), ...(careerGoals || {}) }
-        const mergedPersonalityTraits = { ...(currentProfile.personalityTraits as any || {}), ...(personalityTraits || {}) }
-        const mergedSkillsAssessment = { ...(currentProfile.skillsAssessment as any || {}), ...(skillsAssessment || {}) }
-        const mergedEducationDetails = { ...(currentProfile.educationDetails as any || {}), ...(educationDetails || {}) }
-        const mergedAvailability = { ...(currentProfile.availability as any || {}), ...(availability || {}) }
-        const mergedPreferences = { ...(currentProfile.preferences as any || {}), ...(preferences || {}) }
+        const mergedPersonalInfo = { ...(currentProfile.personalInfo as Record<string, unknown> || {}), ...(personalInfo || {}) }
+        const mergedCareerGoals = { ...(currentProfile.careerGoals as Record<string, unknown> || {}), ...(careerGoals || {}) }
+        const mergedPersonalityTraits = { ...(currentProfile.personalityTraits as Record<string, unknown> || {}), ...(personalityTraits || {}) }
+        const mergedSkillsAssessment = { ...(currentProfile.skillsAssessment as Record<string, unknown> || {}), ...(skillsAssessment || {}) }
+        const mergedEducationDetails = { ...(currentProfile.educationDetails as Record<string, unknown> || {}), ...(educationDetails || {}) }
+        const mergedAvailability = { ...(currentProfile.availability as Record<string, unknown> || {}), ...(availability || {}) }
+        const mergedPreferences = { ...(currentProfile.preferences as Record<string, unknown> || {}), ...(preferences || {}) }
         
         let newConversation = profilingConversation ? profilingConversation : [];
         if (currentProfile.profilingConversation && Array.isArray(currentProfile.profilingConversation)) {
             newConversation = [...currentProfile.profilingConversation, ...(profilingConversation || [])]
         }
 
-        const newAsked = typeof questionsAsked === 'number' ? questionsAsked : currentProfile.questionsAsked || 0
-        const newAnswered = typeof questionsAnswered === 'number' ? questionsAnswered : currentProfile.questionsAnswered || 0
+        const currentAsked = typeof currentProfile.questionsAsked === 'number' ? currentProfile.questionsAsked : 0
+        const currentAnswered = typeof currentProfile.questionsAnswered === 'number' ? currentProfile.questionsAnswered : 0
+        const newAsked = typeof questionsAsked === 'number' ? questionsAsked : currentAsked
+        const newAnswered = typeof questionsAnswered === 'number' ? questionsAnswered : currentAnswered
         const isComplete = profilingComplete !== undefined ? profilingComplete : currentProfile.profilingComplete || false
 
         const aiProfile = await prisma.aIProfile.upsert({

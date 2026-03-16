@@ -42,7 +42,7 @@ export function StudentAIChat() {
         setIsLoading, 
         internshipMatches, 
         setInternshipMatches,
-        generatedPortfolio,
+        generatedPortfolio: _generatedPortfolio,
         setGeneratedPortfolio,
         aiProfileData,
         setAiProfileData,
@@ -138,7 +138,7 @@ export function StudentAIChat() {
                 }
                 if (data.profileUpdate) {
                     // Update local state by merging
-                    setAiProfileData((prev: any) => ({
+                    setAiProfileData((prev: Record<string, unknown> | null) => ({
                         ...(prev || {}),
                         ...(data.profileUpdate || {})
                     }))
@@ -190,7 +190,7 @@ export function StudentAIChat() {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    ...(aiProfileData as any),
+                    ...(aiProfileData as Record<string, unknown>),
                     profilingComplete: chatPhase === "complete"
                 })
             })
@@ -519,61 +519,97 @@ export function StudentAIChat() {
                                 </CardHeader>
                                 <CardContent className="space-y-4 pt-4">
                                     {/* Personal Info */}
-                                    {aiProfileData.personalInfo && Object.keys(aiProfileData.personalInfo as Record<string, any>).length > 0 && (
-                                        <div>
-                                            <p className="text-xs font-bold text-violet-600 dark:text-violet-400 uppercase tracking-wider mb-1">Personal Info</p>
-                                            <div className="flex flex-wrap gap-1">
-                                                {Object.entries(aiProfileData.personalInfo as Record<string, any>).map(([k, v], i) => (
-                                                    <Badge key={i} variant="secondary" className="text-xs bg-violet-500/10 text-violet-700 dark:text-violet-300">
-                                                        {k}: {Array.isArray(v) ? (v as any).join(', ') : String(v as any)}
-                                                    </Badge>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
+                                    {(() => {
+                                        const personalInfo = aiProfileData.personalInfo;
+                                        if (personalInfo && typeof personalInfo === 'object' && personalInfo !== null) {
+                                            const entries = Object.entries(personalInfo as Record<string, unknown>);
+                                            if (entries.length > 0) {
+                                                return (
+                                                    <div>
+                                                        <p className="text-xs font-bold text-violet-600 dark:text-violet-400 uppercase tracking-wider mb-1">Personal Info</p>
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {entries.map(([k, v], i) => (
+                                                                <Badge key={i} variant="secondary" className="text-xs bg-violet-500/10 text-violet-700 dark:text-violet-300">
+                                                                    {k}: {Array.isArray(v) ? (v as unknown[]).join(', ') : String(v)}
+                                                                </Badge>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            }
+                                        }
+                                        return null;
+                                    })()}
 
                                     {/* Career Goals */}
-                                    {aiProfileData.careerGoals && Object.keys(aiProfileData.careerGoals as Record<string, any>).length > 0 && (
-                                        <div>
-                                            <p className="text-xs font-bold text-fuchsia-600 dark:text-fuchsia-400 uppercase tracking-wider mb-1">Career Goals</p>
-                                            <div className="flex flex-wrap gap-1">
-                                                {Object.entries(aiProfileData.careerGoals as Record<string, any>).map(([k, v], i) => (
-                                                    <Badge key={i} variant="outline" className="text-xs border-fuchsia-500/30 text-fuchsia-700 dark:text-fuchsia-300">
-                                                        {k}: {Array.isArray(v) ? (v as any).join(', ') : String(v as any)}
-                                                    </Badge>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
+                                    {(() => {
+                                        const careerGoals = aiProfileData.careerGoals;
+                                        if (careerGoals && typeof careerGoals === 'object' && careerGoals !== null) {
+                                            const entries = Object.entries(careerGoals as Record<string, unknown>);
+                                            if (entries.length > 0) {
+                                                return (
+                                                    <div>
+                                                        <p className="text-xs font-bold text-fuchsia-600 dark:text-fuchsia-400 uppercase tracking-wider mb-1">Career Goals</p>
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {entries.map(([k, v], i) => (
+                                                                <Badge key={i} variant="outline" className="text-xs border-fuchsia-500/30 text-fuchsia-700 dark:text-fuchsia-300">
+                                                                    {k}: {Array.isArray(v) ? (v as unknown[]).join(', ') : String(v)}
+                                                                </Badge>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            }
+                                        }
+                                        return null;
+                                    })()}
 
                                     {/* Skills */}
-                                    {aiProfileData.skillsAssessment && Object.keys(aiProfileData.skillsAssessment as any).length > 0 && (
-                                        <div>
-                                            <p className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-1">Skills</p>
-                                            <div className="flex flex-wrap gap-1">
-                                                {((aiProfileData.skillsAssessment as any).technical || []).map((skill: string, i: number) => (
-                                                    <Badge key={i} variant="default" className="text-xs bg-blue-500/20 text-blue-700 dark:text-blue-300 border-none hover:bg-blue-500/30">
-                                                        {skill}
-                                                    </Badge>
-                                                ))}
-                                                {((aiProfileData.skillsAssessment as any).soft || []).map((skill: string, i: number) => (
-                                                    <Badge key={i} variant="secondary" className="text-xs bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border-none">
-                                                        {skill}
-                                                    </Badge>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
+                                    {(() => {
+                                        const skillsAssessment = aiProfileData.skillsAssessment;
+                                        if (skillsAssessment && typeof skillsAssessment === 'object' && skillsAssessment !== null) {
+                                            const entries = Object.keys(skillsAssessment as Record<string, unknown>);
+                                            if (entries.length > 0) {
+                                                return (
+                                                    <div>
+                                                        <p className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-1">Skills</p>
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {((skillsAssessment as Record<string, unknown>).technical as string[] || []).map((skill: string, i: number) => (
+                                                                <Badge key={i} variant="default" className="text-xs bg-blue-500/20 text-blue-700 dark:text-blue-300 border-none hover:bg-blue-500/30">
+                                                                    {skill}
+                                                                </Badge>
+                                                            ))}
+                                                            {((skillsAssessment as Record<string, unknown>).soft as string[] || []).map((skill: string, i: number) => (
+                                                                <Badge key={i} variant="secondary" className="text-xs bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border-none">
+                                                                    {skill}
+                                                                </Badge>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            }
+                                        }
+                                        return null;
+                                    })()}
 
                                     {/* Education & Availability */}
-                                    {aiProfileData.educationDetails && Object.keys(aiProfileData.educationDetails as any).length > 0 && (
-                                        <div className="text-sm">
-                                            <p className="text-xs font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider mb-1">Education & Setup</p>
-                                            <p className="text-muted-foreground mt-1 text-xs">
-                                                {JSON.stringify(aiProfileData.educationDetails).replace(/["{}]/g, '').replace(/:/g, ': ')}
-                                            </p>
-                                        </div>
-                                    )}
+                                    {(() => {
+                                        const educationDetails = aiProfileData.educationDetails;
+                                        if (educationDetails && typeof educationDetails === 'object' && educationDetails !== null) {
+                                            const entries = Object.keys(educationDetails as Record<string, unknown>);
+                                            if (entries.length > 0) {
+                                                return (
+                                                    <div className="text-sm">
+                                                        <p className="text-xs font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider mb-1">Education & Setup</p>
+                                                        <p className="text-muted-foreground mt-1 text-xs">
+                                                            {JSON.stringify(educationDetails).replace(/["{}]/g, '').replace(/:/g, ': ')}
+                                                        </p>
+                                                    </div>
+                                                );
+                                            }
+                                        }
+                                        return null;
+                                    })()}
 
                                     {/* Save Button */}
                                     <div className="flex gap-2 mt-4 pt-2 border-t border-violet-500/10">

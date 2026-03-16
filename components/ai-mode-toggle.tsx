@@ -8,7 +8,7 @@ import { useTranslation } from "@/lib/i18n"
 
 export function AIModeToggle() {
     const { isAIMode, toggleAIMode } = useAIMode()
-    const { t } = useTranslation()
+    const { t: _t } = useTranslation()
 
     return (
         <motion.button

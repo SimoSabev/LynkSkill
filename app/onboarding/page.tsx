@@ -223,7 +223,6 @@ export default function OnboardingPage() {
         }
 
         restoreState()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isLoaded, user])
 
     // Cleanup ObjectURL on unmount or when logoPreview changes

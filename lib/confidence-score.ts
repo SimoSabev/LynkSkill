@@ -9,7 +9,7 @@ export interface ConfidenceScoreBreakdown {
 }
 
 // Calculate how many fields in AIProfile are populated
-function calculateProfileCompleteness(aiProfile: any | null): number {
+function calculateProfileCompleteness(aiProfile: Record<string, unknown> | null): number {
     if (!aiProfile) return 0;
     
     // Check key JSON fields
@@ -30,11 +30,11 @@ function calculateProfileCompleteness(aiProfile: any | null): number {
 }
 
 // Calculate how deep the AI profiling went
-function calculateProfilingDepth(aiProfile: any | null): number {
+function calculateProfilingDepth(aiProfile: Record<string, unknown> | null): number {
     if (!aiProfile) return 0;
     
-    const asked = aiProfile.questionsAsked || 0;
-    const answered = aiProfile.questionsAnswered || 0;
+    const _asked = typeof aiProfile.questionsAsked === 'number' ? aiProfile.questionsAsked : 0;
+    const answered = typeof aiProfile.questionsAnswered === 'number' ? aiProfile.questionsAnswered : 0;
     
     if (answered === 0) return 0;
     
@@ -45,7 +45,7 @@ function calculateProfilingDepth(aiProfile: any | null): number {
 }
 
 // Calculate endorsement score from experiences
-function calculateEndorsementQuality(experiences: any[]): number {
+function calculateEndorsementQuality(experiences: Record<string, unknown>[]): number {
     if (!experiences || experiences.length === 0) return 0;
     
     let totalScore = 0;
@@ -53,22 +53,27 @@ function calculateEndorsementQuality(experiences: any[]): number {
     
     for (const exp of experiences) {
         // Assume 1-5 scale mapped to 0-100
-        if (exp.skillsRating || exp.impactRating || exp.growthRating || exp.grade) {
+        const skillsRating = typeof exp.skillsRating === 'number' ? exp.skillsRating : null;
+        const impactRating = typeof exp.impactRating === 'number' ? exp.impactRating : null;
+        const growthRating = typeof exp.growthRating === 'number' ? exp.growthRating : null;
+        const grade = typeof exp.grade === 'number' ? exp.grade : null;
+        
+        if (skillsRating || impactRating || growthRating || grade) {
             let avgRating = 0;
             let ratingCount = 0;
             
-            if (exp.skillsRating) { avgRating += exp.skillsRating; ratingCount++; }
-            if (exp.impactRating) { avgRating += exp.impactRating; ratingCount++; }
-            if (exp.growthRating) { avgRating += exp.growthRating; ratingCount++; }
+            if (skillsRating !== null) { avgRating += skillsRating; ratingCount++; }
+            if (impactRating !== null) { avgRating += impactRating; ratingCount++; }
+            if (growthRating !== null) { avgRating += growthRating; ratingCount++; }
             
             if (ratingCount > 0) {
                 // Average of the multiple ratings (1-5) converted to percentage
                 totalScore += (avgRating / ratingCount) * 20; // 5 * 20 = 100
                 endorsementsWithRatings++;
-            } else if (exp.grade) {
+            } else if (grade !== null) {
                 // Fallback to legacy grade
                 const gradeMax = 100; // Assuming 100 is max grade
-                totalScore += Math.min(100, (exp.grade / gradeMax) * 100);
+                totalScore += Math.min(100, (grade / gradeMax) * 100);
                 endorsementsWithRatings++;
             }
         }
@@ -154,9 +159,16 @@ export async function calculateAndSaveConfidenceScore(studentId: string): Promis
             reason: "Recalculated"
         };
         
-        let scoreHistory: any[] = [];
+        let scoreHistory: Array<{ score: number; date: string; reason: string }> = [];
         if (existingScore && existingScore.scoreHistory) {
-            scoreHistory = Array.isArray(existingScore.scoreHistory) ? existingScore.scoreHistory : [];
+            const history = Array.isArray(existingScore.scoreHistory) ? existingScore.scoreHistory : [];
+            // Filter and validate history entries
+            scoreHistory = history.filter((entry): entry is { score: number; date: string; reason: string } =>
+                typeof entry === 'object' && entry !== null &&
+                'score' in entry && typeof (entry as { score: unknown }).score === 'number' &&
+                'date' in entry && typeof (entry as { date: unknown }).date === 'string' &&
+                'reason' in entry && typeof (entry as { reason: unknown }).reason === 'string'
+            );
             // Keep last 10 entries
             if (scoreHistory.length >= 10) scoreHistory.shift();
             scoreHistory.push(newHistoryEntry);

@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { NextRequest, NextResponse } from "next/server"
 import { calculateAndSaveConfidenceScore } from "@/lib/confidence-score"
 
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
     try {
         const { userId } = await auth()
         if (!userId) {
@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
 }
 
 // Force a recalculation
-export async function POST(req: NextRequest) {
+export async function POST(_req: NextRequest) {
     try {
         const { userId } = await auth()
         if (!userId) {

@@ -22,7 +22,7 @@ import {
     FileCheck,
     Clock3,
     BarChart3,
-    Eye,
+    Eye as _Eye,
     RefreshCw,
     AlertCircle,
     ArrowLeft,

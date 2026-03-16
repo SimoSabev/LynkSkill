@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
+import { Progress as _Progress } from "@/components/ui/progress"
 import { useUser } from "@clerk/nextjs"
 import { useAIMode } from "@/lib/ai-mode-context"
 import { useTranslation } from "@/lib/i18n"
@@ -34,15 +34,21 @@ interface ConfidenceScore {
     activityScore: number
 }
 
+interface SkillsData {
+    technical?: string[]
+    soft?: string[]
+    [key: string]: unknown
+}
+
 interface AIProfile {
     studentId: string
-    personalInfo: Record<string, any> | null
-    careerGoals: Record<string, any> | null
-    personalityTraits: Record<string, any> | null
-    skillsAssessment: Record<string, any> | null
-    educationDetails: Record<string, any> | null
-    availability: Record<string, any> | null
-    preferences: Record<string, any> | null
+    personalInfo: Record<string, unknown> | null
+    careerGoals: Record<string, unknown> | null
+    personalityTraits: Record<string, unknown> | null
+    skillsAssessment: Record<string, unknown> | null
+    educationDetails: Record<string, unknown> | null
+    availability: Record<string, unknown> | null
+    preferences: Record<string, unknown> | null
     profilingComplete: boolean
     confidenceScore: ConfidenceScore | null
 }
@@ -277,7 +283,7 @@ function ScoreCard({ title, icon, score, color }: { title: string, icon: React.R
     )
 }
 
-function InsightCard({ title, icon, data }: { title: string, icon: React.ReactNode, data: Record<string, any> }) {
+function InsightCard({ title, icon, data }: { title: string, icon: React.ReactNode, data: Record<string, unknown> }) {
     if (Object.keys(data).length === 0) return null
     return (
         <Card className="bg-gradient-to-br from-card to-card/50 shadow-sm border-border/50">
@@ -305,7 +311,7 @@ function InsightCard({ title, icon, data }: { title: string, icon: React.ReactNo
     )
 }
 
-function SkillsCard({ data }: { data: Record<string, any> }) {
+function SkillsCard({ data }: { data: SkillsData }) {
     if (Object.keys(data).length === 0) return null
     return (
         <Card className="bg-gradient-to-br from-card to-card/50 shadow-sm border-border/50 lg:col-span-2">
