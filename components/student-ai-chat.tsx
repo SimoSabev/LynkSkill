@@ -60,7 +60,7 @@ export function StudentAIChat() {
         deleteSession
     } = useAIMode()
 
-    const { t } = useTranslation()
+    const { t, locale } = useTranslation()
     const [inputValue, setInputValue] = useState("")
     const [isTyping, setIsTyping] = useState(false)
     const [isSavingPortfolio, setIsSavingPortfolio] = useState(false)
@@ -110,7 +110,8 @@ export function StudentAIChat() {
                         content: m.content
                     })),
                     phase: chatPhase,
-                    userType: "student"
+                    userType: "student",
+                    locale
                 })
             })
 

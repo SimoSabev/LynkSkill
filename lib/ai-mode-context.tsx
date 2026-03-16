@@ -1,6 +1,7 @@
 "use client"
 
 import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect, useRef } from "react"
+import { useTranslation } from "@/lib/i18n"
 
 // Generate unique session ID
 function generateSessionId() {
@@ -154,6 +155,9 @@ export function AIModeProvider({ children }: { children: ReactNode }) {
     // Panel & tab tracking
     const [activeTab, setActiveTab] = useState("home")
     const [isPanelMinimized, setPanelMinimized] = useState(false)
+
+    // Translation hook at component level
+    const { t, locale } = useTranslation()
 
     // Load sessions from localStorage on mount
     useEffect(() => {
@@ -342,9 +346,9 @@ export function AIModeProvider({ children }: { children: ReactNode }) {
         setWelcomeSent(true)
         setCurrentUserType(userType)
         
-        const welcomeContent = userType === "company" 
-            ? "👋 Hello! I'm Linky, your AI Talent Scout here at LynkSkill! I'm here to help you find the perfect candidates for your team without manually creating job postings.\n\nJust describe what kind of talent you're looking for - the skills needed, the type of role, experience level, or any specific requirements. I'll search through our student database and find the best matches for you!\n\n💡 Try something like: \"I need a React developer\" or \"Looking for a design intern with Figma skills\""
-            : "👋 Hey there! I'm Linky, your AI Career Profiler here at LynkSkill! 🚀\n\nI'm going to build your professional Confidence Score Profile so you can stand out to companies without needing to fill out long manual forms.\n\nTo get started, where are you currently based, and what kind of environment do you prefer to work in (remote, hybrid, or on-site)?"
+        const welcomeContent = userType === "company"
+            ? t("aiMode.companyWelcome")
+            : t("aiMode.studentWelcome")
         
         const newMessage: AIMessage = {
             id: `msg-welcome-${Date.now()}`,
@@ -356,7 +360,7 @@ export function AIModeProvider({ children }: { children: ReactNode }) {
         
         setMessages([newMessage])
         setChatPhase(userType === "student" ? "profiling" : "gathering")
-    }, [welcomeSent])
+    }, [welcomeSent, locale, t])
 
     return (
         <AIModeContext.Provider value={{

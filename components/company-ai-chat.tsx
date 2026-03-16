@@ -34,7 +34,7 @@ import { toast } from "sonner"
 import { useTranslation } from "@/lib/i18n"
 
 export function CompanyAIChat() {
-    const { t } = useTranslation()
+    const { t, locale } = useTranslation()
     const { 
         messages, 
         addMessage, 
@@ -215,7 +215,8 @@ export function CompanyAIChat() {
                         content: m.content
                     })),
                     phase: chatPhase,
-                    userType: "company"
+                    userType: "company",
+                    locale
                 })
             })
 

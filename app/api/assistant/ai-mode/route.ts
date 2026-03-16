@@ -134,17 +134,30 @@ export async function POST(req: NextRequest) {
         }
 
         const body = await req.json()
-        const { message, conversationHistory, phase, userType } = body as {
+        const { message, conversationHistory, phase, userType, locale } = body as {
             message: string
             conversationHistory: ConversationMessage[]
             phase: ChatPhase
             userType: "student" | "company"
+            locale?: "en" | "bg"
         }
 
+        // Validate and normalize locale
+        const validLocale = locale === "bg" || locale === "en" ? locale : "en"
+        
+        // Log if invalid locale was provided (for debugging)
+        if (locale && locale !== "en" && locale !== "bg") {
+          console.warn(`[AI Mode] Invalid locale "${locale}", falling back to "en"`)
+        }
+        
+        const languageInstruction = validLocale === "bg"
+            ? "\n\n🌐 IMPORTANT: Respond in Bulgarian (български език). Do NOT use Russian. Always write in Bulgarian when the user speaks Bulgarian."
+            : "\n\n🌏 IMPORTANT: Respond in English."
+
         // Build conversation for OpenAI
-        const systemPrompt = userType === "student" 
-            ? STUDENT_SYSTEM_PROMPT.replace("{phase}", phase)
-            : COMPANY_SYSTEM_PROMPT.replace("{phase}", phase)
+        const systemPrompt = userType === "student"
+            ? STUDENT_SYSTEM_PROMPT.replace("{phase}", phase) + languageInstruction
+            : COMPANY_SYSTEM_PROMPT.replace("{phase}", phase) + languageInstruction
 
         const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
             { role: "system", content: systemPrompt },
