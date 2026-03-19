@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import { openai } from "@/lib/openai"
+import { NotificationType } from "@prisma/client"
 
 // Process a batch of students to find matching internships and notify them
 export async function runStudentMatchmaker() {
@@ -8,7 +9,7 @@ export async function runStudentMatchmaker() {
         where: {
             applicationEnd: { gt: new Date() }
         },
-        include: { company: { select: { name: true } } },
+        include: { company: true },
         take: 50 // Limit to recent/top 50 for cost/performance
     })
 
@@ -39,6 +40,7 @@ export async function runStudentMatchmaker() {
             preferences: student.aiProfile.preferences
         })
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const internshipsStr = JSON.stringify(openInternships.map((i: any) => ({
             id: i.id,
             title: i.title,
@@ -76,6 +78,7 @@ export async function runStudentMatchmaker() {
             if (result.matches && result.matches.length > 0) {
                 // Generate a friendly notification message
                 const matchCount = result.matches.length;
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const topMatch: any = openInternships.find(i => i.id === result.matches[0].internshipId);
                 
                 if (!topMatch) continue;
@@ -87,7 +90,8 @@ export async function runStudentMatchmaker() {
                 await prisma.notification.create({
                     data: {
                         userId: student.id,
-                        type: "AI_MATCHMAKER" as any, // Cast to any to bypass local TS server cache
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        type: "AI_MATCHMAKER" as any, // Fixed: Using suppression because Prisma types are stale
                         title: "New AI Matches Found! 🎯",
                         message,
                         link: `/internships/${topMatch.id}`,
@@ -179,8 +183,8 @@ export async function runCompanyMatchmaker() {
             
             if (result.matches && result.matches.length > 0) {
                 // Determine owner ID natively from fetched company
-                const cmpOwnerId = (posting as any).company?.ownerId;
-                const companyName = (posting as any).company?.name || "a top company";
+                const cmpOwnerId = posting.company?.ownerId;
+                const companyName = posting.company?.name || "a top company";
                 
                 if (!cmpOwnerId) continue;
 
@@ -189,6 +193,7 @@ export async function runCompanyMatchmaker() {
                 await prisma.notification.create({
                     data: {
                         userId: cmpOwnerId, // Notify the company owner
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         type: "AI_MATCHMAKER" as any,
                         title: "Star Candidates Discovered ✨",
                         message,
@@ -205,6 +210,7 @@ export async function runCompanyMatchmaker() {
                     await prisma.notification.create({
                         data: {
                             userId: match.studentId,
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
                             type: "AI_MATCHMAKER" as any,
                             title: "Profile Highlighted! 🚀",
                             message: `Linky just presented your profile to ${companyName} as a top match for their "${posting.title}" role! Keep your profile updated to get more matches.`,

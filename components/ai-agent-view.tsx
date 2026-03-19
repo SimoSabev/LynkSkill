@@ -171,7 +171,7 @@ export function AIAgentView({ userType }: AIAgentViewProps) {
                 setIsLoading(false)
                 setActiveToolTitle(null)
             }
-    }, [messages, addMessage, setIsLoading, ut, currentSessionId])
+    }, [messages, addMessage, setIsLoading, ut, currentSessionId, refreshSessions])
 
     const triggeredSessions = useRef<Set<string>>(new Set())
     

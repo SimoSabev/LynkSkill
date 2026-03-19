@@ -301,7 +301,7 @@ async function getPortfolio(ctx: UserContext): Promise<ToolResult> {
 }
 
 async function updatePortfolio(args: Record<string, unknown>, ctx: UserContext): Promise<ToolResult> {
-    const data: Record<string, any> = {}
+    const data: Record<string, unknown> = {}
     if (typeof args.headline === "string") data.headline = args.headline
     if (typeof args.bio === "string") data.bio = args.bio
     if (Array.isArray(args.skills)) data.skills = args.skills

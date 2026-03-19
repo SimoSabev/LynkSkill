@@ -821,7 +821,7 @@ function SessionSearchResultsCard({ title, items, onAction }: { title: string; i
                             </Badge>
                         </div>
                         <div className="text-xs text-muted-foreground italic border-l-2 border-violet-500/30 pl-2 py-0.5">
-                            "...{item.snippet}..."
+                            &quot;...{item.snippet}...&quot;
                         </div>
                         {onAction && (
                             <div className="mt-2">

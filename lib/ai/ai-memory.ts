@@ -9,6 +9,7 @@ export async function saveConversationTurn(
     content: string,
     metadata?: Record<string, unknown>
 ) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return (prisma as any).aIConversationLog.create({
         data: {
             userId,
@@ -26,6 +27,7 @@ export async function loadSessionHistory(
     sessionId: string,
     limit = 50
 ) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return (prisma as any).aIConversationLog.findMany({
         where: { userId, sessionId },
         orderBy: { createdAt: "asc" },
@@ -43,6 +45,7 @@ export async function loadSessionHistory(
 // ─── Load all sessions for a user (grouped) ──────────────────────────────
 export async function loadUserSessions(userId: string) {
     // Get distinct sessions with their first and last message
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sessions = await (prisma as any).aIConversationLog.groupBy({
         by: ["sessionId"],
         where: { userId },
@@ -50,11 +53,17 @@ export async function loadUserSessions(userId: string) {
         _min: { createdAt: true },
         _max: { createdAt: true },
         orderBy: { _max: { createdAt: "desc" } },
-    })
+    }) as Array<{
+        sessionId: string;
+        _count: { id: number };
+        _min: { createdAt: Date | null };
+        _max: { createdAt: Date | null };
+    }>
 
     // For each session, get the first user message for a name
     const enriched = await Promise.all(
-        sessions.map(async (s: any) => {
+        sessions.map(async (s) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const firstMsg = await (prisma as any).aIConversationLog.findFirst({
                 where: { userId, sessionId: s.sessionId, role: "user" },
                 orderBy: { createdAt: "asc" },
@@ -77,6 +86,7 @@ export async function loadUserSessions(userId: string) {
 
 // ─── Delete a session ────────────────────────────────────────────────────
 export async function deleteSession(userId: string, sessionId: string) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return (prisma as any).aIConversationLog.deleteMany({
         where: { userId, sessionId },
     })
@@ -91,16 +101,18 @@ export async function loadUserMemory(userId: string): Promise<string | null> {
     })
 
     // 2. Load recent conversation topics (last 5 sessions, last message from each)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const recentSessions = await (prisma as any).aIConversationLog.groupBy({
         by: ["sessionId"],
         where: { userId },
         _max: { createdAt: true },
         orderBy: { _max: { createdAt: "desc" } },
         take: 5,
-    })
+    }) as Array<{ sessionId: string }>
 
     const recentTopics: string[] = []
     for (const s of recentSessions) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const lastUserMsg = await (prisma as any).aIConversationLog.findFirst({
             where: { userId, sessionId: s.sessionId, role: "user" },
             orderBy: { createdAt: "desc" },

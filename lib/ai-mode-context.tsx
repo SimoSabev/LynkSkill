@@ -13,36 +13,7 @@ const SESSIONS_STORAGE_KEY = "lynkskill_ai_sessions"
 const CURRENT_SESSION_KEY = "lynkskill_current_session"
 
 // Helper to safely parse JSON from localStorage
-function getStoredSessions(): ChatSession[] {
-    if (typeof window === "undefined") return []
-    try {
-        const stored = localStorage.getItem(SESSIONS_STORAGE_KEY)
-        if (!stored) return []
-        const parsed = JSON.parse(stored)
-        // Convert date strings back to Date objects
-        return parsed.map((session: ChatSession) => ({
-            ...session,
-            createdAt: new Date(session.createdAt),
-            messages: session.messages.map((msg: AIMessage) => ({
-                ...msg,
-                timestamp: new Date(msg.timestamp)
-            }))
-        }))
-    } catch {
-        return []
-    }
-}
-
-function getStoredCurrentSession(): { id: string; userType: "student" | "company" } | null {
-    if (typeof window === "undefined") return null
-    try {
-        const stored = localStorage.getItem(CURRENT_SESSION_KEY)
-        if (!stored) return null
-        return JSON.parse(stored)
-    } catch {
-        return null
-    }
-}
+// Generation: Session ID helper remains if needed
 
 interface AIMessage {
     id: string
@@ -158,14 +129,14 @@ export function AIModeProvider({ children }: { children: ReactNode }) {
     const [isPanelMinimized, setPanelMinimized] = useState(false)
 
     // Translation hook at component level
-    const { t, locale } = useTranslation()
+    const { t } = useTranslation()
 
     const refreshSessions = useCallback(async () => {
         try {
             const res = await fetch("/api/ai-sessions")
             const data = await res.json()
             const sessionsList = data.sessions || (Array.isArray(data) ? data : [])
-            setSessions(sessionsList.map((s: any) => ({
+            setSessions(sessionsList.map((s: { id: string, name: string, createdAt: string, userType: "student" | "company" }) => ({
                 id: s.id,
                 name: s.name,
                 createdAt: new Date(s.createdAt),
@@ -230,7 +201,7 @@ export function AIModeProvider({ children }: { children: ReactNode }) {
             
             setCurrentSessionId(sessionId)
             setCurrentUserType(data.userType || "student")
-            setMessages(data.messages.map((m: any) => ({
+            setMessages(data.messages.map((m: { id: string, role: "user" | "assistant", content: string, createdAt: string, metadata?: AIMessage["metadata"] }) => ({
                 id: m.id,
                 role: m.role,
                 content: m.content,
@@ -270,7 +241,7 @@ export function AIModeProvider({ children }: { children: ReactNode }) {
         // Note: The dynamic AI welcome is now securely triggered by the ai-agent-view component natively on load.
         // We only update phase state here!
         setChatPhase(userType === "student" ? "profiling" : "gathering")
-    }, [welcomeSent, locale, t])
+    }, [welcomeSent])
 
     return (
         <AIModeContext.Provider value={{
