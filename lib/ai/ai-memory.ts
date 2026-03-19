@@ -7,6 +7,7 @@ export async function saveConversationTurn(
     sessionId: string,
     role: "user" | "assistant",
     content: string,
+    userType: "student" | "company",
     metadata?: Record<string, unknown>
 ) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -14,6 +15,7 @@ export async function saveConversationTurn(
         data: {
             userId,
             sessionId,
+            userType,
             role,
             content,
             metadata: metadata ?? undefined,
@@ -37,6 +39,7 @@ export async function loadSessionHistory(
             role: true,
             content: true,
             metadata: true,
+            userType: true,
             createdAt: true,
         },
     })
@@ -47,7 +50,7 @@ export async function loadUserSessions(userId: string) {
     // Get distinct sessions with their first and last message
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sessions = await (prisma as any).aIConversationLog.groupBy({
-        by: ["sessionId"],
+        by: ["sessionId", "userType"],
         where: { userId },
         _count: { id: true },
         _min: { createdAt: true },
@@ -55,6 +58,7 @@ export async function loadUserSessions(userId: string) {
         orderBy: { _max: { createdAt: "desc" } },
     }) as Array<{
         sessionId: string;
+        userType: "student" | "company";
         _count: { id: number };
         _min: { createdAt: Date | null };
         _max: { createdAt: Date | null };
@@ -74,6 +78,7 @@ export async function loadUserSessions(userId: string) {
                 name: firstMsg
                     ? firstMsg.content.slice(0, 60) + (firstMsg.content.length > 60 ? "…" : "")
                     : `Chat ${s._min.createdAt?.toLocaleDateString() ?? ""}`,
+                userType: s.userType,
                 messageCount: s._count.id,
                 createdAt: s._min.createdAt,
                 lastMessageAt: s._max.createdAt,

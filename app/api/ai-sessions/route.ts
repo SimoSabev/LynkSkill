@@ -21,7 +21,8 @@ export async function GET(req: Request) {
     if (sessionId) {
         // Load messages for a specific session
         const messages = await loadSessionHistory(ctxResult.context.userId, sessionId)
-        return NextResponse.json({ messages })
+        const userType = messages.length > 0 ? messages[0].userType : "student"
+        return NextResponse.json({ messages, userType })
     }
 
     // List all sessions

@@ -219,8 +219,8 @@ export function AIAgentView({ userType }: AIAgentViewProps) {
                                 <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">History</h4>
                                 <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setShowHistory(false)}><X className="h-3.5 w-3.5" /></Button>
                             </div>
-                             <ScrollArea className="flex-1 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
-                                <div className="p-2 space-y-1">
+                             <ScrollArea className="flex-1 min-h-0">
+                                <div className="p-2 pr-4 space-y-1">
                                     <Button variant="ghost" className="w-full justify-start gap-2 h-8 text-[11px] text-violet-600 font-medium hover:bg-violet-500/10"
                                         onClick={() => { startNewSession(ut); setShowHistory(false) }}>
                                         <Plus className="h-3.5 w-3.5" /> New chat

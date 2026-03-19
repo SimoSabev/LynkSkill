@@ -818,6 +818,7 @@ model AIConversationLog {
   id        String   @id @default(cuid())
   userId    String
   sessionId String
+  userType  String   @default("student") // "student" | "company"
   role      String   // "user" | "assistant"
   content   String
   metadata  Json?    // tool results, extracted insights, suggestions

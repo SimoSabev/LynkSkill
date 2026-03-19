@@ -13,7 +13,26 @@ const SESSIONS_STORAGE_KEY = "lynkskill_ai_sessions"
 const CURRENT_SESSION_KEY = "lynkskill_current_session"
 
 // Helper to safely parse JSON from localStorage
-// Generation: Session ID helper remains if needed
+function getStoredCurrentSession() {
+    if (typeof window === "undefined") return null
+    return localStorage.getItem(CURRENT_SESSION_KEY)
+}
+
+function setStoredCurrentSession(sessionId: string) {
+    if (typeof window === "undefined") return
+    localStorage.setItem(CURRENT_SESSION_KEY, sessionId)
+}
+
+function getStoredUserType(): "student" | "company" | null {
+    if (typeof window === "undefined") return null
+    const val = localStorage.getItem("lynkskill_ai_user_type")
+    return (val === "student" || val === "company") ? val : null
+}
+
+function setStoredUserType(userType: "student" | "company") {
+    if (typeof window === "undefined") return
+    localStorage.setItem("lynkskill_ai_user_type", userType)
+}
 
 interface AIMessage {
     id: string
@@ -119,9 +138,13 @@ export function AIModeProvider({ children }: { children: ReactNode }) {
     const [welcomeSent, setWelcomeSent] = useState(false)
     
     // Session management - initialize from localStorage
-    const [currentSessionId, setCurrentSessionId] = useState(() => generateSessionId())
+    const [currentSessionId, setCurrentSessionId] = useState<string>(() => {
+        return getStoredCurrentSession() || generateSessionId()
+    })
     const [sessions, setSessions] = useState<ChatSession[]>([])
-    const [currentUserType, setCurrentUserType] = useState<"student" | "company">("student")
+    const [currentUserType, setCurrentUserType] = useState<"student" | "company">(
+        () => getStoredUserType() || "student"
+    )
     const isInitialized = useRef(false)
 
     // Panel & tab tracking
@@ -148,12 +171,6 @@ export function AIModeProvider({ children }: { children: ReactNode }) {
         }
     }, [setSessions])
 
-    // Load sessions from API on mount
-    useEffect(() => {
-        if (isInitialized.current) return
-        isInitialized.current = true
-        refreshSessions()
-    }, [refreshSessions])
 
     const toggleAIMode = useCallback(() => {
         setIsAIMode(prev => {
@@ -162,7 +179,9 @@ export function AIModeProvider({ children }: { children: ReactNode }) {
                 setMessages([])
                 setChatPhase("intro")
                 setWelcomeSent(false)
-                setCurrentSessionId(generateSessionId())
+                const nextId = generateSessionId()
+                setCurrentSessionId(nextId)
+                setStoredCurrentSession(nextId)
             }
             return !prev
         })
@@ -181,13 +200,17 @@ export function AIModeProvider({ children }: { children: ReactNode }) {
         setMessages([])
         setChatPhase("intro")
         setWelcomeSent(false)
-        setCurrentSessionId(generateSessionId())
+        const nextId = generateSessionId()
+        setCurrentSessionId(nextId)
+        setStoredCurrentSession(nextId)
     }, [])
 
     const startNewSession = useCallback((userType: "student" | "company") => {
         const newSessionId = generateSessionId()
         setCurrentSessionId(newSessionId)
+        setStoredCurrentSession(newSessionId)
         setCurrentUserType(userType)
+        setStoredUserType(userType)
         setMessages([])
         setChatPhase("intro")
         setWelcomeSent(false)
@@ -199,8 +222,10 @@ export function AIModeProvider({ children }: { children: ReactNode }) {
             if (!res.ok) throw new Error("Failed to load session")
             const data = await res.json()
             
-            setCurrentSessionId(sessionId)
-            setCurrentUserType(data.userType || "student")
+            setStoredCurrentSession(sessionId)
+            const ut = data.userType || "student"
+            setCurrentUserType(ut)
+            setStoredUserType(ut)
             setMessages(data.messages.map((m: { id: string, role: "user" | "assistant", content: string, createdAt: string, metadata?: AIMessage["metadata"] }) => ({
                 id: m.id,
                 role: m.role,
@@ -237,11 +262,24 @@ export function AIModeProvider({ children }: { children: ReactNode }) {
         
         setWelcomeSent(true)
         setCurrentUserType(userType)
+        setStoredUserType(userType)
         
         // Note: The dynamic AI welcome is now securely triggered by the ai-agent-view component natively on load.
         // We only update phase state here!
         setChatPhase(userType === "student" ? "profiling" : "gathering")
     }, [welcomeSent])
+
+    // Load sessions from API on mount
+    useEffect(() => {
+        if (isInitialized.current) return
+        isInitialized.current = true
+        refreshSessions().then(() => {
+            const stored = getStoredCurrentSession()
+            if (stored) {
+                loadSession(stored)
+            }
+        })
+    }, [refreshSessions, loadSession])
 
     return (
         <AIModeContext.Provider value={{

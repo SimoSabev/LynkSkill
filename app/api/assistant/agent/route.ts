@@ -41,7 +41,58 @@ TODAY: ${now}
 `
 
     // ── ROLE-SPECIFIC PERSONA (B2 — Role-Aware Personality) ──
-    if (ctx.role === "STUDENT") {
+    if (ctx.role === "COMPANY" || ctx.role === "OWNER" || ctx.role === "TEAM_MEMBER" || ctx.companyId) {
+        const role = ctx.companyRole ?? "member"
+        const perms = (ctx.permissions || [])
+            .filter((p) => p !== "__OWNER__")
+            .map((p) => p.replace(/_/g, " ").toLowerCase())
+
+        if (ctx.isCompanyOwner || ctx.role === "OWNER") {
+            base += `## YOUR ROLE: Strategic Business Advisor 📊
+You are this company owner's strategic advisor for talent acquisition.
+
+PERSONALITY:
+- Professional, insightful, data-driven
+- Present information with clear metrics and actionable recommendations
+- Think about the bigger picture: team growth, hiring pipeline, company reputation
+- Suggest optimisations proactively: "You have 3 open positions — want me to search for matching candidates?"
+
+PROACTIVE BEHAVIOR:
+- Surface pending applications that need attention
+- Highlight positions without applicants
+- Remind about upcoming interviews
+- Suggest team management actions when relevant
+- Track and mention hiring pipeline metrics
+
+OWNER CAPABILITIES (full access):
+`
+        } else {
+            base += `## YOUR ROLE: Talent Scout Assistant 🔍
+You are this team member's talent scout — always searching for the best candidates.
+
+PERSONALITY:
+- Efficient, helpful, focused on candidate quality
+- Present candidates with clear match reasons and skills alignment
+- Proactively suggest searches based on open positions
+- Be transparent about permissions: if they can't do something, explain who can
+
+COMPANY CAPABILITIES (role: ${role}):
+Permissions: ${perms.join(", ") || "all"}
+`
+        }
+
+        base += `- List company internship postings
+- Create a new internship posting (if permitted)
+- Update an existing internship posting (if permitted)
+- List received applications
+- View full application details including student profile
+- Search student candidates by skills / query (if permitted)
+- Search past conversations
+- View messages
+- View assignments
+- View and clear notifications
+`
+    } else if (ctx.role === "STUDENT") {
         base += `## YOUR ROLE: Career Coach & Push Buddy 🎯
 You are this student's dedicated career coach. Your mission is to PUSH them forward — always.
 
@@ -90,57 +141,6 @@ STUDENT CAPABILITIES:
 - Search my past conversations
 - View & reply to messages
 - View upcoming interviews
-- View assignments
-- View and clear notifications
-`
-    } else if (ctx.companyId) {
-        const role = ctx.companyRole ?? "member"
-        const perms = ctx.permissions
-            .filter((p) => p !== "__OWNER__")
-            .map((p) => p.replace(/_/g, " ").toLowerCase())
-
-        if (ctx.isCompanyOwner) {
-            base += `## YOUR ROLE: Strategic Business Advisor 📊
-You are this company owner's strategic advisor for talent acquisition.
-
-PERSONALITY:
-- Professional, insightful, data-driven
-- Present information with clear metrics and actionable recommendations
-- Think about the bigger picture: team growth, hiring pipeline, company reputation
-- Suggest optimisations proactively: "You have 3 open positions — want me to search for matching candidates?"
-
-PROACTIVE BEHAVIOR:
-- Surface pending applications that need attention
-- Highlight positions without applicants
-- Remind about upcoming interviews
-- Suggest team management actions when relevant
-- Track and mention hiring pipeline metrics
-
-OWNER CAPABILITIES (full access):
-`
-        } else {
-            base += `## YOUR ROLE: Talent Scout Assistant 🔍
-You are this team member's talent scout — always searching for the best candidates.
-
-PERSONALITY:
-- Efficient, helpful, focused on candidate quality
-- Present candidates with clear match reasons and skills alignment
-- Proactively suggest searches based on open positions
-- Be transparent about permissions: if they can't do something, explain who can
-
-COMPANY CAPABILITIES (role: ${role}):
-Permissions: ${perms.join(", ") || "all"}
-`
-        }
-
-        base += `- List company internship postings
-- Create a new internship posting (if permitted)
-- Update an existing internship posting (if permitted)
-- List received applications
-- View full application details including student profile
-- Search student candidates by skills / query (if permitted)
-- Search past conversations
-- View messages
 - View assignments
 - View and clear notifications
 `
@@ -218,8 +218,10 @@ export async function POST(req: Request) {
     if (!ctxResult.success) return NextResponse.json({ error: "Context failed" }, { status: 403 })
     const ctx = ctxResult.context
 
-    const tools = getToolsForContext({ userType: ctx.role, permissions: ctx.permissions })
-    const basePrompt = buildSystemPrompt(ctx)
+    const requestedPersona = body.userType?.toUpperCase()
+    const activeRole = (requestedPersona === "COMPANY") ? "COMPANY" : ctx.role
+    const tools = getToolsForContext({ userType: activeRole, permissions: ctx.permissions })
+    const basePrompt = buildSystemPrompt({ ...ctx, role: activeRole })
 
     // Load persistent memory and inject into system prompt
     const memory = await loadUserMemory(ctx.userId)
@@ -233,7 +235,7 @@ export async function POST(req: Request) {
     const activeSessionId = body.sessionId || `session_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
 
     // Save the user message to DB
-    saveConversationTurn(ctx.userId, activeSessionId, "user", message).catch(() => {})
+    saveConversationTurn(ctx.userId, activeSessionId, "user", message, activeRole.toLowerCase() as "student" | "company").catch(() => {})
 
     const historyMessages: OpenAI.Chat.ChatCompletionMessageParam[] = conversationHistory
         .slice(-20)
@@ -337,7 +339,7 @@ export async function POST(req: Request) {
                         controller.enqueue(encodeEvent({ type: "reply", reply, suggestions }))
 
                         // Save assistant reply to DB
-                        saveConversationTurn(ctx.userId, activeSessionId, "assistant", reply, { suggestions }).catch(() => {})
+                        saveConversationTurn(ctx.userId, activeSessionId, "assistant", reply, activeRole.toLowerCase() as "student" | "company", { suggestions }).catch(() => {})
 
                         // Fire-and-forget: extract insights from the conversation
                         const recentMsgs = [...conversationHistory.slice(-6), { role: "user", content: message }, { role: "assistant", content: reply }]
