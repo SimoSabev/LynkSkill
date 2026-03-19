@@ -101,7 +101,7 @@ async function computeStudentNotifications(userId: string, out: AINotification[]
     
     if (unreadNotifications.length > 0) {
         // Specifically look for AI_MATCHMAKER notifications
-        const matchmakerNotifs = unreadNotifications.filter(n => n.type === "AI_MATCHMAKER")
+        const matchmakerNotifs = unreadNotifications.filter(n => n.type === NotificationType.AI_MATCHMAKER)
         if (matchmakerNotifs.length > 0) {
             out.push({
                 type: "RELEVANT_MATCHES",
