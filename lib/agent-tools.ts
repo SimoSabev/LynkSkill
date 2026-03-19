@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import { openai } from "@/lib/openai"
+import { searchAcrossSessions } from "@/lib/ai/ai-search"
 
 export interface UserContext {
     userId: string
@@ -37,6 +38,8 @@ export async function executeTool(
                 return await getDashboardStats(ctx)
             case "get_portfolio":
                 return await getPortfolio(ctx)
+            case "update_portfolio":
+                return await updatePortfolio(args, ctx)
             case "get_saved_internships":
                 return await getSavedInternships(ctx)
             case "get_interviews":
@@ -63,6 +66,8 @@ export async function executeTool(
                 return await listNotifications(args, ctx)
             case "mark_notifications_read":
                 return await markNotificationsRead(ctx)
+            case "search_past_sessions":
+                return await searchPastSessions(args, ctx)
             default:
                 return {
                     tool: toolName,
@@ -295,6 +300,41 @@ async function getPortfolio(ctx: UserContext): Promise<ToolResult> {
     }
 }
 
+async function updatePortfolio(args: Record<string, unknown>, ctx: UserContext): Promise<ToolResult> {
+    const data: Record<string, any> = {}
+    if (typeof args.headline === "string") data.headline = args.headline
+    if (typeof args.bio === "string") data.bio = args.bio
+    if (Array.isArray(args.skills)) data.skills = args.skills
+
+    const portfolio = await prisma.portfolio.upsert({
+        where: { studentId: ctx.userId },
+        update: data,
+        create: {
+            studentId: ctx.userId,
+            fullName: "Student", // placeholder if they don't have one
+            ...data
+        }
+    })
+
+    return {
+        tool: "update_portfolio",
+        cardType: "portfolio-view",
+        title: "Portfolio Updated",
+        data: {
+            fullName: portfolio.fullName,
+            headline: portfolio.headline,
+            bio: portfolio.bio,
+            skills: portfolio.skills,
+            interests: portfolio.interests,
+            experience: portfolio.experience,
+            education: portfolio.education,
+            linkedin: portfolio.linkedin,
+            github: portfolio.github,
+            approvalStatus: portfolio.approvalStatus,
+        },
+        success: true,
+    }
+}
 async function getSavedInternships(ctx: UserContext): Promise<ToolResult> {
     const saved = await prisma.savedInternship.findMany({
         where: { userId: ctx.userId },
@@ -798,3 +838,40 @@ async function markNotificationsRead(ctx: UserContext): Promise<ToolResult> {
         success: true,
     }
 }
+
+async function searchPastSessions(
+    args: Record<string, unknown>,
+    ctx: UserContext
+): Promise<ToolResult> {
+    const query = (args.query as string) || ""
+    if (!query.trim()) {
+        return {
+            tool: "search_past_sessions",
+            cardType: "error",
+            title: "No query",
+            data: null,
+            success: false,
+            error: "Please provide a search term.",
+        }
+    }
+
+    const limit = Math.min((args.limit as number) || 10, 20)
+    const results = await searchAcrossSessions(ctx.userId, query, limit)
+
+    return {
+        tool: "search_past_sessions",
+        cardType: "session-search-results",
+        title: `Found ${results.length} result(s) for "${query}"`,
+        data: results.map(r => ({
+            sessionId: r.sessionId,
+            sessionName: r.sessionName,
+            sessionDate: r.sessionDate,
+            snippet: r.matchingSnippet,
+            role: r.role,
+            confidenceScore: r.confidenceScore,
+            sourceLabel: `From: "${r.sessionName}" • ${r.sessionDate}${r.confidenceScore != null ? ` • Score: ${r.confidenceScore}%` : ""}`,
+        })),
+        success: true,
+    }
+}
+

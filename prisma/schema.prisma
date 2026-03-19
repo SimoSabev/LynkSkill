@@ -38,6 +38,7 @@ model User {
   sentMessages       Message[]      @relation("SentMessages")
   reviews            Review[]       @relation("StudentReviews")
   candidateEvaluations CandidateEvaluation[] @relation("CandidateEvaluations")
+  aiConversationLogs   AIConversationLog[]   @relation("AIConversationLogs")
 
   // Company Roles System
   companyMembership     CompanyMember?         @relation("UserMembership")
@@ -552,6 +553,7 @@ enum NotificationType {
   NEW_MESSAGE
   INTERVIEW_SCHEDULED
   INTERVIEW_REMINDER
+  AI_MATCHMAKER
   GENERAL
   // Cover Letter Notifications
   COVER_LETTER_REVIEWED
@@ -805,4 +807,25 @@ model ConfidenceScore {
   
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
+}
+
+//
+// ---------------------
+// AI CONVERSATION LOGS (Persistent Memory)
+// ---------------------
+
+model AIConversationLog {
+  id        String   @id @default(cuid())
+  userId    String
+  sessionId String
+  role      String   // "user" | "assistant"
+  content   String
+  metadata  Json?    // tool results, extracted insights, suggestions
+  createdAt DateTime @default(now())
+
+  user      User     @relation("AIConversationLogs", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, sessionId])
+  @@index([userId, createdAt])
+  @@index([sessionId])
 }

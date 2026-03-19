@@ -16,10 +16,11 @@ export const TOOL_REGISTRY: Record<string, ToolDefinition> = {
         audience: "STUDENT",
         permission: null,
         scope: "NONE",
-        description: "Search for available internships by keyword, skill, or location.",
+        description: "Search for ONE available internship by keyword, skill, or location.",
         input: z.object({
             query: z.string().optional().describe("Search keyword (title, skill, description)"),
             location: z.string().optional().describe("City or region filter"),
+            limit: z.number().optional().describe("MUST be exactly 1 unless overridden. Never output a list."),
         }),
     },
     get_portfolio: {
@@ -28,6 +29,17 @@ export const TOOL_REGISTRY: Record<string, ToolDefinition> = {
         scope: "SELF",
         description: "Retrieve the student's portfolio (name, headline, skills).",
         input: z.object({}),
+    },
+    update_portfolio: {
+        audience: "STUDENT",
+        permission: null,
+        scope: "SELF",
+        description: "Updates the user's manual portfolio fields (headline, bio, skills). Use this when the user explicitly asks to add something to their portfolio.",
+        input: z.object({
+            headline: z.string().optional().describe("A short professional headline"),
+            bio: z.string().optional().describe("A brief about me summary"),
+            skills: z.array(z.string()).optional().describe("An array of skills, e.g. ['React', 'TypeScript']"),
+        }),
     },
     get_saved_internships: {
         audience: "STUDENT",
@@ -49,9 +61,9 @@ export const TOOL_REGISTRY: Record<string, ToolDefinition> = {
         audience: "STUDENT",
         permission: null,
         scope: "SELF",
-        description: "Get personalised internship recommendations ranked by match to the student's skills and interests.",
+        description: "Get ONE personalised internship recommendation ranked by match to the student's skills and interests.",
         input: z.object({
-            limit: z.number().optional().describe("How many recommendations (default 5, max 10)"),
+            limit: z.number().optional().describe("MUST be exactly 1. You only recommend the single best match."),
         }),
     },
     withdraw_application: {
@@ -187,6 +199,16 @@ export const TOOL_REGISTRY: Record<string, ToolDefinition> = {
         scope: "SELF",
         description: "Mark all notifications as read.",
         input: z.object({}),
+    },
+    search_past_sessions: {
+        audience: "BOTH",
+        permission: null,
+        scope: "SELF",
+        description: "Search across all past AI conversations for a keyword or topic. Returns matching messages with session names, dates, and confidence scores showing which session the info came from.",
+        input: z.object({
+            query: z.string().describe("Search term to find in past conversations"),
+            limit: z.number().optional().describe("Max results (default 10, max 20)"),
+        }),
     },
 }
 

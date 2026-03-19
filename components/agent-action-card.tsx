@@ -4,9 +4,9 @@ import React, { useState } from "react"
 import { motion } from "framer-motion"
 import {
     MapPin, DollarSign, Clock, Briefcase, ExternalLink,
-    CheckCircle2, XCircle, Building2, User, Users,
+    CheckCircle2, XCircle, Building2, User, Users, Search,
     Calendar, MessageSquare, Star, BookOpen, FileText,
-    TrendingUp, Bookmark, ChevronRight, Bell
+    TrendingUp, Bookmark, ChevronRight, Bell, History
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
@@ -57,6 +57,8 @@ export function AgentActionCard({ result, onAction }: AgentActionCardProps) {
             return <StatsCard title={title} data={data as Record<string, number | string>} />
         case "action-success":
             return <SuccessCard title={title} data={data as Record<string, unknown>} />
+        case "session-search-results":
+            return <SessionSearchResultsCard title={title} items={data as SessionSearchResultItem[]} onAction={onAction} />
         case "cover-letter":
             return <CoverLetterCard data={data as CoverLetterData} onAction={onAction} />
         case "notification-list":
@@ -786,6 +788,49 @@ function ErrorCard({ title, error }: { title: string; error: string }) {
                 <span className="text-xs font-semibold text-red-500">{title}</span>
             </div>
             <p className="px-3 py-2 text-[11px] text-muted-foreground">{error}</p>
+        </CardWrapper>
+    )
+}
+
+// ─── Session Search Results Card ──────────────────────────────────────────────
+
+interface SessionSearchResultItem {
+    sessionId: string
+    sessionName: string
+    sessionDate: string
+    snippet: string
+    role: string
+    confidenceScore: number | null
+    sourceLabel: string
+}
+
+function SessionSearchResultsCard({ title, items, onAction }: { title: string; items: SessionSearchResultItem[]; onAction?: (p: string) => void }) {
+    if (!items || items.length === 0) {
+        return <EmptyCard icon={Search} message="No previous conversations found" />
+    }
+
+    return (
+        <CardWrapper>
+            <CardTitle icon={History} title={title} badge={`${items.length}`} />
+            <div className="divide-y divide-border/30 max-h-96 overflow-y-auto">
+                {items.map((item, i) => (
+                    <div key={`${item.sessionId}-${i}`} className="px-3 py-2.5 hover:bg-muted/10 transition-colors">
+                        <div className="flex items-start justify-between gap-2 mb-1.5">
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-violet-500/5 text-violet-600 border-violet-500/20 font-normal">
+                                {item.sourceLabel}
+                            </Badge>
+                        </div>
+                        <div className="text-xs text-muted-foreground italic border-l-2 border-violet-500/30 pl-2 py-0.5">
+                            "...{item.snippet}..."
+                        </div>
+                        {onAction && (
+                            <div className="mt-2">
+                                <ActionBtn label="Load this session" variant="primary" onClick={() => onAction(`Load session ${item.sessionId}`)} />
+                            </div>
+                        )}
+                    </div>
+                ))}
+            </div>
         </CardWrapper>
     )
 }

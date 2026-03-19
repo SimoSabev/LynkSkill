@@ -93,7 +93,7 @@ function CopyBtn({ text }: { text: string }) {
 // ─── Main Component ─────────────────────────────────────────────────────────
 
 export function AIAgentView({ userType }: AIAgentViewProps) {
-    const { messages, addMessage, isLoading, setIsLoading, sessions, startNewSession, loadSession, deleteSession, sendWelcomeMessage, toggleAIMode } = useAIMode()
+    const { messages, addMessage, isLoading, setIsLoading, sessions, startNewSession, loadSession, deleteSession, refreshSessions, currentSessionId, toggleAIMode } = useAIMode()
     const [input, setInput] = useState("")
     const [showHistory, setShowHistory] = useState(false)
     const [showScrollDown, setShowScrollDown] = useState(false)
@@ -104,13 +104,16 @@ export function AIAgentView({ userType }: AIAgentViewProps) {
     const ut = userType.toLowerCase() as "student" | "company"
     const quickActions = userType === "Student" ? STUDENT_QUICK_ACTIONS : COMPANY_QUICK_ACTIONS
 
-    useEffect(() => { sendWelcomeMessage(ut) }, [sendWelcomeMessage, ut])
+    // (Moved to after sendMessage declaration)
+    
     useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }) }, [messages, isLoading])
 
     // ─── Stream-based send ────────────────────────────────────────
 
-    const sendMessage = useCallback(async (text: string) => {
-        addMessage({ role: "user", content: text })
+    const sendMessage = useCallback(async (text: string, isSilent = false) => {
+        if (!isSilent) {
+            addMessage({ role: "user", content: text })
+        }
         setIsLoading(true)
         setActiveToolTitle(null)
 
@@ -119,7 +122,7 @@ export function AIAgentView({ userType }: AIAgentViewProps) {
             const res = await fetch("/api/assistant/agent", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ message: text, conversationHistory: history, userType: ut })
+                body: JSON.stringify({ message: text, conversationHistory: history, userType: ut, sessionId: currentSessionId })
             })
             if (!res.ok || !res.body) throw new Error("Request failed")
 
@@ -161,17 +164,29 @@ export function AIAgentView({ userType }: AIAgentViewProps) {
         } catch (err) {
             console.error(err)
             addMessage({ role: "assistant", content: "Sorry, something went wrong. Please try again." })
-        } finally {
-            setIsLoading(false)
-            setActiveToolTitle(null)
+            } finally {
+                if (messages.length === 0) {
+                    refreshSessions().catch(() => {})
+                }
+                setIsLoading(false)
+                setActiveToolTitle(null)
+            }
+    }, [messages, addMessage, setIsLoading, ut, currentSessionId])
+
+    const triggeredSessions = useRef<Set<string>>(new Set())
+    
+    useEffect(() => { 
+        if (messages.length === 0 && !triggeredSessions.current.has(currentSessionId) && !isLoading) {
+            triggeredSessions.current.add(currentSessionId)
+            sendMessage("Hello! Please review my memory block and give me a highly personalized greeting. If I am a COMPANY, give me a business greeting. If I am a STUDENT and my Confidence Score is below 100, tell me my exact score and immediately ask exactly 1 deep, thought-provoking question to uncover my potential and continue my profiling seamlessly! If my score is 100, just greet me normally.", true)
         }
-    }, [messages, addMessage, setIsLoading, ut])
+    }, [messages.length, isLoading, currentSessionId, sendMessage])
 
     const handleSend = useCallback(() => {
         const t = input.trim()
         if (!t || isLoading) return
         setInput("")
-        sendMessage(t)
+        sendMessage(t, false)
     }, [input, isLoading, sendMessage])
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -204,24 +219,29 @@ export function AIAgentView({ userType }: AIAgentViewProps) {
                                 <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">History</h4>
                                 <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setShowHistory(false)}><X className="h-3.5 w-3.5" /></Button>
                             </div>
-                            <ScrollArea className="flex-1">
+                             <ScrollArea className="flex-1 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
                                 <div className="p-2 space-y-1">
-                                    <Button variant="ghost" className="w-full justify-start gap-2 h-8 text-xs text-violet-600"
+                                    <Button variant="ghost" className="w-full justify-start gap-2 h-8 text-[11px] text-violet-600 font-medium hover:bg-violet-500/10"
                                         onClick={() => { startNewSession(ut); setShowHistory(false) }}>
                                         <Plus className="h-3.5 w-3.5" /> New chat
                                     </Button>
-                                    {relevantSessions.map(s => (
-                                        <div key={s.id} className="group flex items-center gap-1">
-                                            <button onClick={() => { loadSession(s.id); setShowHistory(false) }}
-                                                className="flex-1 text-left px-2 py-1.5 rounded text-xs text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors truncate">
-                                                <MessageSquare className="h-3 w-3 inline mr-1.5" />{s.name}
-                                            </button>
-                                            <button onClick={() => deleteSession(s.id)}
-                                                className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-destructive transition-opacity">
-                                                <Trash2 className="h-3 w-3" />
-                                            </button>
-                                        </div>
-                                    ))}
+                                    <div className="space-y-0.5">
+                                        {relevantSessions.map(s => (
+                                            <div key={s.id} className="group flex items-center gap-1 px-1">
+                                                <button onClick={() => { loadSession(s.id); setShowHistory(false) }}
+                                                    className={cn(
+                                                        "flex-1 text-left px-2 py-1.5 rounded-md text-[11px] transition-colors truncate",
+                                                        s.id === currentSessionId ? "bg-violet-500/10 text-violet-600 font-medium" : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                                                    )}>
+                                                    <MessageSquare className="h-3 w-3 inline mr-2 opacity-70" />{s.name}
+                                                </button>
+                                                <button onClick={() => deleteSession(s.id)}
+                                                    className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-destructive transition-opacity">
+                                                    <Trash2 className="h-3 w-3" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             </ScrollArea>
                         </div>

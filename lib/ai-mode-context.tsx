@@ -124,6 +124,7 @@ interface AIModeContextType {
     startNewSession: (userType: "student" | "company") => void
     loadSession: (sessionId: string) => void
     deleteSession: (sessionId: string) => void
+    refreshSessions: () => Promise<void>
     // Panel & tab tracking
     activeTab: string
     setActiveTab: (tab: string) => void
@@ -159,89 +160,29 @@ export function AIModeProvider({ children }: { children: ReactNode }) {
     // Translation hook at component level
     const { t, locale } = useTranslation()
 
-    // Load sessions from localStorage on mount
+    const refreshSessions = useCallback(async () => {
+        try {
+            const res = await fetch("/api/ai-sessions")
+            const data = await res.json()
+            const sessionsList = data.sessions || (Array.isArray(data) ? data : [])
+            setSessions(sessionsList.map((s: any) => ({
+                id: s.id,
+                name: s.name,
+                createdAt: new Date(s.createdAt),
+                messages: [],
+                userType: s.userType || "student"
+            })))
+        } catch (err) {
+            console.error("Failed to fetch sessions", err)
+        }
+    }, [setSessions])
+
+    // Load sessions from API on mount
     useEffect(() => {
         if (isInitialized.current) return
         isInitialized.current = true
-        
-        const storedSessions = getStoredSessions()
-        if (storedSessions.length > 0) {
-            setSessions(storedSessions)
-        }
-        
-        const storedCurrentSession = getStoredCurrentSession()
-        if (storedCurrentSession) {
-            setCurrentSessionId(storedCurrentSession.id)
-            setCurrentUserType(storedCurrentSession.userType)
-        }
-    }, [])
-
-    // Save sessions to localStorage whenever they change
-    useEffect(() => {
-        if (!isInitialized.current) return
-        if (sessions.length > 0) {
-            localStorage.setItem(SESSIONS_STORAGE_KEY, JSON.stringify(sessions))
-        }
-    }, [sessions])
-
-    // Auto-save current session when messages change
-    useEffect(() => {
-        if (!isInitialized.current || messages.length === 0) return
-        
-        // Debounce the save to avoid too many writes
-        const timeoutId = setTimeout(() => {
-            setSessions(prev => {
-                const existingIndex = prev.findIndex(s => s.id === currentSessionId)
-                const sessionData: ChatSession = {
-                    id: currentSessionId,
-                    name: existingIndex >= 0 
-                        ? prev[existingIndex].name 
-                        : `Chat ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
-                    createdAt: existingIndex >= 0 ? prev[existingIndex].createdAt : new Date(),
-                    messages: [...messages],
-                    userType: currentUserType
-                }
-                
-                if (existingIndex >= 0) {
-                    const updated = [...prev]
-                    updated[existingIndex] = sessionData
-                    return updated
-                }
-                return [sessionData, ...prev]
-            })
-            
-            // Also save current session reference
-            localStorage.setItem(CURRENT_SESSION_KEY, JSON.stringify({
-                id: currentSessionId,
-                userType: currentUserType
-            }))
-        }, 1000) // 1 second debounce
-        
-        return () => clearTimeout(timeoutId)
-    }, [messages, currentSessionId, currentUserType])
-
-    // Save current session before switching
-    const saveCurrentSession = useCallback((userType: "student" | "company") => {
-        if (messages.length > 0) {
-            setSessions(prev => {
-                const existingIndex = prev.findIndex(s => s.id === currentSessionId)
-                const sessionData: ChatSession = {
-                    id: currentSessionId,
-                    name: `Chat ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
-                    createdAt: existingIndex >= 0 ? prev[existingIndex].createdAt : new Date(),
-                    messages: [...messages],
-                    userType
-                }
-                
-                if (existingIndex >= 0) {
-                    const updated = [...prev]
-                    updated[existingIndex] = sessionData
-                    return updated
-                }
-                return [sessionData, ...prev]
-            })
-        }
-    }, [messages, currentSessionId])
+        refreshSessions()
+    }, [refreshSessions])
 
     const toggleAIMode = useCallback(() => {
         setIsAIMode(prev => {
@@ -249,12 +190,6 @@ export function AIModeProvider({ children }: { children: ReactNode }) {
                 // Resetting when turning off
                 setMessages([])
                 setChatPhase("intro")
-                setInternshipMatches([])
-                setStudentMatches([])
-                setGeneratedPortfolio(null)
-                setAiProfileData(null)
-                setConfidenceScore(0)
-                setProfilingProgress(0)
                 setWelcomeSent(false)
                 setCurrentSessionId(generateSessionId())
             }
@@ -275,70 +210,56 @@ export function AIModeProvider({ children }: { children: ReactNode }) {
         setMessages([])
         setChatPhase("intro")
         setWelcomeSent(false)
+        setCurrentSessionId(generateSessionId())
     }, [])
 
     const startNewSession = useCallback((userType: "student" | "company") => {
-        // Save current session first
-        saveCurrentSession(userType)
-        
-        // Create new session
         const newSessionId = generateSessionId()
         setCurrentSessionId(newSessionId)
         setCurrentUserType(userType)
         setMessages([])
         setChatPhase("intro")
         setWelcomeSent(false)
-        setInternshipMatches([])
-        setStudentMatches([])
-        setGeneratedPortfolio(null)
-        setAiProfileData(null)
-        setConfidenceScore(0)
-        setProfilingProgress(0)
-        
-        // Update localStorage with new session reference
-        localStorage.setItem(CURRENT_SESSION_KEY, JSON.stringify({
-            id: newSessionId,
-            userType
-        }))
-    }, [saveCurrentSession])
+    }, [])
 
-    const loadSession = useCallback((sessionId: string) => {
-        const session = sessions.find(s => s.id === sessionId)
-        if (session) {
-            setCurrentSessionId(session.id)
-            setCurrentUserType(session.userType)
-            setMessages(session.messages)
+    const loadSession = useCallback(async (sessionId: string) => {
+        try {
+            const res = await fetch(`/api/ai-sessions?sessionId=${sessionId}`)
+            if (!res.ok) throw new Error("Failed to load session")
+            const data = await res.json()
+            
+            setCurrentSessionId(sessionId)
+            setCurrentUserType(data.userType || "student")
+            setMessages(data.messages.map((m: any) => ({
+                id: m.id,
+                role: m.role,
+                content: m.content,
+                timestamp: new Date(m.createdAt),
+                metadata: m.metadata || {}
+            })))
             setChatPhase("results")
             setWelcomeSent(true)
-            
-            // Update localStorage
-            localStorage.setItem(CURRENT_SESSION_KEY, JSON.stringify({
-                id: session.id,
-                userType: session.userType
-            }))
+        } catch (err) {
+            console.error(err)
         }
-    }, [sessions])
+    }, [])
 
-    const deleteSession = useCallback((sessionId: string) => {
-        setSessions(prev => {
-            const updated = prev.filter(s => s.id !== sessionId)
-            // Update localStorage
-            if (updated.length > 0) {
-                localStorage.setItem(SESSIONS_STORAGE_KEY, JSON.stringify(updated))
-            } else {
-                localStorage.removeItem(SESSIONS_STORAGE_KEY)
-            }
-            return updated
-        })
+    const deleteSession = useCallback(async (sessionId: string) => {
+        setSessions(prev => prev.filter(s => s.id !== sessionId))
         if (sessionId === currentSessionId) {
-            const newSessionId = generateSessionId()
-            setCurrentSessionId(newSessionId)
-            setMessages([])
-            setChatPhase("intro")
-            setWelcomeSent(false)
-            localStorage.removeItem(CURRENT_SESSION_KEY)
+            startNewSession(currentUserType)
         }
-    }, [currentSessionId])
+        
+        try {
+            await fetch(`/api/ai-sessions`, { 
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ sessionId })
+            })
+        } catch (err) {
+            console.error("Failed to delete session", err)
+        }
+    }, [currentSessionId, currentUserType, startNewSession])
 
     const sendWelcomeMessage = useCallback((userType: "student" | "company") => {
         if (welcomeSent) return
@@ -346,19 +267,8 @@ export function AIModeProvider({ children }: { children: ReactNode }) {
         setWelcomeSent(true)
         setCurrentUserType(userType)
         
-        const welcomeContent = userType === "company"
-            ? t("aiMode.companyWelcome")
-            : t("aiMode.studentWelcome")
-        
-        const newMessage: AIMessage = {
-            id: `msg-welcome-${Date.now()}`,
-            role: "assistant",
-            content: welcomeContent,
-            timestamp: new Date(),
-            metadata: { type: "question" }
-        }
-        
-        setMessages([newMessage])
+        // Note: The dynamic AI welcome is now securely triggered by the ai-agent-view component natively on load.
+        // We only update phase state here!
         setChatPhase(userType === "student" ? "profiling" : "gathering")
     }, [welcomeSent, locale, t])
 
@@ -392,6 +302,7 @@ export function AIModeProvider({ children }: { children: ReactNode }) {
             startNewSession,
             loadSession,
             deleteSession,
+            refreshSessions,
             activeTab,
             setActiveTab,
             isPanelMinimized,
