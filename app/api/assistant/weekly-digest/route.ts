@@ -31,7 +31,6 @@ async function buildStudentDigest(userId: string, since: Date) {
         applicationsThisWeek,
         statusChanges,
         newMatches,
-        scoreHistory,
         autoApplied,
     ] = await Promise.all([
         prisma.application.count({
@@ -50,15 +49,9 @@ async function buildStudentDigest(userId: string, since: Date) {
         }),
         prisma.aIProfile.findUnique({
             where: { studentId: userId },
-            select: { confidenceScore: { select: { overallScore: true, scoreHistory: true } } },
-        }),
-        prisma.aIProfile.findUnique({
-            where: { studentId: userId },
             select: { autoApplyCount: true, autoApplyEnabled: true },
         }),
     ])
-
-    const currentScore = scoreHistory?.confidenceScore?.overallScore ?? 0
 
     const digest = []
 
@@ -71,7 +64,7 @@ async function buildStudentDigest(userId: string, since: Date) {
     }
 
     for (const sc of statusChanges) {
-        const emoji = sc.status === "ACCEPTED" ? "🎉" : sc.status === "REJECTED" ? "😔" : "📋"
+        const emoji = sc.status === "APPROVED" ? "🎉" : sc.status === "REJECTED" ? "😔" : "📋"
         digest.push({
             icon: emoji,
             category: "Status Update",
@@ -95,18 +88,11 @@ async function buildStudentDigest(userId: string, since: Date) {
         })
     }
 
-    digest.push({
-        icon: "📊",
-        category: "Confidence Score",
-        text: `Current score: ${currentScore}/100`,
-    })
-
     return {
         digest,
         summary: digest.length > 1
             ? `This week: ${applicationsThisWeek} applications, ${statusChanges.length} updates, ${newMatches.length} new matches`
             : "Quiet week — let Linky find some opportunities for you!",
-        score: currentScore,
     }
 }
 
@@ -122,7 +108,7 @@ async function buildCompanyDigest(companyId: string, since: Date) {
             where: { internship: { companyId }, createdAt: { gte: since } },
         }),
         prisma.application.count({
-            where: { internship: { companyId }, status: "ACCEPTED", updatedAt: { gte: since } },
+            where: { internship: { companyId }, status: "APPROVED", updatedAt: { gte: since } },
         }),
         prisma.application.count({
             where: { internship: { companyId }, status: "REJECTED", updatedAt: { gte: since } },

@@ -63,14 +63,13 @@ export async function loadUserSessions(userId: string) {
     // For each session, get the first user message for a name and message count
     const enriched = await Promise.all(
         distinctSessions.map(async (s) => {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const [firstMsg, count] = await Promise.all([
-                (prisma as any).aIConversationLog.findFirst({
+                (prisma as { aIConversationLog: { findFirst: (args: unknown) => Promise<{ content: string } | null> } }).aIConversationLog.findFirst({
                     where: { userId, sessionId: s.sessionId, role: "user" },
                     orderBy: { createdAt: "asc" },
                     select: { content: true },
                 }),
-                (prisma as any).aIConversationLog.count({
+                (prisma as { aIConversationLog: { count: (args: unknown) => Promise<number> } }).aIConversationLog.count({
                     where: { userId, sessionId: s.sessionId },
                 }),
             ])
