@@ -10,43 +10,52 @@ export async function runStudentMatchmaker() {
             applicationEnd: { gt: new Date() }
         },
         include: { company: true },
-        take: 50 // Limit to recent/top 50 for cost/performance
+        take: 50
     })
 
     if (openInternships.length === 0) return 0
 
-    // 2. Fetch students who have an AIProfile with a reasonable confidence score
+    // 2. Fetch students — lowered threshold to 10 so even new users get matches
     const students = await prisma.user.findMany({
         where: { role: "STUDENT" },
         include: {
-            aiProfile: { include: { confidenceScore: true } }
+            aiProfile: { include: { confidenceScore: true } },
+            portfolio: { select: { skills: true, interests: true, headline: true } },
+            applications: { select: { internshipId: true } },
         },
-        take: 100 // Process in batches
+        take: 100
     })
 
     let notificationsCreated = 0
 
-    // 3. Evaluate each student using lightweight Prompt (to keep costs down)
     for (const student of students) {
-        if (!student.aiProfile || !student.aiProfile.skillsAssessment) continue
-        
-        // Skip students with very low profile completion
-        const score = student.aiProfile.confidenceScore?.overallScore ?? 0
-        if (score < 30) continue
+        // Skip students with zero info — but allow very low scores
+        const hasAnyProfile = student.aiProfile?.skillsAssessment || (student.portfolio?.skills && student.portfolio.skills.length > 0)
+        if (!hasAnyProfile) continue
+
+        // Don't recommend internships they already applied to
+        const appliedIds = new Set(student.applications.map(a => a.internshipId))
+        const eligibleInternships = openInternships.filter(i => !appliedIds.has(i.id))
+        if (eligibleInternships.length === 0) continue
 
         const studentProfileStr = JSON.stringify({
-            skills: student.aiProfile.skillsAssessment,
-            goals: student.aiProfile.careerGoals,
-            preferences: student.aiProfile.preferences
+            skills: student.aiProfile?.skillsAssessment ?? { technical: student.portfolio?.skills ?? [] },
+            goals: student.aiProfile?.careerGoals ?? null,
+            preferences: student.aiProfile?.preferences ?? null,
+            headline: student.portfolio?.headline ?? null,
+            interests: student.portfolio?.interests ?? [],
         })
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const internshipsStr = JSON.stringify(openInternships.map((i: any) => ({
+        const internshipsStr = JSON.stringify(eligibleInternships.map((i: any) => ({
             id: i.id,
             title: i.title,
             company: i.company?.name,
             requirements: i.qualifications,
-            location: i.location
+            skills: i.skills,
+            location: i.location,
+            paid: i.paid,
+            salary: i.salary,
         })))
 
         try {
@@ -55,10 +64,18 @@ export async function runStudentMatchmaker() {
                 messages: [
                     {
                         role: "system",
-                        content: `You are Linky's Matchmaker. You are given a student profile and a list of open internships. Find the top 1-3 best matching internships for this student. If none are a good fit (>70% match), return an empty array. Respond ONLY in valid JSON format:
+                        content: `You are Linky's Matchmaker for Bulgarian students. Match this student to the best internships. Consider skills, goals, location, and potential. Be generous with potential matches — students are learning, so transferable skills count. Find 1-3 best matches with score > 60%.
+
+Respond ONLY in valid JSON:
 {
     "matches": [
-        { "internshipId": "string", "matchReason": "Short, enthusiastic reason why they fit", "matchScore": 85 }
+        {
+            "internshipId": "string",
+            "matchScore": 85,
+            "matchReason": "Short, enthusiastic reason (1 sentence)",
+            "actionLabel": "Apply now" or "Tell me more",
+            "urgency": "high" | "medium" | "low"
+        }
     ]
 }`
                     },
@@ -73,29 +90,41 @@ export async function runStudentMatchmaker() {
             const content = completion.choices[0]?.message?.content;
             if (!content) continue;
 
-            const result = JSON.parse(content) as { matches: { internshipId: string; matchReason: string; matchScore: number }[] };
-            
+            const result = JSON.parse(content) as { matches: { internshipId: string; matchReason: string; matchScore: number; actionLabel?: string; urgency?: string }[] };
+
             if (result.matches && result.matches.length > 0) {
-                // Generate a friendly notification message
                 const matchCount = result.matches.length;
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const topMatch: any = openInternships.find(i => i.id === result.matches[0].internshipId);
-                
+                const topMatch: any = eligibleInternships.find(i => i.id === result.matches[0].internshipId);
+
                 if (!topMatch) continue;
 
-                const message = matchCount === 1 
-                    ? `Linky found a perfect match! ${topMatch.title} at ${topMatch.company.name} looks like a great fit for your skills. Reason: ${result.matches[0].matchReason}`
-                    : `Linky found ${matchCount} new matching internships for you! Top pick: ${topMatch.title} at ${topMatch.company.name}.`;
+                const message = matchCount === 1
+                    ? `🎯 Linky found a match! **${topMatch.title}** at **${topMatch.company.name}** (${result.matches[0].matchScore}% fit). ${result.matches[0].matchReason}`
+                    : `🎯 Linky found ${matchCount} matches for you! Top pick: **${topMatch.title}** at **${topMatch.company.name}** (${result.matches[0].matchScore}% fit).`;
+
+                // Enhanced metadata with action buttons for the frontend
+                const metadata = {
+                    matches: result.matches,
+                    actions: result.matches.map(m => ({
+                        internshipId: m.internshipId,
+                        label: m.actionLabel || "Apply now",
+                        type: "linky_apply", // Frontend can use this to trigger apply_to_internship via Linky
+                        matchScore: m.matchScore,
+                    })),
+                    topMatchCompany: topMatch.company?.name,
+                    topMatchTitle: topMatch.title,
+                }
 
                 await prisma.notification.create({
                     data: {
                         userId: student.id,
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        type: "AI_MATCHMAKER" as any, // Fixed: Using suppression because Prisma types are stale
-                        title: "New AI Matches Found! 🎯",
+                        type: "AI_MATCHMAKER" as any,
+                        title: "Linky Found You a Match! 🎯",
                         message,
-                        link: `/internships/${topMatch.id}`,
-                        metadata: JSON.stringify(result.matches)
+                        link: `/dashboard/student/internships`,
+                        metadata: JSON.stringify(metadata),
                     }
                 });
                 notificationsCreated++;
@@ -108,47 +137,52 @@ export async function runStudentMatchmaker() {
     return notificationsCreated;
 }
 
-// Process companies with open postings to find star candidates
+// Process companies with open postings — PROACTIVELY push high-confidence students
+// This is the core "AI middleman" feature: students don't need to apply,
+// Linky pushes them to companies based on their confidence score + match quality
 export async function runCompanyMatchmaker() {
-    // 1. Fetch active company postings with low applicants 
+    // 1. Fetch active company postings
     const allPostings = await prisma.internship.findMany({
         where: {
             applicationEnd: { gt: new Date() }
         },
-        include: { 
+        include: {
             company: true,
             _count: { select: { applications: true } }
         },
         take: 50
     });
 
-    // Filter in memory for < 20 applicants to ensure we help postings that actually need visibility
-    const postings = allPostings.filter(p => p._count.applications < 20);
+    // Prioritize postings with fewer applicants
+    const postings = allPostings.sort((a, b) => a._count.applications - b._count.applications).slice(0, 30);
 
     if (postings.length === 0) return 0;
 
-    // 2. Fetch top students looking for roles
+    // 2. Fetch students with any confidence score — the AI middleman evaluates everyone
     const students = await prisma.aIProfile.findMany({
         where: {
-            confidenceScore: { overallScore: { gt: 40 } }
+            confidenceScore: { overallScore: { gt: 20 } } // Lower threshold — push more students
         },
-        include: { 
-            student: { 
-                select: { 
-                    id: true, 
-                    email: true, 
+        include: {
+            confidenceScore: true,
+            student: {
+                select: {
+                    id: true,
+                    email: true,
                     profile: { select: { name: true } },
-                    portfolio: { 
-                        select: { 
-                            bio: true, 
-                            skills: true, 
-                            experience: true, 
-                            education: true, 
-                            projects: true 
-                        } 
+                    portfolio: {
+                        select: {
+                            fullName: true,
+                            headline: true,
+                            bio: true,
+                            skills: true,
+                            experience: true,
+                            education: true,
+                            projects: true
+                        }
                     }
-                } 
-            } 
+                }
+            }
         },
         take: 100
     });
@@ -157,20 +191,23 @@ export async function runCompanyMatchmaker() {
 
     let notificationsCreated = 0;
 
-    // 3. For each posting, find top candidates
+    // 3. For each posting, find top candidates and push them
     for (const posting of postings) {
         const postingStr = JSON.stringify({
             title: posting.title,
             requirements: posting.qualifications,
-            description: posting.description
+            skills: posting.skills,
+            description: posting.description?.slice(0, 400),
         });
 
         const candidatesStr = JSON.stringify(students.map(s => ({
             id: s.studentId,
-            name: s.student?.profile?.name || s.student?.email || "Candidate",
+            name: s.student?.portfolio?.fullName || s.student?.profile?.name || s.student?.email || "Candidate",
+            headline: s.student?.portfolio?.headline,
+            confidenceScore: s.confidenceScore?.overallScore ?? 0,
             skills: s.skillsAssessment,
             careerGoals: s.careerGoals,
-            portfolio: s.student?.portfolio || null
+            portfolioSkills: s.student?.portfolio?.skills || [],
         })));
 
         try {
@@ -179,18 +216,25 @@ export async function runCompanyMatchmaker() {
                 messages: [
                     {
                         role: "system",
-                        content: `You are Linky's Elite Talent Scout. Find the absolute best matching candidates for a job posting. 
-Analyze student skills, career goals, and portfolio experience deeply. Look for potential and transferable skills. 
-Be highly selective but don't miss hidden gems. Pick top 1-3.
-Respond ONLY in valid JSON format:
+                        content: `You are Linky's AI Middleman for a Bulgarian internship platform. Your job is to PUSH the best students to companies — students don't need to apply, YOU match them.
+
+Evaluate each candidate based on:
+1. Skill overlap with the posting
+2. Confidence Score (higher = more reliable profile data)
+3. Career goals alignment
+4. Potential and transferable skills
+
+Find top 1-3 matches. Prefer students with higher confidence scores. Be generous with potential.
+Respond ONLY in valid JSON:
 {
     "matches": [
-        { 
-            "studentId": "string", 
-            "studentName": "string", 
+        {
+            "studentId": "string",
+            "studentName": "string",
+            "confidenceScore": 75,
             "matchScore": 95,
             "matchReason": "Detailed reason why (2 sentences)",
-            "highlight": "The single most impressive thing (e.g. 'Complex React projects in portfolio')"
+            "highlight": "The single most impressive thing about this candidate"
         }
     ]
 }`
@@ -206,46 +250,56 @@ Respond ONLY in valid JSON format:
             const content = completion.choices[0]?.message?.content;
             if (!content) continue;
 
-            const result = JSON.parse(content) as { matches: { studentId: string; studentName: string; matchReason: string; matchScore: number; highlight?: string }[] };
-            
+            const result = JSON.parse(content) as { matches: { studentId: string; studentName: string; confidenceScore?: number; matchReason: string; matchScore: number; highlight?: string }[] };
+
             if (result.matches && result.matches.length > 0) {
                 const cmpOwnerId = posting.company?.ownerId;
                 const companyName = posting.company?.name || "a top company";
-                
+
                 if (!cmpOwnerId) continue;
 
                 const topMatch = result.matches[0];
-                const message = `Linky Scout has found ${result.matches.length} star candidates for your "${posting.title}" role. 
-                
-🏆 Top Pick: ${topMatch.studentName} (${topMatch.matchScore}% Match)
-💡 Note: ${topMatch.highlight || topMatch.matchReason}`;
+                const message = `🤖 Linky pushed ${result.matches.length} candidate${result.matches.length > 1 ? "s" : ""} to your "${posting.title}" role.
+
+🏆 Top: **${topMatch.studentName}** (${topMatch.matchScore}% fit, Score: ${topMatch.confidenceScore ?? "?"}/100)
+💡 ${topMatch.highlight || topMatch.matchReason}`;
 
                 await prisma.notification.create({
                     data: {
-                        userId: cmpOwnerId, // Notify the company owner
+                        userId: cmpOwnerId,
                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         type: "AI_MATCHMAKER" as any,
-                        title: "Star Candidates Discovered ✨",
+                        title: "Linky Pushed Candidates to You ⭐",
                         message,
-                        link: `/company/internships/${posting.id}/matches`,
-                        metadata: JSON.stringify({ internshipId: posting.id, matches: result.matches })
+                        link: `/dashboard/company/candidates`,
+                        metadata: JSON.stringify({
+                            internshipId: posting.id,
+                            matches: result.matches,
+                            pushedByLinky: true,
+                        })
                     }
                 });
                 notificationsCreated++;
 
-                // Notify students that they were highlighted
+                // Notify students that Linky is pushing them — even if they didn't apply
                 for (const match of result.matches) {
                     if (!match.studentId) continue;
-                    
+
                     await prisma.notification.create({
                         data: {
                             userId: match.studentId,
                             // eslint-disable-next-line @typescript-eslint/no-explicit-any
                             type: "AI_MATCHMAKER" as any,
-                            title: "Profile Highlighted! 🚀",
-                            message: `Linky just presented your profile to ${companyName} as a top match for their "${posting.title}" role! Keep your profile updated to get more matches.`,
-                            link: `/dashboard/student/portfolio`,
-                            metadata: JSON.stringify({ internshipId: posting.id, companyId: posting.companyId })
+                            title: "Linky Pushed You to a Company! 🚀",
+                            message: `Linky presented your profile to **${companyName}** for their "${posting.title}" role (${match.matchScore}% match). Your Confidence Score made this possible — keep it high!`,
+                            link: `/dashboard/student/internships`,
+                            metadata: JSON.stringify({
+                                internshipId: posting.id,
+                                companyId: posting.companyId,
+                                companyName,
+                                matchScore: match.matchScore,
+                                pushedByLinky: true,
+                            })
                         }
                     });
                     notificationsCreated++;

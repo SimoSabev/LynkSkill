@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { notifyNewApplication, notifyNewAssignment } from "@/lib/notifications";
+import { autoPreScreenApplication } from "@/lib/ai/auto-prescreen";
 
 export async function POST(req: Request) {
     const { userId } = await auth();
@@ -120,6 +121,11 @@ export async function POST(req: Request) {
             console.error("Failed to create test assignment:", err);
         }
     }
+
+    // 🤖 Auto pre-screen: fire-and-forget AI evaluation
+    autoPreScreenApplication(application.id).catch(err =>
+        console.error("[auto-prescreen] Failed:", err)
+    );
 
     return NextResponse.json(application);
 }

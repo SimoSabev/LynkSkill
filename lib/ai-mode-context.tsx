@@ -1,18 +1,15 @@
 "use client"
 
 import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect, useRef } from "react"
-import { useTranslation } from "@/lib/i18n"
 
 // Generate unique session ID
 function generateSessionId() {
     return `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
 }
 
-// LocalStorage keys
-const SESSIONS_STORAGE_KEY = "lynkskill_ai_sessions"
+// LocalStorage helpers
 const CURRENT_SESSION_KEY = "lynkskill_current_session"
 
-// Helper to safely parse JSON from localStorage
 function getStoredCurrentSession() {
     if (typeof window === "undefined") return null
     return localStorage.getItem(CURRENT_SESSION_KEY)
@@ -34,7 +31,9 @@ function setStoredUserType(userType: "student" | "company") {
     localStorage.setItem("lynkskill_ai_user_type", userType)
 }
 
-interface AIMessage {
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+export interface AIMessage {
     id: string
     role: "user" | "assistant"
     content: string
@@ -54,7 +53,7 @@ interface AIMessage {
     }
 }
 
-interface ChatSession {
+export interface ChatSession {
     id: string
     name: string
     createdAt: Date
@@ -62,52 +61,52 @@ interface ChatSession {
     userType: "student" | "company"
 }
 
-interface InternshipMatch {
-    id: string
-    title: string
-    company: string
-    matchPercentage: number
-    reasons: string[]
-    skills: string[]
-}
-
-interface StudentMatch {
-    id: string
-    name: string
-    email: string
-    matchPercentage: number
-    reasons: string[]
-    skills: string[]
-    portfolio?: {
-        headline?: string
-        about?: string
-    }
+export interface ConfidenceScoreData {
+    overallScore: number
+    overall?: number // alias from calculateAndSaveConfidenceScore
+    profileCompleteness: number
+    profilingDepth: number
+    endorsementQuality: number
+    activityScore: number
 }
 
 interface AIModeContextType {
+    // Core AI state
     isAIMode: boolean
-    toggleAIMode: () => void
+    setAIMode: (open: boolean) => void
+    openLinky: (prompt?: string) => void
+    closeLinky: () => void
+    toggleAIMode: () => void // backward compat
+
+    // Messages
     messages: AIMessage[]
     addMessage: (message: Omit<AIMessage, "id" | "timestamp">) => void
     clearMessages: () => void
     isLoading: boolean
     setIsLoading: (loading: boolean) => void
-    internshipMatches: InternshipMatch[]
-    setInternshipMatches: (matches: InternshipMatch[]) => void
-    studentMatches: StudentMatch[]
-    setStudentMatches: (matches: StudentMatch[]) => void
+    
+    // AI message sending (registered by AIAgentView)
+    sendMessage: ((text: string, isSilent?: boolean) => Promise<void>) | null
+    registerSendMessage: (fn: ((text: string, isSilent?: boolean) => Promise<void>) | null) => void
+
+    // Confidence Score (auto-updated)
+    confidenceScore: ConfidenceScoreData | null
+    refreshConfidenceScore: () => Promise<void>
+    updateConfidenceFromStream: (score: ConfidenceScoreData) => void
+    setConfidenceScore: React.Dispatch<React.SetStateAction<ConfidenceScoreData | null>>
+
+    // Legacy state (used by older chat components)
+    internshipMatches: unknown[]
+    setInternshipMatches: (matches: unknown[]) => void
+    studentMatches: unknown[]
+    setStudentMatches: (matches: unknown[]) => void
     generatedPortfolio: Record<string, unknown> | null
     setGeneratedPortfolio: (portfolio: Record<string, unknown> | null) => void
     aiProfileData: Record<string, unknown> | null
     setAiProfileData: React.Dispatch<React.SetStateAction<Record<string, unknown> | null>>
-    confidenceScore: number
-    setConfidenceScore: React.Dispatch<React.SetStateAction<number>>
     profilingProgress: number
     setProfilingProgress: (progress: number) => void
-    chatPhase: "intro" | "gathering" | "portfolio" | "matching" | "results" | "profiling" | "deepDive" | "complete"
-    setChatPhase: (phase: "intro" | "gathering" | "portfolio" | "matching" | "results" | "profiling" | "deepDive" | "complete") => void
-    sendWelcomeMessage: (userType: "student" | "company") => void
-    welcomeSent: boolean
+
     // Session management
     currentSessionId: string
     sessions: ChatSession[]
@@ -115,7 +114,14 @@ interface AIModeContextType {
     loadSession: (sessionId: string) => void
     deleteSession: (sessionId: string) => void
     refreshSessions: () => Promise<void>
-    // Panel & tab tracking
+
+    // Chat phase & welcome
+    chatPhase: string
+    setChatPhase: (phase: string) => void
+    welcomeSent: boolean
+    sendWelcomeMessage: (userType: "student" | "company") => void
+
+    // Panel state
     activeTab: string
     setActiveTab: (tab: string) => void
     isPanelMinimized: boolean
@@ -125,19 +131,14 @@ interface AIModeContextType {
 const AIModeContext = createContext<AIModeContextType | undefined>(undefined)
 
 export function AIModeProvider({ children }: { children: ReactNode }) {
-    const [isAIMode, setIsAIMode] = useState(false)
+    const [isAIMode, setIsAIModeState] = useState(false)
     const [messages, setMessages] = useState<AIMessage[]>([])
     const [isLoading, setIsLoading] = useState(false)
-    const [internshipMatches, setInternshipMatches] = useState<InternshipMatch[]>([])
-    const [studentMatches, setStudentMatches] = useState<StudentMatch[]>([])
-    const [generatedPortfolio, setGeneratedPortfolio] = useState<Record<string, unknown> | null>(null)
-    const [aiProfileData, setAiProfileData] = useState<Record<string, unknown> | null>(null)
-    const [confidenceScore, setConfidenceScore] = useState<number>(0)
-    const [profilingProgress, setProfilingProgress] = useState<number>(0)
-    const [chatPhase, setChatPhase] = useState<"intro" | "gathering" | "portfolio" | "matching" | "results" | "profiling" | "deepDive" | "complete">("intro")
+    const [confidenceScore, setConfidenceScore] = useState<ConfidenceScoreData | null>(null)
+    const [chatPhase, setChatPhase] = useState("intro")
     const [welcomeSent, setWelcomeSent] = useState(false)
-    
-    // Session management - initialize from localStorage
+
+    // Session management
     const [currentSessionId, setCurrentSessionId] = useState<string>(() => {
         return getStoredCurrentSession() || generateSessionId()
     })
@@ -146,46 +147,92 @@ export function AIModeProvider({ children }: { children: ReactNode }) {
         () => getStoredUserType() || "student"
     )
     const isInitialized = useRef(false)
+    
+    // AI message sending callback (registered by AIAgentView)
+    const [sendMessage, setSendMessage] = useState<((text: string, isSilent?: boolean) => Promise<void>) | null>(null)
 
-    // Panel & tab tracking
+    // Legacy state (backward compat for old chat components)
+    const [internshipMatches, setInternshipMatches] = useState<unknown[]>([])
+    const [studentMatches, setStudentMatches] = useState<unknown[]>([])
+    const [generatedPortfolio, setGeneratedPortfolio] = useState<Record<string, unknown> | null>(null)
+    const [aiProfileData, setAiProfileData] = useState<Record<string, unknown> | null>(null)
+    const [profilingProgress, setProfilingProgress] = useState(0)
+
+    // Panel state
     const [activeTab, setActiveTab] = useState("home")
     const [isPanelMinimized, setPanelMinimized] = useState(false)
+    const pendingPromptRef = useRef<string | undefined>(undefined)
 
-    // Translation hook at component level
-    const { t } = useTranslation()
+    // ─── AI Mode controls ────────────────────────────────────────────
 
-    const refreshSessions = useCallback(async () => {
-        try {
-            const res = await fetch("/api/ai-sessions")
-            const data = await res.json()
-            const sessionsList = data.sessions || (Array.isArray(data) ? data : [])
-            setSessions(sessionsList.map((s: { id: string, name: string, createdAt: string, userType: "student" | "company" }) => ({
-                id: s.id,
-                name: s.name,
-                createdAt: new Date(s.createdAt),
-                messages: [],
-                userType: s.userType || "student"
-            })))
-        } catch (err) {
-            console.error("Failed to fetch sessions", err)
+    const setAIMode = useCallback((open: boolean) => {
+        setIsAIModeState(open)
+        if (!open) {
+            // Reset state when closing
+            setMessages([])
+            setChatPhase("intro")
+            setWelcomeSent(false)
+            const nextId = generateSessionId()
+            setCurrentSessionId(nextId)
+            setStoredCurrentSession(nextId)
         }
-    }, [setSessions])
-
-
-    const toggleAIMode = useCallback(() => {
-        setIsAIMode(prev => {
-            if (prev) {
-                // Resetting when turning off
-                setMessages([])
-                setChatPhase("intro")
-                setWelcomeSent(false)
-                const nextId = generateSessionId()
-                setCurrentSessionId(nextId)
-                setStoredCurrentSession(nextId)
-            }
-            return !prev
-        })
     }, [])
+
+    const toggleAIMode = useCallback(() => setAIMode(!isAIMode), [setAIMode, isAIMode])
+const openLinky = useCallback((prompt?: string) => {
+    // Check if prompt is actually an event object (common mistake)
+    if (prompt && typeof prompt !== 'string') {
+        // It's likely an event object, ignore it
+        console.warn('openLinky called with non-string argument, ignoring')
+        setIsAIModeState(true)
+        return
+    }
+    setIsAIModeState(true)
+    if (prompt) {
+        // Store the prompt to be sent after the component mounts
+        pendingPromptRef.current = prompt
+    }
+}, [sendMessage])
+
+const closeLinky = useCallback(() => {
+        setIsAIModeState(false)
+        setMessages([])
+        setChatPhase("intro")
+        setWelcomeSent(false)
+        const nextId = generateSessionId()
+        setCurrentSessionId(nextId)
+        setStoredCurrentSession(nextId)
+    }, [])
+
+    // ─── Confidence Score ────────────────────────────────────────────
+
+    const refreshConfidenceScore = useCallback(async () => {
+        try {
+            const res = await fetch("/api/confidence-score")
+            if (!res.ok) return
+            const data = await res.json()
+            setConfidenceScore({
+                overallScore: data.overallScore ?? data.overall ?? 0,
+                profileCompleteness: data.profileCompleteness ?? 0,
+                profilingDepth: data.profilingDepth ?? 0,
+                endorsementQuality: data.endorsementQuality ?? 0,
+                activityScore: data.activityScore ?? 0,
+            })
+        } catch {
+            // Silently fail — score will show as null
+        }
+    }, [])
+
+    const updateConfidenceFromStream = useCallback((score: ConfidenceScoreData) => {
+        setConfidenceScore(score)
+    }, [])
+
+    // Fetch confidence score on mount
+    useEffect(() => {
+        refreshConfidenceScore()
+    }, [refreshConfidenceScore])
+
+    // ─── Messages ────────────────────────────────────────────────────
 
     const addMessage = useCallback((message: Omit<AIMessage, "id" | "timestamp">) => {
         const newMessage: AIMessage = {
@@ -205,6 +252,37 @@ export function AIModeProvider({ children }: { children: ReactNode }) {
         setStoredCurrentSession(nextId)
     }, [])
 
+    // Handle prompt when opening Linky
+    useEffect(() => {
+        if (isAIMode && pendingPromptRef.current && sendMessage) {
+            const prompt = pendingPromptRef.current
+            pendingPromptRef.current = undefined
+            // Use setTimeout to ensure the component is fully mounted
+            setTimeout(() => {
+                sendMessage(prompt, false)
+            }, 100)
+        }
+    }, [isAIMode, sendMessage])
+
+    // ─── Sessions ────────────────────────────────────────────────────
+
+    const refreshSessions = useCallback(async () => {
+        try {
+            const res = await fetch("/api/ai-sessions")
+            const data = await res.json()
+            const sessionsList = data.sessions || (Array.isArray(data) ? data : [])
+            setSessions(sessionsList.map((s: { id: string, name: string, createdAt: string, userType: "student" | "company" }) => ({
+                id: s.id,
+                name: s.name,
+                createdAt: new Date(s.createdAt),
+                messages: [],
+                userType: s.userType || "student"
+            })))
+        } catch (err) {
+            console.error("Failed to fetch sessions", err)
+        }
+    }, [])
+
     const startNewSession = useCallback((userType: "student" | "company") => {
         const newSessionId = generateSessionId()
         setCurrentSessionId(newSessionId)
@@ -221,7 +299,8 @@ export function AIModeProvider({ children }: { children: ReactNode }) {
             const res = await fetch(`/api/ai-sessions?sessionId=${sessionId}`)
             if (!res.ok) throw new Error("Failed to load session")
             const data = await res.json()
-            
+
+            setCurrentSessionId(sessionId)
             setStoredCurrentSession(sessionId)
             const ut = data.userType || "student"
             setCurrentUserType(ut)
@@ -245,9 +324,9 @@ export function AIModeProvider({ children }: { children: ReactNode }) {
         if (sessionId === currentSessionId) {
             startNewSession(currentUserType)
         }
-        
+
         try {
-            await fetch(`/api/ai-sessions`, { 
+            await fetch(`/api/ai-sessions`, {
                 method: "DELETE",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ sessionId })
@@ -259,17 +338,13 @@ export function AIModeProvider({ children }: { children: ReactNode }) {
 
     const sendWelcomeMessage = useCallback((userType: "student" | "company") => {
         if (welcomeSent) return
-        
         setWelcomeSent(true)
         setCurrentUserType(userType)
         setStoredUserType(userType)
-        
-        // Note: The dynamic AI welcome is now securely triggered by the ai-agent-view component natively on load.
-        // We only update phase state here!
         setChatPhase(userType === "student" ? "profiling" : "gathering")
     }, [welcomeSent])
 
-    // Load sessions from API on mount
+    // Load sessions on mount
     useEffect(() => {
         if (isInitialized.current) return
         isInitialized.current = true
@@ -281,15 +356,26 @@ export function AIModeProvider({ children }: { children: ReactNode }) {
         })
     }, [refreshSessions, loadSession])
 
+    const registerSendMessage = useCallback((fn: ((text: string, isSilent?: boolean) => Promise<void>) | null) => {
+        setSendMessage(() => fn)
+    }, [])
+
     return (
         <AIModeContext.Provider value={{
             isAIMode,
+            setAIMode,
+            openLinky,
+            closeLinky,
             toggleAIMode,
             messages,
             addMessage,
             clearMessages,
             isLoading,
             setIsLoading,
+            confidenceScore,
+            refreshConfidenceScore,
+            updateConfidenceFromStream,
+            setConfidenceScore,
             internshipMatches,
             setInternshipMatches,
             studentMatches,
@@ -298,24 +384,24 @@ export function AIModeProvider({ children }: { children: ReactNode }) {
             setGeneratedPortfolio,
             aiProfileData,
             setAiProfileData,
-            confidenceScore,
-            setConfidenceScore,
             profilingProgress,
             setProfilingProgress,
-            chatPhase,
-            setChatPhase,
-            sendWelcomeMessage,
-            welcomeSent,
             currentSessionId,
             sessions,
             startNewSession,
             loadSession,
             deleteSession,
             refreshSessions,
+            chatPhase,
+            setChatPhase,
+            welcomeSent,
+            sendWelcomeMessage,
             activeTab,
             setActiveTab,
             isPanelMinimized,
-            setPanelMinimized
+            setPanelMinimized,
+            sendMessage,
+            registerSendMessage
         }}>
             {children}
         </AIModeContext.Provider>

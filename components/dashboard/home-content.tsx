@@ -6,29 +6,35 @@ import { RecentApplicationsSection } from "@/components/recent-applications-sect
 import { ActiveAssignmentsSection } from "@/components/active-assignments-section"
 import { CommunityHighlights } from "@/components/community-highlights-section"
 import { ExpiringInternshipsBanner } from "@/components/expiring-internships-banner"
+import { LinkyDailyBriefing } from "@/components/linky-daily-briefing"
+import { useAIMode } from "@/lib/ai-mode-context"
 
 interface HomeContentProps {
     userType: "Student" | "Company"
 }
 
 export function HomeContent({ userType }: HomeContentProps) {
+    const { openLinky } = useAIMode()
     return (
         <div className="space-y-8 pb-8">
+            {/* Linky AI Daily Briefing — the first thing users see */}
+            <LinkyDailyBriefing userType={userType} onOpenLinky={openLinky} />
+
             {/* Hero section with welcome message */}
             <DashboardHero userType={userType} />
-            
+
             {/* Expiring internships alert for company users */}
             {userType === "Company" && <ExpiringInternshipsBanner />}
-            
+
             {/* Main internships section - full width for better visibility */}
             <RecentInternshipsSection userType={userType} />
-            
+
             {/* Secondary content in responsive grid */}
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 <RecentApplicationsSection userType={userType} />
                 <ActiveAssignmentsSection userType={userType} />
             </div>
-            
+
             {/* Community section */}
             <CommunityHighlights userType={userType} />
         </div>

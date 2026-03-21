@@ -48,15 +48,6 @@ export const TOOL_REGISTRY: Record<string, ToolDefinition> = {
         description: "List internships the student has bookmarked / saved.",
         input: z.object({}),
     },
-    generate_cover_letter: {
-        audience: "STUDENT",
-        permission: null,
-        scope: "SELF",
-        description: "Generate a personalised AI cover letter for a specific internship based on the student's portfolio.",
-        input: z.object({
-            internshipId: z.string().describe("The internship ID to generate the cover letter for"),
-        }),
-    },
     get_internship_recommendations: {
         audience: "STUDENT",
         permission: null,
@@ -74,6 +65,34 @@ export const TOOL_REGISTRY: Record<string, ToolDefinition> = {
         input: z.object({
             applicationId: z.string().describe("The application ID to withdraw"),
         }),
+    },
+    apply_to_internship: {
+        audience: "STUDENT",
+        permission: null,
+        scope: "SELF",
+        description: "Apply to an internship on behalf of the student. Automatically generates an AI cover letter from their profile if needed. Use this when the student says 'apply for me' or confirms a match.",
+        input: z.object({
+            internshipId: z.string().describe("The internship ID to apply to"),
+            customMessage: z.string().optional().describe("Optional custom message from the student to include"),
+        }),
+    },
+
+    toggle_auto_apply: {
+        audience: "STUDENT",
+        permission: null,
+        scope: "SELF",
+        description: "Toggle Linky's autonomous auto-apply mode. When enabled, Linky automatically applies to internships that match above the threshold score. Returns the new settings.",
+        input: z.object({
+            enabled: z.boolean().describe("True to enable auto-apply, false to disable"),
+            threshold: z.number().optional().describe("Minimum match score (0-100) to auto-apply. Default 80."),
+        }),
+    },
+    get_auto_apply_settings: {
+        audience: "STUDENT",
+        permission: null,
+        scope: "SELF",
+        description: "Get the student's current auto-apply settings (enabled/disabled, threshold, count of auto-applications).",
+        input: z.object({}),
     },
 
     // ─── Company tools ───────────────────────────────────────────────
@@ -145,6 +164,67 @@ export const TOOL_REGISTRY: Record<string, ToolDefinition> = {
         description: "Get full details of a specific application including student profile and cover letter.",
         input: z.object({
             applicationId: z.string().describe("The application ID"),
+        }),
+    },
+    draft_internship_from_description: {
+        audience: "COMPANY",
+        permission: Permission.CREATE_INTERNSHIPS,
+        scope: "COMPANY_OWNED",
+        description: "Generate a full internship posting from a natural language description. The company describes what they need in plain words and Linky drafts everything (title, description, qualifications, skills, salary, dates). Returns a preview for confirmation before publishing.",
+        input: z.object({
+            naturalDescription: z.string().describe("The company's plain-language description of what they need, e.g. 'I need a React intern for 3 months in Sofia, paid 600 lv'"),
+        }),
+    },
+    evaluate_application: {
+        audience: "COMPANY",
+        permission: Permission.VIEW_APPLICATIONS,
+        scope: "COMPANY_OWNED",
+        description: "AI pre-screen an application. Scores the student against the internship requirements and returns match score, reasons, and concerns.",
+        input: z.object({
+            applicationId: z.string().describe("The application ID to evaluate"),
+        }),
+    },
+    bulk_evaluate_applications: {
+        audience: "COMPANY",
+        permission: Permission.VIEW_APPLICATIONS,
+        scope: "COMPANY_OWNED",
+        description: "AI pre-screen ALL pending applications for a specific internship. Returns a ranked list with match scores.",
+        input: z.object({
+            internshipId: z.string().describe("The internship ID whose applications to evaluate"),
+        }),
+    },
+    propose_interview_slots: {
+        audience: "COMPANY",
+        permission: Permission.SCHEDULE_INTERVIEWS,
+        scope: "COMPANY_OWNED",
+        description: "After approving an application, propose interview time slots to the student. Linky creates the interview and notifies the student.",
+        input: z.object({
+            applicationId: z.string().describe("The approved application ID"),
+            slots: z.array(z.object({
+                date: z.string().describe("Date in YYYY-MM-DD format"),
+                time: z.string().describe("Time in HH:MM format (24h)"),
+                durationMinutes: z.number().optional().describe("Duration in minutes, default 30"),
+            })).describe("1-3 proposed time slots"),
+            location: z.string().optional().describe("Interview location or video call link"),
+            notes: z.string().optional().describe("Additional notes for the candidate"),
+        }),
+    },
+    approve_application: {
+        audience: "COMPANY",
+        permission: Permission.MANAGE_APPLICATIONS,
+        scope: "COMPANY_OWNED",
+        description: "Approve a pending application and optionally schedule an interview in one step.",
+        input: z.object({
+            applicationId: z.string().describe("The application ID to approve"),
+        }),
+    },
+    reject_application: {
+        audience: "COMPANY",
+        permission: Permission.MANAGE_APPLICATIONS,
+        scope: "COMPANY_OWNED",
+        description: "Reject a pending application.",
+        input: z.object({
+            applicationId: z.string().describe("The application ID to reject"),
         }),
     },
 

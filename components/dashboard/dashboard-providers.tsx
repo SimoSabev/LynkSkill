@@ -4,6 +4,7 @@ import React from "react"
 import { SettingsProvider, useSettings } from "@/lib/settings-context"
 import { NavigationProvider } from "@/lib/navigation-context"
 import { NavigationLoader } from "@/components/navigation-loader"
+import { AIModeProvider } from "@/lib/ai-mode-context"
 import { cn } from "@/lib/utils"
 
 interface DashboardProvidersProps {
@@ -56,12 +57,14 @@ function SettingsApplier({ children }: { children: React.ReactNode }) {
 export function DashboardProviders({ children }: DashboardProvidersProps) {
     return (
         <SettingsProvider>
-            <NavigationProvider>
-                <NavigationLoader />
-                <SettingsApplier>
-                    {children}
-                </SettingsApplier>
-            </NavigationProvider>
+            <AIModeProvider>
+                <NavigationProvider>
+                    <NavigationLoader />
+                    <SettingsApplier>
+                        {children}
+                    </SettingsApplier>
+                </NavigationProvider>
+            </AIModeProvider>
         </SettingsProvider>
     )
 }

@@ -5,6 +5,8 @@ export interface AINotification {
     type: string
     priority: "high" | "medium" | "low"
     message: string
+    suggestedAction?: string // Tool name Linky should proactively call
+    actionArgs?: Record<string, unknown> // Args for the suggested tool
 }
 
 // Compute proactive nudges for the current user
@@ -65,7 +67,7 @@ async function computeStudentNotifications(userId: string, out: AINotification[]
         }
     }
 
-    // 3. Unapplied saved internships
+    // 3. Unapplied saved internships — suggest Linky applies for them
     const applications = await prisma.application.findMany({
         where: { studentId: userId },
         select: { internshipId: true },
@@ -73,10 +75,13 @@ async function computeStudentNotifications(userId: string, out: AINotification[]
     const appliedIds = new Set(applications.map(a => a.internshipId))
     const unapplied = savedInternships.filter(s => !appliedIds.has(s.internshipId))
     if (unapplied.length > 0) {
+        const firstUnapplied = unapplied[0]
         out.push({
             type: "UNUSED_SAVED",
-            priority: "low",
-            message: `They saved ${unapplied.length} internship(s) but haven't applied yet. Suggest applying.`,
+            priority: "medium",
+            message: `They saved ${unapplied.length} internship(s) but haven't applied yet. Offer to apply for them: "Want me to apply to '${firstUnapplied.internship.title}' for you? I'll write the cover letter!"`,
+            suggestedAction: "apply_to_internship",
+            actionArgs: { internshipId: firstUnapplied.internshipId },
         })
     }
 
@@ -117,7 +122,30 @@ async function computeStudentNotifications(userId: string, out: AINotification[]
         }
     }
 
-    // 6. Profile visibility stats
+    // 6. Auto-apply status
+    const autoApplyProfile = await prisma.aIProfile.findUnique({
+        where: { studentId: userId },
+        select: { autoApplyEnabled: true, autoApplyThreshold: true, autoApplyCount: true },
+    })
+    if (autoApplyProfile) {
+        if (autoApplyProfile.autoApplyEnabled && autoApplyProfile.autoApplyCount > 0) {
+            out.push({
+                type: "AUTO_APPLY_ACTIVE",
+                priority: "low",
+                message: `Auto-apply is ON (threshold: ${autoApplyProfile.autoApplyThreshold}%). Linky has auto-applied ${autoApplyProfile.autoApplyCount} time(s). Mention this casually.`,
+            })
+        } else if (!autoApplyProfile.autoApplyEnabled && score >= 60) {
+            out.push({
+                type: "SUGGEST_AUTO_APPLY",
+                priority: "low",
+                message: `Their score is ${score}/100 — high enough for auto-apply. Suggest enabling it: "Want me to auto-apply when I find matches above 80%?"`,
+                suggestedAction: "toggle_auto_apply",
+                actionArgs: { enabled: true, threshold: 80 },
+            })
+        }
+    }
+
+    // 7. Profile visibility stats
     const totalShown = await prisma.notification.count({
         where: { userId, type: NotificationType.AI_MATCHMAKER, title: { contains: "Profile Highlighted" } }
     })
@@ -131,34 +159,54 @@ async function computeStudentNotifications(userId: string, out: AINotification[]
 }
 
 async function computeCompanyNotifications(companyId: string, out: AINotification[]) {
-    // 1. Unreviewed applications
-    const pendingApps = await prisma.application.count({
+    // 1. Unreviewed applications — offer to bulk-evaluate
+    const pendingApps = await prisma.application.findMany({
         where: { internship: { companyId }, status: "PENDING" },
+        include: { internship: { select: { id: true, title: true } } },
+        take: 50,
     })
-    if (pendingApps > 0) {
+    if (pendingApps.length > 0) {
+        // Group by internship for actionable suggestion
+        const byInternship = new Map<string, { title: string; count: number }>()
+        for (const app of pendingApps) {
+            const existing = byInternship.get(app.internshipId)
+            if (existing) {
+                existing.count++
+            } else {
+                byInternship.set(app.internshipId, { title: app.internship.title, count: 1 })
+            }
+        }
+
+        const topInternship = [...byInternship.entries()].sort((a, b) => b[1].count - a[1].count)[0]
+
         out.push({
             type: "UNREVIEWED_APPLICATIONS",
             priority: "high",
-            message: `There are ${pendingApps} pending application(s) waiting for review. Suggest reviewing them.`,
+            message: `There are ${pendingApps.length} pending applications. "${topInternship[1].title}" has ${topInternship[1].count}. Offer: "Want me to rank all ${topInternship[1].count} candidates for '${topInternship[1].title}' by fit?"`,
+            suggestedAction: "bulk_evaluate_applications",
+            actionArgs: { internshipId: topInternship[0] },
         })
     }
 
-    // 2. Positions without applicants
+    // 2. Positions without applicants — suggest searching for candidates
     const internshipsWithoutApps = await prisma.internship.findMany({
         where: {
             companyId,
             applicationEnd: { gte: new Date() },
             applications: { none: {} },
         },
-        select: { title: true },
+        select: { id: true, title: true, skills: true },
         take: 3,
     })
     if (internshipsWithoutApps.length > 0) {
+        const first = internshipsWithoutApps[0]
         const titles = internshipsWithoutApps.map(i => `"${i.title}"`).join(", ")
         out.push({
             type: "POSITION_WITHOUT_CANDIDATES",
             priority: "medium",
-            message: `${titles} have no applicants yet. Suggest searching for matching candidates.`,
+            message: `${titles} have no applicants yet. Offer: "Want me to search for students who match '${first.title}'?"`,
+            suggestedAction: "search_candidates",
+            actionArgs: { query: (first.skills || []).slice(0, 3).join(" ") || first.title },
         })
     }
 
@@ -178,6 +226,27 @@ async function computeCompanyNotifications(companyId: string, out: AINotificatio
             type: "INTERVIEW_UPCOMING",
             priority: "high",
             message: `Interview for "${interview.application.internship.title}" is coming up at ${interview.scheduledAt.toLocaleString()}.`,
+        })
+    }
+
+    // 4. Recently auto-screened strong candidates
+    const recentStrongMatches = await prisma.candidateEvaluation.findMany({
+        where: {
+            companyId,
+            matchPercentage: { gte: 80 },
+            sessionId: { startsWith: "auto_prescreen_" },
+            createdAt: { gte: new Date(Date.now() - 48 * 60 * 60 * 1000) },
+        },
+        include: { candidate: { select: { profile: { select: { name: true } }, portfolio: { select: { fullName: true } } } } },
+        take: 3,
+        orderBy: { matchPercentage: "desc" },
+    })
+    if (recentStrongMatches.length > 0) {
+        const names = recentStrongMatches.map(m => m.candidate.portfolio?.fullName ?? m.candidate.profile?.name ?? "A student").join(", ")
+        out.push({
+            type: "STRONG_CANDIDATES_DETECTED",
+            priority: "high",
+            message: `Linky's auto-screener found ${recentStrongMatches.length} strong candidate(s): ${names}. Suggest reviewing and approving.`,
         })
     }
 }

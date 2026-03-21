@@ -782,6 +782,12 @@ model AIProfile {
   questionsAnswered     Int      @default(0)
   profilingComplete     Boolean  @default(false)
   lastProfilingAt       DateTime?
+
+  // Autonomous mode settings
+  autoApplyEnabled      Boolean  @default(false)
+  autoApplyThreshold    Int      @default(80)  // Min match score to auto-apply
+  autoApplyCount        Int      @default(0)   // Total auto-applications made
+  lastAutoApplyAt       DateTime?
   
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt

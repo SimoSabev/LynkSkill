@@ -61,10 +61,18 @@ export function AgentActionCard({ result, onAction }: AgentActionCardProps) {
             return <SessionSearchResultsCard title={title} items={data as SessionSearchResultItem[]} onAction={onAction} />
         case "cover-letter":
             return <CoverLetterCard data={data as CoverLetterData} onAction={onAction} />
+        case "evaluation":
+            return <EvaluationCard data={data as EvaluationData} onAction={onAction} />
+        case "evaluation-ranking":
+            return <EvaluationRankingCard title={title} items={data as EvaluationRankingItem[]} onAction={onAction} />
+        case "draft-internship":
+            return <DraftInternshipCard data={data as DraftInternshipData} onAction={onAction} />
         case "notification-list":
             return <NotificationListCard title={title} items={data as NotificationItem[]} />
         case "application-detail":
             return <ApplicationDetailCard data={data as ApplicationDetailData} onAction={onAction} />
+        case "auto-apply-settings":
+            return <AutoApplySettingsCard title={title} data={data as { enabled: boolean; threshold: number; autoApplyCount: number; message: string }} onAction={onAction} />
         case "error":
             return <ErrorCard title={title} error={error || "Unknown error"} />
         default:
@@ -194,10 +202,9 @@ function InternshipListCard({ title, items, onAction }: { title: string; items: 
                         )}
                         {onAction && (
                             <div className="flex gap-1.5 mt-1.5 flex-wrap">
-                                <ActionBtn label="Apply" variant="primary" onClick={() => onAction(`Apply to internship ${item.id}`)} />
+                                <ActionBtn label="Apply for me" variant="primary" onClick={() => onAction(`Apply to internship ${item.id} for me`)} />
                                 <ActionBtn label="Save" onClick={() => onAction(`Save internship ${item.id}`)} />
                                 <ActionBtn label="Details" onClick={() => onAction(`Tell me more about internship ${item.id} at ${item.company}`)} />
-                                <ActionBtn label="Cover letter" variant="success" onClick={() => onAction(`Generate a cover letter for internship ${item.id}`)} />
                             </div>
                         )}
                     </div>
@@ -266,8 +273,8 @@ function InternshipDetailCard({ data, onAction }: { data: InternshipDetail; onAc
                 )}
                 {onAction && (
                     <div className="flex gap-1.5 mt-1 flex-wrap">
-                        <ActionBtn label="Apply" variant="primary" onClick={() => onAction(`Apply to internship ${data.id}`)} />
-                        <ActionBtn label="Generate cover letter" variant="success" onClick={() => onAction(`Generate a cover letter for internship ${data.id}`)} />
+                        <ActionBtn label="Apply for me" variant="primary" onClick={() => onAction(`Apply to internship ${data.id} for me`)} />
+                        <ActionBtn label="Save" onClick={() => onAction(`Save internship ${data.id}`)} />
                     </div>
                 )}
             </div>
@@ -768,9 +775,175 @@ function ApplicationDetailCard({ data, onAction }: { data: ApplicationDetailData
                 <p className="text-[10px] text-muted-foreground">Applied: {new Date(data.appliedAt).toLocaleDateString()}</p>
                 {onAction && data.status === "PENDING" && (
                     <div className="flex gap-2 flex-wrap">
+                        <ActionBtn label="AI Evaluate" variant="primary" onClick={() => onAction(`Evaluate application ${data.id} with AI`)} />
                         <ActionBtn label="Approve" variant="success" onClick={() => onAction(`Approve application ${data.id}`)} />
                         <ActionBtn label="Reject" variant="danger" onClick={() => onAction(`Reject application ${data.id}`)} />
-                        <ActionBtn label="Schedule interview" variant="primary" onClick={() => onAction(`Schedule interview for application ${data.id}`)} />
+                        <ActionBtn label="Schedule interview" onClick={() => onAction(`Schedule interview for application ${data.id}`)} />
+                    </div>
+                )}
+            </div>
+        </CardWrapper>
+    )
+}
+
+// ─── Evaluation Card (single application AI pre-screen) ────────────────────
+
+interface EvaluationData {
+    applicationId: string
+    studentName: string
+    internshipTitle: string
+    matchScore: number
+    verdict: string
+    strengths: string[]
+    concerns: string[]
+    oneLiner: string
+}
+
+function EvaluationCard({ data, onAction }: { data: EvaluationData; onAction?: (p: string) => void }) {
+    const scoreColor = data.matchScore >= 80 ? "text-emerald-500" : data.matchScore >= 50 ? "text-amber-500" : "text-rose-500"
+    const scoreBg = data.matchScore >= 80 ? "bg-emerald-500/10" : data.matchScore >= 50 ? "bg-amber-500/10" : "bg-rose-500/10"
+    const verdictLabels: Record<string, string> = {
+        strong_match: "Strong Match",
+        good_match: "Good Match",
+        partial_match: "Partial Match",
+        weak_match: "Weak Match",
+    }
+
+    return (
+        <CardWrapper>
+            <CardTitle icon={Star} title={`AI Evaluation: ${data.studentName}`} badge={verdictLabels[data.verdict] || data.verdict} />
+            <div className="p-3 space-y-2">
+                <div className="flex items-center gap-2">
+                    <div className={cn("flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold", scoreBg, scoreColor)}>
+                        <TrendingUp className="h-3 w-3" />
+                        {data.matchScore}% Match
+                    </div>
+                    <span className="text-xs text-muted-foreground">for {data.internshipTitle}</span>
+                </div>
+                <p className="text-xs font-medium">{data.oneLiner}</p>
+                {data.strengths.length > 0 && (
+                    <div>
+                        <p className="text-[10px] font-semibold text-emerald-600 mb-0.5">Strengths</p>
+                        {data.strengths.map((s, i) => (
+                            <p key={i} className="text-[11px] text-muted-foreground flex items-start gap-1">
+                                <CheckCircle2 className="h-3 w-3 text-emerald-500 mt-0.5 shrink-0" />{s}
+                            </p>
+                        ))}
+                    </div>
+                )}
+                {data.concerns.length > 0 && (
+                    <div>
+                        <p className="text-[10px] font-semibold text-amber-600 mb-0.5">Concerns</p>
+                        {data.concerns.map((c, i) => (
+                            <p key={i} className="text-[11px] text-muted-foreground flex items-start gap-1">
+                                <XCircle className="h-3 w-3 text-amber-500 mt-0.5 shrink-0" />{c}
+                            </p>
+                        ))}
+                    </div>
+                )}
+                {onAction && (
+                    <div className="flex gap-1.5 flex-wrap">
+                        <ActionBtn label="Approve" variant="success" onClick={() => onAction(`Approve application ${data.applicationId}`)} />
+                        <ActionBtn label="Reject" variant="danger" onClick={() => onAction(`Reject application ${data.applicationId}`)} />
+                        <ActionBtn label="Schedule interview" variant="primary" onClick={() => onAction(`Schedule interview for application ${data.applicationId}`)} />
+                    </div>
+                )}
+            </div>
+        </CardWrapper>
+    )
+}
+
+// ─── Evaluation Ranking Card (bulk AI ranking) ─────────────────────────────
+
+interface EvaluationRankingItem {
+    applicationId: string
+    studentName: string
+    matchScore: number
+    verdict: string
+    oneLiner: string
+}
+
+function EvaluationRankingCard({ title, items, onAction }: { title: string; items: EvaluationRankingItem[]; onAction?: (p: string) => void }) {
+    if (!items || items.length === 0) {
+        return <EmptyCard icon={Users} message="No evaluations available" />
+    }
+
+    return (
+        <CardWrapper>
+            <CardTitle icon={TrendingUp} title={title} badge={`${items.length} ranked`} />
+            <div className="divide-y divide-border/30">
+                {items.map((item, idx) => {
+                    const scoreColor = item.matchScore >= 80 ? "text-emerald-500" : item.matchScore >= 50 ? "text-amber-500" : "text-rose-500"
+                    return (
+                        <div key={item.applicationId} className="px-3 py-2.5 hover:bg-muted/10 transition-colors">
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs font-bold text-muted-foreground w-5">#{idx + 1}</span>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium truncate">{item.studentName}</p>
+                                    <p className="text-[11px] text-muted-foreground truncate">{item.oneLiner}</p>
+                                </div>
+                                <span className={cn("text-sm font-bold tabular-nums", scoreColor)}>{item.matchScore}%</span>
+                            </div>
+                            {onAction && (
+                                <div className="flex gap-1.5 mt-1.5 pl-7 flex-wrap">
+                                    <ActionBtn label="View details" variant="primary" onClick={() => onAction(`Evaluate application ${item.applicationId} in detail`)} />
+                                    <ActionBtn label="Approve" variant="success" onClick={() => onAction(`Approve application ${item.applicationId}`)} />
+                                </div>
+                            )}
+                        </div>
+                    )
+                })}
+            </div>
+        </CardWrapper>
+    )
+}
+
+// ─── Draft Internship Card (AI-generated posting preview) ──────────────────
+
+interface DraftInternshipData {
+    title: string
+    description: string
+    location: string
+    paid: boolean
+    salary?: number
+    qualifications: string
+    skills: string[]
+    applicationEnd: string
+    startDate?: string
+    endDate?: string
+    requiresCoverLetter: boolean
+}
+
+function DraftInternshipCard({ data, onAction }: { data: DraftInternshipData; onAction?: (p: string) => void }) {
+    return (
+        <CardWrapper className="border-violet-500/20">
+            <CardTitle icon={Briefcase} title="Draft Internship Preview" badge="AI Generated" />
+            <div className="p-3 space-y-2">
+                <p className="text-sm font-semibold">{data.title}</p>
+                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{data.location}</span>
+                    {data.paid && data.salary && (
+                        <Badge className="text-[10px] px-1.5 py-0 bg-emerald-500/10 text-emerald-500 border-emerald-500/20">
+                            {data.salary} лв/month
+                        </Badge>
+                    )}
+                    <span className="flex items-center gap-1"><Clock className="h-3 w-3" />Deadline: {new Date(data.applicationEnd).toLocaleDateString()}</span>
+                </div>
+                <p className="text-xs text-muted-foreground line-clamp-3">{data.description}</p>
+                {data.skills.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                        {data.skills.map(s => (
+                            <Badge key={s} variant="outline" className="text-[10px] px-1.5 py-0">{s}</Badge>
+                        ))}
+                    </div>
+                )}
+                {data.qualifications && (
+                    <p className="text-[11px] text-muted-foreground"><span className="font-medium text-foreground">Requirements:</span> {data.qualifications}</p>
+                )}
+                {onAction && (
+                    <div className="flex gap-1.5 flex-wrap pt-1">
+                        <ActionBtn label="Publish this posting" variant="success" onClick={() => onAction("Yes, publish this internship posting!")} />
+                        <ActionBtn label="Edit details" variant="primary" onClick={() => onAction("I'd like to change some details before publishing")} />
                     </div>
                 )}
             </div>
@@ -830,6 +1003,61 @@ function SessionSearchResultsCard({ title, items, onAction }: { title: string; i
                         )}
                     </div>
                 ))}
+            </div>
+        </CardWrapper>
+    )
+}
+
+// ─── Auto-Apply Settings Card ───────────────────────────────────────────────
+
+function AutoApplySettingsCard({ title, data, onAction }: { title: string; data: { enabled: boolean; threshold: number; autoApplyCount: number; message: string }; onAction?: (p: string) => void }) {
+    return (
+        <CardWrapper>
+            <CardTitle icon={data.enabled ? CheckCircle2 : XCircle} title={title} badge={data.enabled ? "Active" : "Inactive"} />
+            <div className="px-4 pb-4 space-y-3">
+                <div className="flex items-center gap-3">
+                    <div className={cn(
+                        "h-10 w-10 rounded-xl flex items-center justify-center",
+                        data.enabled ? "bg-emerald-500/10" : "bg-muted"
+                    )}>
+                        {data.enabled ? (
+                            <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                        ) : (
+                            <XCircle className="h-5 w-5 text-muted-foreground" />
+                        )}
+                    </div>
+                    <div>
+                        <p className="text-sm font-medium">{data.message}</p>
+                        {data.autoApplyCount > 0 && (
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                                {data.autoApplyCount} auto-application{data.autoApplyCount !== 1 ? "s" : ""} so far
+                            </p>
+                        )}
+                    </div>
+                </div>
+                {data.enabled && (
+                    <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
+                        <span className="text-xs text-muted-foreground">Match threshold</span>
+                        <Badge variant="outline" className="text-emerald-600 border-emerald-500/30 font-bold">{data.threshold}%</Badge>
+                    </div>
+                )}
+                <div className="flex gap-2">
+                    {data.enabled ? (
+                        <button onClick={() => onAction?.("Turn off auto-apply")}
+                            className="text-xs px-3 py-1.5 rounded-lg bg-muted hover:bg-muted/80 text-muted-foreground transition-colors">
+                            Turn off
+                        </button>
+                    ) : (
+                        <button onClick={() => onAction?.("Enable auto-apply with 80% threshold")}
+                            className="text-xs px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 font-medium transition-colors">
+                            Enable auto-apply
+                        </button>
+                    )}
+                    <button onClick={() => onAction?.("Change my auto-apply threshold")}
+                        className="text-xs px-3 py-1.5 rounded-lg bg-muted hover:bg-muted/80 text-muted-foreground transition-colors">
+                        Adjust threshold
+                    </button>
+                </div>
             </div>
         </CardWrapper>
     )

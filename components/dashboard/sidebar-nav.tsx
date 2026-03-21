@@ -75,7 +75,7 @@ export function SidebarNav({
     const { t } = useTranslation()
     const pathname = usePathname()
     const { signOut } = useClerk()
-    const { isAIMode, toggleAIMode } = useAIMode()
+    const { isAIMode, openLinky, closeLinky, confidenceScore } = useAIMode()
     const { navigateTo } = useNavigation()
     const [openMenus, setOpenMenus] = useState<string[]>([])
 
@@ -439,35 +439,36 @@ export function SidebarNav({
                 )}
             </div>
 
-            {/* AI Mode Toggle */}
+            {/* Talk to Linky — prominent CTA */}
             <div className="px-3 py-4 border-b border-border/50">
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <button
-                            onClick={toggleAIMode}
-                            className={cn(
-                                "flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-colors duration-150",
-                                isAIMode
-                                    ? "bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-sm"
-                                    : "bg-muted/50 hover:bg-muted"
-                            )}
-                        >
-                            <Sparkles className="h-5 w-5" />
-                            <span>{t('aiMode.title')}</span>
-                            <span className={cn(
-                                "ml-auto text-xs px-2 py-0.5 rounded-full",
-                                isAIMode
-                                    ? "bg-white/20 text-white"
-                                    : "bg-purple-500/20 text-purple-600 dark:text-purple-400"
-                            )}>
-                                {isAIMode ? "ON" : "OFF"}
-                            </span>
-                        </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="right">
-                        <p>{isAIMode ? t('navigation.disableAI') : t('navigation.enableAI')}</p>
-                    </TooltipContent>
-                </Tooltip>
+                <button
+                    onClick={() => isAIMode ? closeLinky() : openLinky()}
+                    className={cn(
+                        "relative flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold transition-all duration-200",
+                        isAIMode
+                            ? "bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-lg shadow-violet-500/20"
+                            : "bg-gradient-to-r from-violet-500/10 to-purple-500/10 hover:from-violet-500/20 hover:to-purple-500/20 text-violet-600 dark:text-violet-400 border border-violet-500/20"
+                    )}
+                >
+                    <Sparkles className={cn("h-5 w-5", isAIMode ? "animate-pulse" : "")} />
+                    <span>{isAIMode ? "Close Linky" : "Talk to Linky"}</span>
+                    {!isAIMode && (
+                        <span className="ml-auto flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                    )}
+                </button>
+                {/* Student confidence score mini display */}
+                {userType === "Student" && confidenceScore && !isAIMode && (
+                    <div className="mt-2 flex items-center justify-between px-3 py-1.5 rounded-lg bg-muted/30">
+                        <span className="text-[10px] text-muted-foreground font-medium">Confidence Score</span>
+                        <span className={cn(
+                            "text-xs font-bold tabular-nums",
+                            (confidenceScore.overallScore ?? 0) >= 70 ? "text-emerald-500" :
+                            (confidenceScore.overallScore ?? 0) >= 40 ? "text-amber-500" : "text-rose-500"
+                        )}>
+                            {confidenceScore.overallScore ?? 0}/100
+                        </span>
+                    </div>
+                )}
             </div>
 
             {/* Navigation */}

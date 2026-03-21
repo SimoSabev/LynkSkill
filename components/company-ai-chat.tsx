@@ -1,4 +1,5 @@
 "use client"
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { useState, useRef, useEffect, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
@@ -51,7 +52,8 @@ export function CompanyAIChat() {
         sessions,
         startNewSession,
         loadSession,
-        deleteSession
+        deleteSession,
+        refreshSessions
     } = useAIMode()
 
     const [inputValue, setInputValue] = useState("")
@@ -216,7 +218,8 @@ export function CompanyAIChat() {
                     })),
                     phase: chatPhase,
                     userType: "company",
-                    locale
+                    locale,
+                    sessionId: currentSessionId
                 })
             })
 
@@ -283,6 +286,8 @@ export function CompanyAIChat() {
         } finally {
             setIsLoading(false)
             setIsTyping(false)
+            // Refresh sessions list so the sidebar updates
+            refreshSessions()
         }
     }
 
@@ -611,7 +616,7 @@ export function CompanyAIChat() {
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-3">
-                                    {studentMatches.slice(0, 6).map((match, index) => (
+                                    {(studentMatches as any[]).slice(0, 6).map((match: any, index: number) => (
                                         <motion.div
                                             key={match.id}
                                             initial={{ opacity: 0, y: 10 }}
@@ -643,7 +648,7 @@ export function CompanyAIChat() {
                                                     </div>
 
                                                     <div className="flex flex-wrap gap-1 mt-2">
-                                                        {(match.skills || []).slice(0, 3).map((skill, i) => (
+                                                        {(match.skills || []).slice(0, 3).map((skill: any, i: number) => (
                                                             <Badge key={i} variant="outline" className="text-xs py-0">
                                                                 {skill}
                                                             </Badge>

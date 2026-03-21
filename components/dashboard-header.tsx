@@ -64,13 +64,9 @@ export function DashboardHeader({
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button
-                      variant="ghost"
-                      size="icon"
-                      className="rounded-xl transition-colors duration-150 hover:bg-muted"
-                  >
+                  <div className="rounded-xl transition-colors duration-150 hover:bg-muted cursor-pointer">
                     <ModeToggle />
-                  </Button>
+                  </div>
                 </TooltipTrigger>
                 <TooltipContent>
                   {t('dashboard.toggleTheme')}

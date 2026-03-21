@@ -727,9 +727,9 @@ export default function StudentDashboardPage() {
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="rounded-2xl">
+                                        <div className="rounded-2xl cursor-pointer">
                                             <ModeToggle/>
-                                        </Button>
+                                        </div>
                                     </TooltipTrigger>
                                     <TooltipContent>{t("dashboardStudent.toggleTheme")}</TooltipContent>
                                 </Tooltip>

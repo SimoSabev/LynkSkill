@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { usePathname } from "next/navigation"
 import dynamic from "next/dynamic"
-import { Menu, PanelLeft } from "lucide-react"
+import { Menu, PanelLeft, MessageCircle, X as XIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { ModeToggle } from "@/components/theme-toggle"
@@ -51,7 +51,7 @@ interface DashboardShellProps {
 
 export function DashboardShell({ children, userType, memberPermissions = [] }: DashboardShellProps) {
     const { t } = useTranslation()
-    const { isAIMode } = useAIMode()
+    const { isAIMode, openLinky } = useAIMode()
     const pathname = usePathname()
     const [sidebarOpen, setSidebarOpen] = useState(true)
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -229,13 +229,9 @@ export function DashboardShell({ children, userType, memberPermissions = [] }: D
                             <TooltipProvider>
                                 <Tooltip>
                                     <TooltipTrigger asChild>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="rounded-xl hover:bg-purple-500/10"
-                                        >
+                                        <div className="rounded-xl hover:bg-purple-500/10 cursor-pointer">
                                             <ModeToggle />
-                                        </Button>
+                                        </div>
                                     </TooltipTrigger>
                                     <TooltipContent className="bg-purple-950/90 border-purple-500/30">
                                         {t('dashboard.toggleTheme')}
@@ -282,6 +278,25 @@ export function DashboardShell({ children, userType, memberPermissions = [] }: D
                     </AnimatePresence>
                 </main>
             </div>
+
+            {/* Floating Linky Button — always visible, quick access */}
+            <AnimatePresence>
+                {!isAIMode && (
+                    <motion.button
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0, opacity: 0 }}
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => openLinky()}
+                        className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-full bg-gradient-to-r from-violet-600 to-purple-600 px-5 py-3.5 text-white shadow-2xl shadow-violet-500/25 hover:shadow-violet-500/40 transition-shadow group"
+                    >
+                        <MessageCircle className="h-5 w-5 group-hover:rotate-12 transition-transform" />
+                        <span className="text-sm font-semibold hidden sm:inline">Talk to Linky</span>
+                        <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-emerald-400 ring-2 ring-background animate-pulse" />
+                    </motion.button>
+                )}
+            </AnimatePresence>
 
             {/* Mascot Scene */}
             {showMascot && (

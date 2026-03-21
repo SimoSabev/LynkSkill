@@ -15,10 +15,9 @@ export async function saveConversationTurn(
         data: {
             userId,
             sessionId,
-            userType,
             role,
             content,
-            metadata: metadata ?? undefined,
+            metadata: { ...(metadata ?? {}), userType },
         },
     })
 }
@@ -30,7 +29,7 @@ export async function loadSessionHistory(
     limit = 50
 ) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (prisma as any).aIConversationLog.findMany({
+    const rows = await (prisma as any).aIConversationLog.findMany({
         where: { userId, sessionId },
         orderBy: { createdAt: "asc" },
         take: limit,
@@ -39,49 +38,55 @@ export async function loadSessionHistory(
             role: true,
             content: true,
             metadata: true,
-            userType: true,
             createdAt: true,
         },
     })
+
+    // Extract userType from metadata for backwards compatibility
+    return rows.map((r: { id: string; role: string; content: string; metadata: Record<string, unknown> | null; createdAt: Date }) => ({
+        ...r,
+        userType: (r.metadata as Record<string, unknown>)?.userType ?? "student",
+    }))
 }
 
 // ─── Load all sessions for a user (grouped) ──────────────────────────────
 export async function loadUserSessions(userId: string) {
-    // Get distinct sessions with their first and last message
+    // Get distinct sessions
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const sessions = await (prisma as any).aIConversationLog.groupBy({
-        by: ["sessionId", "userType"],
+    const distinctSessions = await (prisma as any).aIConversationLog.findMany({
         where: { userId },
-        _count: { id: true },
-        _min: { createdAt: true },
-        _max: { createdAt: true },
-        orderBy: { _max: { createdAt: "desc" } },
-    }) as Array<{
-        sessionId: string;
-        userType: "student" | "company";
-        _count: { id: number };
-        _min: { createdAt: Date | null };
-        _max: { createdAt: Date | null };
-    }>
+        distinct: ["sessionId"],
+        orderBy: { createdAt: "desc" },
+        select: { sessionId: true, createdAt: true, metadata: true },
+    }) as Array<{ sessionId: string; createdAt: Date; metadata: Record<string, unknown> | null }>
 
-    // For each session, get the first user message for a name
+    // For each session, get the first user message for a name and message count
     const enriched = await Promise.all(
-        sessions.map(async (s) => {
+        distinctSessions.map(async (s) => {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const firstMsg = await (prisma as any).aIConversationLog.findFirst({
-                where: { userId, sessionId: s.sessionId, role: "user" },
-                orderBy: { createdAt: "asc" },
-                select: { content: true },
-            })
+            const [firstMsg, count] = await Promise.all([
+                (prisma as any).aIConversationLog.findFirst({
+                    where: { userId, sessionId: s.sessionId, role: "user" },
+                    orderBy: { createdAt: "asc" },
+                    select: { content: true },
+                }),
+                (prisma as any).aIConversationLog.count({
+                    where: { userId, sessionId: s.sessionId },
+                }),
+            ])
+
+            // Extract userType from metadata
+            const userType = (s.metadata as Record<string, unknown>)?.userType ?? "student"
+
             return {
                 id: s.sessionId,
                 name: firstMsg
                     ? firstMsg.content.slice(0, 60) + (firstMsg.content.length > 60 ? "…" : "")
-                    : `Chat ${s._min.createdAt?.toLocaleDateString() ?? ""}`,
-                userType: s.userType,
-                messageCount: s._count.id,
-                createdAt: s._min.createdAt,
-                lastMessageAt: s._max.createdAt,
+                    : `Chat ${s.createdAt?.toLocaleDateString() ?? ""}`,
+                userType,
+                messageCount: count,
+                createdAt: s.createdAt,
+                lastMessageAt: s.createdAt,
             }
         })
     )
@@ -107,11 +112,11 @@ export async function loadUserMemory(userId: string): Promise<string | null> {
 
     // 2. Load recent conversation topics (last 5 sessions, last message from each)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const recentSessions = await (prisma as any).aIConversationLog.groupBy({
-        by: ["sessionId"],
+    const recentSessions = await (prisma as any).aIConversationLog.findMany({
         where: { userId },
-        _max: { createdAt: true },
-        orderBy: { _max: { createdAt: "desc" } },
+        distinct: ["sessionId"],
+        orderBy: { createdAt: "desc" },
+        select: { sessionId: true },
         take: 5,
     }) as Array<{ sessionId: string }>
 
@@ -130,8 +135,20 @@ export async function loadUserMemory(userId: string): Promise<string | null> {
         }
     }
 
-    // 3. Build memory block
+    // 3. Load portfolio for richer context
+    const portfolio = await prisma.portfolio.findUnique({
+        where: { studentId: userId },
+        select: { fullName: true, headline: true, skills: true, bio: true },
+    })
+
+    // 4. Build memory block
     const parts: string[] = []
+
+    if (portfolio) {
+        if (portfolio.fullName) parts.push(`Name: ${portfolio.fullName}`)
+        if (portfolio.headline) parts.push(`Headline: ${portfolio.headline}`)
+        if (portfolio.skills?.length) parts.push(`Portfolio skills: ${portfolio.skills.join(", ")}`)
+    }
 
     if (aiProfile) {
         if (aiProfile.careerGoals) {
