@@ -8,6 +8,7 @@ import { getToolsForContext, getToolDefinition } from "@/lib/ai/tool-registry"
 import { saveConversationTurn, loadUserMemory, extractAndStoreInsights } from "@/lib/ai/ai-memory"
 import { computeNotifications, type AINotification } from "@/lib/ai/ai-notifications"
 import { calculateAndSaveConfidenceScore } from "@/lib/confidence-score"
+import { determinePersonalityState, buildPersonalityBlock } from "@/lib/ai/linky-personality"
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
@@ -108,6 +109,14 @@ Permissions: ${perms.join(", ") || "all"}
 - Search student candidates by skills / query (if permitted)
 - Search past conversations
 - View messages, assignments, notifications
+
+CANDIDATE SEARCH FLOW — ALWAYS FOLLOW THIS:
+When a company asks to "find students", "find candidates", "who matches this role", or similar:
+1. FIRST ask ONE clarifying question: "Sure! Do you want me to **match against a specific internship** (AI scoring + confidence ratings), or do a **keyword search** across all students?"
+2. If they say "match against posting" → call bulk_evaluate_applications for that internship ID
+3. If they say "keyword search" or mention a skill/name → call search_candidates with that query
+4. NEVER call search_candidates immediately without asking — always clarify intent first
+5. When showing candidate results, ALWAYS mention their confidence score (0-100) and explain: "Higher score = stronger profile. I recommend candidates with 45+ score."
 `
     } else if (ctx.role === "STUDENT") {
         base += `## YOUR ROLE: Career Coach & AI Middleman 🎯
@@ -136,11 +145,14 @@ NO COVER LETTERS PHILOSOPHY:
 - When a company searches for candidates, Linky pushes high-confidence students proactively even if they haven't applied.
 
 INTERNSHIP & APPLICATION FLOW:
-1. When a student asks about internships, find the BEST match using search_internships or get_internship_recommendations
-2. Show them the match and ask: "This looks perfect for you — want me to apply?"
-3. If they say yes → use apply_to_internship. Linky handles the match summary automatically. No cover letter.
-4. If their profile is thin, ask 1-2 quick profiling questions WHILE still showing opportunities. Don't block them.
-5. PROACTIVE: Even when the student is offline, the matchmaker runs and pushes their profile to companies that match.
+When a student asks to "find internships", "show me opportunities", or "what should I apply to":
+1. FIRST ask ONE clarifying question: "Sure! Do you want me to **find your best AI match** based on your profile, or **search by a keyword** like a skill, company name, or location?"
+2. If they say "best match" or "recommend" → use get_internship_recommendations
+3. If they say "search" or give a keyword → use search_internships with that query
+4. Show the result and ask: "This looks perfect for you — want me to apply?"
+5. If they say yes → use apply_to_internship. No cover letter needed.
+6. If their profile is thin, ask 1-2 quick profiling questions WHILE still showing opportunities. Don't block them.
+7. PROACTIVE: Even when the student is offline, the matchmaker runs and pushes their profile to companies that match.
 
 PROGRESSIVE PROFILING (NOT A WALL):
 - Do NOT refuse to show internships because of a low confidence score. Instead:
@@ -202,6 +214,54 @@ function injectMemory(base: string, memory: string | null): string {
     return base + `\n\n## WHAT YOU REMEMBER ABOUT THIS USER\nUse this info to provide personalised, contextual responses. Reference past conversations naturally.\n${memory}\n`
 }
 
+// Build a rolling context summary for long conversations.
+// When history exceeds RECENT_WINDOW, summarise the older turns so Linky remembers
+// facts mentioned 20+ messages ago without blowing up the context window.
+const RECENT_WINDOW = 8
+const SUMMARY_THRESHOLD = 12 // start summarising once we have more than this many turns
+
+async function buildRollingContext(
+    conversationHistory: { role: "user" | "assistant"; content: string }[],
+): Promise<{ recentMessages: OpenAI.Chat.ChatCompletionMessageParam[]; summaryBlock: string }> {
+    const recentMessages: OpenAI.Chat.ChatCompletionMessageParam[] = conversationHistory
+        .slice(-RECENT_WINDOW)
+        .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }))
+
+    if (conversationHistory.length <= SUMMARY_THRESHOLD) {
+        return { recentMessages, summaryBlock: "" }
+    }
+
+    // Older turns that won't fit in the live context
+    const olderTurns = conversationHistory.slice(0, -RECENT_WINDOW)
+    const turnText = olderTurns
+        .map((m) => `${m.role === "user" ? "User" : "Linky"}: ${m.content}`)
+        .join("\n")
+
+    try {
+        const summarisation = await openai.chat.completions.create({
+            model: "gpt-4o-mini",
+            messages: [
+                {
+                    role: "system",
+                    content:
+                        "You are a concise note-taker. Extract key facts from this conversation that Linky (the AI agent) needs to remember: the user's skills, goals, preferences, internship interests, any decisions made, and any personal context shared. Be terse — max 120 words, bullet list.",
+                },
+                { role: "user", content: turnText },
+            ],
+            max_tokens: 200,
+            temperature: 0.2,
+        })
+        const summary = summarisation.choices[0]?.message?.content?.trim() ?? ""
+        const summaryBlock = summary
+            ? `\n\n## EARLIER IN THIS CONVERSATION\nThese facts came up before recent messages — use them for context:\n${summary}\n`
+            : ""
+        return { recentMessages, summaryBlock }
+    } catch {
+        // If summarisation fails, fall back to keeping RECENT_WINDOW messages
+        return { recentMessages, summaryBlock: "" }
+    }
+}
+
 // Inject proactive notifications into system prompt
 function injectNotifications(base: string, notifications: AINotification[]): string {
     if (notifications.length === 0) return base
@@ -239,6 +299,7 @@ interface ReqBody {
     conversationHistory?: { role: "user" | "assistant"; content: string }[]
     userType?: string
     sessionId?: string
+    silent?: boolean  // true for auto-greeting; skip saving user turn so session name = first real message
 }
 
 export async function POST(req: Request) {
@@ -251,7 +312,7 @@ export async function POST(req: Request) {
     } catch {
         return NextResponse.json({ error: "Invalid or empty request body" }, { status: 400 })
     }
-    const { message, conversationHistory = [] } = body
+    const { message, conversationHistory = [], silent = false } = body
     if (!message) return NextResponse.json({ error: "Message is required" }, { status: 400 })
 
     const ctxResult = await resolveEnhancedUserContext(clerkId)
@@ -271,22 +332,34 @@ export async function POST(req: Request) {
     const notifications = await computeNotifications(ctx.userId, ctx.role, ctx.companyId)
     systemPrompt = injectNotifications(systemPrompt, notifications)
 
+    // Inject personality state for students — makes Linky emotionally adaptive
+    if (activeRole === "STUDENT") {
+        try {
+            const personality = await determinePersonalityState(ctx.userId)
+            systemPrompt += buildPersonalityBlock(personality)
+        } catch {
+            // Personality is a best-effort enhancement — don't block the request
+        }
+    }
+
     // Derive sessionId from request or generate one
     const activeSessionId = body.sessionId || `session_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
 
-    // Save the user message to DB
-    saveConversationTurn(ctx.userId, activeSessionId, "user", message, activeRole.toLowerCase() as "student" | "company").catch(() => {})
+    // Save the user message to DB — skip silent auto-greeting so session name = first real user message
+    if (!silent) {
+        saveConversationTurn(ctx.userId, activeSessionId, "user", message, activeRole.toLowerCase() as "student" | "company").catch(() => {})
+    }
 
-    const historyMessages: OpenAI.Chat.ChatCompletionMessageParam[] = conversationHistory
-        .slice(-20)
-        .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }))
+    // Build rolling context: summarise old turns, keep recent ones live
+    const { recentMessages, summaryBlock } = await buildRollingContext(conversationHistory)
+    if (summaryBlock) systemPrompt += summaryBlock
 
     const stream = new ReadableStream({
         async start(controller) {
             try {
                 const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
                     { role: "system", content: systemPrompt },
-                    ...historyMessages,
+                    ...recentMessages,
                     { role: "user", content: message },
                 ]
 

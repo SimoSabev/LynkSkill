@@ -6,7 +6,8 @@ import {
     MapPin, DollarSign, Clock, Briefcase, ExternalLink,
     CheckCircle2, XCircle, Building2, User, Users, Search,
     Calendar, MessageSquare, Star, BookOpen, FileText,
-    TrendingUp, Bookmark, ChevronRight, Bell, History
+    TrendingUp, Bookmark, ChevronRight, Bell, History, Rocket,
+    ThumbsUp, ThumbsDown
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
@@ -143,6 +144,13 @@ interface InternshipItem {
     applicationEnd?: string
     applicationsCount?: number
     requiresCoverLetter?: boolean
+    // Explainable match fields (from hybrid scoring)
+    matchScore?: number
+    baseScore?: number
+    matchReason?: string
+    skillsAligned?: string[]
+    missingSkills?: string[]
+    growthOpportunity?: string
 }
 
 function InternshipListCard({ title, items, onAction }: { title: string; items: InternshipItem[]; onAction?: (p: string) => void }) {
@@ -197,14 +205,56 @@ function InternshipListCard({ title, items, onAction }: { title: string; items: 
                                 <ChevronRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                             </div>
                         </div>
-                        {item.description && (
+                        {item.description && !item.matchScore && (
                             <p className="text-[11px] text-muted-foreground mt-1 line-clamp-2">{item.description}</p>
                         )}
+                        {/* Explainable match breakdown — shown when hybrid scoring data is available */}
+                        {item.matchScore != null && (
+                            <div className="mt-1.5 space-y-1">
+                                <div className="flex items-center gap-2">
+                                    <div className={cn(
+                                        "flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold",
+                                        item.matchScore >= 80 ? "bg-emerald-500/10 text-emerald-500" :
+                                        item.matchScore >= 60 ? "bg-amber-500/10 text-amber-500" :
+                                        "bg-rose-500/10 text-rose-500"
+                                    )}>
+                                        <TrendingUp className="h-3 w-3" />
+                                        {item.matchScore}% match
+                                    </div>
+                                    {item.matchReason && (
+                                        <span className="text-[10px] text-muted-foreground truncate">{item.matchReason}</span>
+                                    )}
+                                </div>
+                                {item.skillsAligned && item.skillsAligned.length > 0 && (
+                                    <div className="flex flex-wrap gap-1">
+                                        {item.skillsAligned.map(skill => (
+                                            <Badge key={skill} className="text-[9px] px-1 py-0 bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
+                                                {skill}
+                                            </Badge>
+                                        ))}
+                                        {item.missingSkills && item.missingSkills.length > 0 && item.missingSkills.slice(0, 2).map(skill => (
+                                            <Badge key={skill} variant="outline" className="text-[9px] px-1 py-0 text-muted-foreground border-dashed">
+                                                {skill}
+                                            </Badge>
+                                        ))}
+                                    </div>
+                                )}
+                                {item.growthOpportunity && (
+                                    <p className="text-[10px] text-blue-500/80 flex items-start gap-1">
+                                        <Rocket className="h-3 w-3 shrink-0 mt-0.5" />
+                                        {item.growthOpportunity}
+                                    </p>
+                                )}
+                            </div>
+                        )}
                         {onAction && (
-                            <div className="flex gap-1.5 mt-1.5 flex-wrap">
+                            <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                                 <ActionBtn label="Apply for me" variant="primary" onClick={() => onAction(`Apply to internship ${item.id} for me`)} />
                                 <ActionBtn label="Save" onClick={() => onAction(`Save internship ${item.id}`)} />
                                 <ActionBtn label="Details" onClick={() => onAction(`Tell me more about internship ${item.id} at ${item.company}`)} />
+                                {item.matchScore != null && (
+                                    <MatchFeedbackButtons internshipId={item.id} matchScore={item.matchScore} />
+                                )}
                             </div>
                         )}
                     </div>
@@ -216,6 +266,52 @@ function InternshipListCard({ title, items, onAction }: { title: string; items: 
                 </div>
             )}
         </CardWrapper>
+    )
+}
+
+// ─── Match Feedback Buttons ────────────────────────────────────────────────
+
+function MatchFeedbackButtons({ internshipId, matchScore }: { internshipId: string; matchScore: number }) {
+    const [submitted, setSubmitted] = React.useState<"HELPFUL" | "NOT_HELPFUL" | null>(null)
+
+    const sendFeedback = async (rating: "HELPFUL" | "NOT_HELPFUL") => {
+        setSubmitted(rating)
+        try {
+            await fetch("/api/match-feedback", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ internshipId, rating, matchScore }),
+            })
+        } catch {
+            // Best-effort �� don't block UI
+        }
+    }
+
+    if (submitted) {
+        return (
+            <span className="text-[10px] text-muted-foreground ml-auto">
+                {submitted === "HELPFUL" ? "Thanks!" : "Noted"}
+            </span>
+        )
+    }
+
+    return (
+        <div className="flex items-center gap-0.5 ml-auto">
+            <button
+                onClick={() => sendFeedback("HELPFUL")}
+                className="p-1 rounded hover:bg-emerald-500/10 transition-colors"
+                title="Good match"
+            >
+                <ThumbsUp className="h-3 w-3 text-muted-foreground hover:text-emerald-500" />
+            </button>
+            <button
+                onClick={() => sendFeedback("NOT_HELPFUL")}
+                className="p-1 rounded hover:bg-rose-500/10 transition-colors"
+                title="Not a good match"
+            >
+                <ThumbsDown className="h-3 w-3 text-muted-foreground hover:text-rose-500" />
+            </button>
+        </div>
     )
 }
 
@@ -349,6 +445,7 @@ interface CandidateItem {
     headline?: string
     skills: string[]
     matchScore?: number
+    confidenceScore?: number | null
     reasons?: string[]
     projectCount?: number
 }
@@ -371,12 +468,25 @@ function CandidateListCard({ title, items, onAction }: { title: string; items: C
                                     <p className="text-[11px] text-muted-foreground truncate">{item.headline}</p>
                                 )}
                             </div>
-                            {item.matchScore != null && (
-                                <div className="flex items-center gap-1 flex-shrink-0">
-                                    <Star className="h-3 w-3 text-amber-400" />
-                                    <span className="text-xs font-semibold">{item.matchScore}%</span>
-                                </div>
-                            )}
+                            <div className="flex items-center gap-1.5 flex-shrink-0">
+                                {item.matchScore != null && (
+                                    <div className="flex items-center gap-0.5">
+                                        <Star className="h-3 w-3 text-amber-400" />
+                                        <span className="text-xs font-semibold">{item.matchScore}%</span>
+                                    </div>
+                                )}
+                                {item.confidenceScore != null && (
+                                    <div className={cn(
+                                        "flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold",
+                                        item.confidenceScore >= 70 ? "bg-emerald-500/20 text-emerald-400" :
+                                        item.confidenceScore >= 45 ? "bg-amber-500/20 text-amber-400" :
+                                        "bg-rose-500/20 text-rose-400"
+                                    )}>
+                                        <TrendingUp className="h-2.5 w-2.5" />
+                                        {item.confidenceScore}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                         {item.skills.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-1.5">

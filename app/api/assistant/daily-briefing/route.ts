@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import { auth } from "@clerk/nextjs/server"
 import { prisma } from "@/lib/prisma"
+import { determinePersonalityState } from "@/lib/ai/linky-personality"
+import type { PersonalityState } from "@/lib/ai/linky-personality"
 
 export async function POST(req: Request) {
     const { userId: clerkId } = await auth()
@@ -42,6 +44,9 @@ async function buildStudentBriefing(userId: string, firstName: string, timeGreet
         savedCount,
         upcomingInterview,
         aiProfile,
+        recentRejections,
+        recentApprovals,
+        personality,
     ] = await Promise.all([
         prisma.application.count({ where: { studentId: userId, status: "PENDING" } }),
         prisma.notification.count({ where: { userId, read: false } }),
@@ -52,16 +57,47 @@ async function buildStudentBriefing(userId: string, firstName: string, timeGreet
             orderBy: { scheduledAt: "asc" },
         }),
         prisma.aIProfile.findUnique({ where: { studentId: userId }, include: { confidenceScore: true } }),
+        prisma.application.count({
+            where: { studentId: userId, status: "REJECTED", updatedAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } },
+        }),
+        prisma.application.count({
+            where: { studentId: userId, status: "APPROVED", updatedAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } },
+        }),
+        determinePersonalityState(userId).catch(() => null),
     ])
 
     const score = aiProfile?.confidenceScore?.overallScore ?? 0
+    const state: PersonalityState = personality?.state ?? "ENCOURAGING"
     const highlights: { icon: string; text: string; action?: string }[] = []
+
+    // Adaptive greeting based on personality state
+    const greeting = buildAdaptiveGreeting(state, firstName, timeGreeting, {
+        score, recentApprovals, recentRejections, pendingApps, upcomingInterview,
+    })
+
+    // Priority order changes based on emotional state
+    if (state === "CELEBRATING" && recentApprovals > 0) {
+        highlights.push({
+            icon: "🎉",
+            text: `You got approved for ${recentApprovals} role${recentApprovals > 1 ? "s" : ""}! Let's prep for what's next.`,
+            action: "Help me prepare for my upcoming role",
+        })
+    }
 
     if (upcomingInterview) {
         const dateStr = upcomingInterview.scheduledAt.toLocaleDateString("en-GB", { weekday: "short", month: "short", day: "numeric" })
         highlights.push({
             icon: "📅",
             text: `Interview for "${upcomingInterview.application.internship.title}" on ${dateStr}`,
+            action: `Help me prepare for my interview for ${upcomingInterview.application.internship.title}`,
+        })
+    }
+
+    if (state === "EMPATHETIC" && recentRejections > 0) {
+        highlights.push({
+            icon: "💪",
+            text: `${recentRejections} application${recentRejections > 1 ? "s" : ""} didn't work out — but I found new opportunities that fit you better.`,
+            action: "Show me new matches that fit my profile",
         })
     }
 
@@ -81,7 +117,7 @@ async function buildStudentBriefing(userId: string, firstName: string, timeGreet
         })
     }
 
-    if (score < 50) {
+    if (score < 50 && state !== "EMPATHETIC") {
         highlights.push({
             icon: "📊",
             text: `Your profile score is ${score}/100 — let's boost it with a quick chat!`,
@@ -89,16 +125,39 @@ async function buildStudentBriefing(userId: string, firstName: string, timeGreet
         })
     }
 
-    const suggestedPrompt = score < 30
+    // Adaptive suggested prompt
+    const suggestedPrompt = state === "CELEBRATING"
+        ? "What should I do next after getting approved?"
+        : state === "EMPATHETIC"
+        ? "Show me new matches that fit my profile"
+        : state === "PROACTIVE"
+        ? "Any new internships that match my skills?"
+        : score < 30
         ? "Help me build my profile"
         : savedCount > 0
         ? "Apply to my best matching internship"
-        : "Find me an internship that matches my skills"
+        : "What should I work on today?"
 
-    return {
-        greeting: `${timeGreeting}, ${firstName}! ${score >= 60 ? "Your profile is looking solid 💪" : "Let's make today count 🚀"}`,
-        highlights,
-        suggestedPrompt,
+    return { greeting, highlights, suggestedPrompt }
+}
+
+function buildAdaptiveGreeting(
+    state: PersonalityState,
+    firstName: string,
+    timeGreeting: string,
+    ctx: { score: number; recentApprovals: number; recentRejections: number; pendingApps: number; upcomingInterview: unknown }
+): string {
+    switch (state) {
+        case "CELEBRATING":
+            return `${timeGreeting}, ${firstName}! Amazing news — you got approved! 🎉 Let's keep this momentum going.`
+        case "EMPATHETIC":
+            return `${timeGreeting}, ${firstName}. I know things have been tough, but I've been working on finding you better matches. Let's look at what's new.`
+        case "ENCOURAGING":
+            return `${timeGreeting}, ${firstName}! Welcome to LynkSkill 🚀 I'm Linky, and I'm here to help you find your perfect internship. Let's get started!`
+        case "PROACTIVE":
+            return `${timeGreeting}, ${firstName}! I've been keeping an eye on new opportunities for you. ${ctx.score >= 50 ? "Your profile is looking good" : "Let's catch up"} — there's some exciting stuff to check out.`
+        case "COACHING":
+            return `${timeGreeting}, ${firstName}! ${ctx.score >= 60 ? `Your profile score is ${ctx.score}/100 — solid 💪` : "Let's make today count 🚀"} ${ctx.pendingApps > 0 ? `You have ${ctx.pendingApps} app${ctx.pendingApps > 1 ? "s" : ""} pending.` : ""}`
     }
 }
 

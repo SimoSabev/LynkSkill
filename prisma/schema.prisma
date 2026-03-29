@@ -39,6 +39,7 @@ model User {
   reviews            Review[]       @relation("StudentReviews")
   candidateEvaluations CandidateEvaluation[] @relation("CandidateEvaluations")
   aiConversationLogs   AIConversationLog[]   @relation("AIConversationLogs")
+  matchFeedbacks       MatchFeedback[]       @relation("MatchFeedbacks")
 
   // Company Roles System
   companyMembership     CompanyMember?         @relation("UserMembership")
@@ -93,7 +94,8 @@ model Company {
   customRoles       CompanyCustomRole[]
   invitations       CompanyInvitation[]
   transferRequests  OwnershipTransferRequest[]
-  codeJoins         CompanyCodeJoin[]                    // Audit trail for code joins
+  codeJoins            CompanyCodeJoin[]                    // Audit trail for code joins
+  matchPreferences     CompanyMatchPreferences?
 }
 
 //
@@ -788,6 +790,8 @@ model AIProfile {
   autoApplyThreshold    Int      @default(80)  // Min match score to auto-apply
   autoApplyCount        Int      @default(0)   // Total auto-applications made
   lastAutoApplyAt       DateTime?
+  autoApplyPreviewMode  Boolean  @default(true) // Show previews before submitting (builds trust)
+  autoApplyApprovedCount Int     @default(0)    // Approved drafts — when >= 3 offer to disable preview
   
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
@@ -835,4 +839,41 @@ model AIConversationLog {
   @@index([userId, sessionId])
   @@index([userId, createdAt])
   @@index([sessionId])
+}
+
+//
+// ---------------------
+// MATCH FEEDBACK (for learning loop)
+// ---------------------
+model MatchFeedback {
+  id             String   @id @default(cuid())
+  userId         String
+  notificationId String?  // The notification that showed the match
+  internshipId   String?  // The internship that was matched
+  rating         String   // "HELPFUL" | "NOT_HELPFUL"
+  reason         String?  // Optional reason from user
+  matchScore     Int?     // The score that was shown
+  createdAt      DateTime @default(now())
+
+  user           User     @relation("MatchFeedbacks", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([internshipId])
+  @@index([rating])
+}
+
+//
+// ---------------------
+// COMPANY MATCH PREFERENCES (for preference learning)
+// ---------------------
+model CompanyMatchPreferences {
+  id              String   @id @default(cuid())
+  companyId       String   @unique
+  preferredSkills String[] // Skills the company wants to see in candidates
+  excludedSkills  String[] // Skills to filter out (e.g., "no frontend devs")
+  preferredTraits String?  // Free-text notes about desired traits
+  notes           String?  // Additional matching instructions
+  updatedAt       DateTime @updatedAt
+
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
 }

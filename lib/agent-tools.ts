@@ -86,6 +86,10 @@ export async function executeTool(
                 return await toggleAutoApply(args, ctx)
             case "get_auto_apply_settings":
                 return await getAutoApplySettings(ctx)
+            case "update_match_preferences":
+                return await updateMatchPreferences(args, ctx)
+            case "preview_auto_apply":
+                return await previewAutoApply(ctx)
             default:
                 return {
                     tool: toolName,
@@ -517,36 +521,57 @@ async function getCompanyInternships(ctx: UserContext): Promise<ToolResult> {
 async function searchCandidates(
     args: Record<string, unknown>,
 ): Promise<ToolResult> {
-    const query = (args.query as string) || ""
+    const query = ((args.query as string) || "").trim()
+    const queryLower = query.toLowerCase()
 
+    // Fetch all students with portfolio + AI profile (confidence score)
     const students = await prisma.user.findMany({
-        where: {
-            role: "STUDENT",
-            ...(query
-                ? {
-                      OR: [
-                          { email: { contains: query, mode: "insensitive" as const } },
-                          { profile: { is: { name: { contains: query, mode: "insensitive" as const } } } },
-                      ],
-                  }
-                : {}),
-        },
+        where: { role: "STUDENT" },
         include: {
             profile: { select: { name: true } },
             portfolio: { select: { fullName: true, headline: true, skills: true } },
+            aiProfile: { include: { confidenceScore: true } },
         },
-        take: 10,
+        take: 100,
     })
+
+    // Filter and rank: name/email match scores higher, then skill match
+    const scored = students
+        .map((s) => {
+            const name = (s.portfolio?.fullName || s.profile?.name || s.email || "").toLowerCase()
+            const skills = (s.portfolio?.skills || []) as string[]
+            const skillsLower = skills.map(sk => sk.toLowerCase())
+            const score = s.aiProfile?.confidenceScore?.overallScore ?? 0
+
+            if (!query) return { student: s, rank: score }
+
+            // Name / email match
+            if (name.includes(queryLower) || s.email.toLowerCase().includes(queryLower)) {
+                return { student: s, rank: 100 + score }
+            }
+
+            // Skill match — check if any skill contains the query keyword
+            const skillMatch = skillsLower.some(sk => sk.includes(queryLower) || queryLower.includes(sk))
+            if (skillMatch) {
+                return { student: s, rank: 80 + score }
+            }
+
+            return { student: s, rank: -1 } // no match
+        })
+        .filter(r => !query || r.rank >= 0)
+        .sort((a, b) => b.rank - a.rank)
+        .slice(0, 10)
 
     return {
         tool: "search_candidates",
         cardType: "candidate-list",
-        title: `${students.length} candidates found`,
-        data: students.map((s) => ({
+        title: `${scored.length} candidate${scored.length !== 1 ? "s" : ""} found`,
+        data: scored.map(({ student: s }) => ({
             id: s.id,
             name: s.portfolio?.fullName || s.profile?.name || s.email,
             headline: s.portfolio?.headline,
-            skills: s.portfolio?.skills || [],
+            skills: (s.portfolio?.skills || []) as string[],
+            confidenceScore: s.aiProfile?.confidenceScore?.overallScore ?? null,
         })),
         success: true,
     }
@@ -625,10 +650,16 @@ async function getInternshipRecommendations(
 ): Promise<ToolResult> {
     const limit = Math.min((args.limit as number) || 5, 10)
 
-    const portfolio = await prisma.portfolio.findUnique({
-        where: { studentId: ctx.userId },
-        select: { skills: true, interests: true },
-    })
+    const [portfolio, aiProfile] = await Promise.all([
+        prisma.portfolio.findUnique({
+            where: { studentId: ctx.userId },
+            select: { skills: true, interests: true, headline: true },
+        }),
+        prisma.aIProfile.findUnique({
+            where: { studentId: ctx.userId },
+            select: { skillsAssessment: true, careerGoals: true, preferences: true, availability: true },
+        }),
+    ])
 
     const skillsArr = portfolio?.skills ?? []
     const searchTerms = [...skillsArr, ...(portfolio?.interests ?? [])].slice(0, 5)
@@ -648,7 +679,7 @@ async function getInternshipRecommendations(
                   }
                 : {}),
         },
-        take: limit,
+        take: limit * 2, // Fetch more to filter by score
         orderBy: { createdAt: "desc" },
         select: {
             id: true,
@@ -656,21 +687,75 @@ async function getInternshipRecommendations(
             location: true,
             paid: true,
             salary: true,
+            skills: true,
+            description: true,
+            startDate: true,
+            endDate: true,
             company: { select: { name: true } },
         },
     })
 
+    // Use hybrid scoring to rank and explain matches
+    const { computeBaseScore, extractStudentSkills } = await import("@/lib/ai/hybrid-scoring")
+
+    const studentSkills = extractStudentSkills(
+        aiProfile?.skillsAssessment,
+        portfolio?.skills
+    )
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const goals = aiProfile?.careerGoals as any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const prefs = aiProfile?.preferences as any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const availability = aiProfile?.availability as any
+
+    const studentProfile = {
+        skills: studentSkills,
+        location: prefs?.location ?? null,
+        availabilityStart: availability?.startDate ?? null,
+        hoursPerWeek: availability?.hoursPerWeek ?? null,
+        remotePreference: prefs?.remote ?? null,
+        salaryExpectation: prefs?.salary ?? null,
+        careerGoals: goals ? {
+            industries: goals.industries ?? [],
+            dreamJob: goals.dreamJob ?? null,
+            shortTermGoal: goals.shortTermGoal ?? null,
+        } : null,
+        experienceCount: 0,
+    }
+
+    const scoredInternships = internships
+        .map(i => {
+            const internshipProfile = {
+                skills: Array.isArray(i.skills) ? i.skills : [],
+                location: i.location,
+                paid: i.paid,
+                salary: i.salary ? Number(i.salary) : null,
+                startDate: i.startDate?.toISOString() ?? null,
+                endDate: i.endDate?.toISOString() ?? null,
+                description: i.description,
+                title: i.title,
+            }
+            const breakdown = computeBaseScore(studentProfile, internshipProfile)
+            return { internship: i, breakdown }
+        })
+        .sort((a, b) => b.breakdown.baseScore - a.breakdown.baseScore)
+        .slice(0, limit)
+
     return {
         tool: "get_internship_recommendations",
         cardType: "internship-list",
-        title: `Top ${internships.length} Recommendations for You`,
-        data: internships.map((i) => ({
+        title: `Top ${scoredInternships.length} Recommendations for You`,
+        data: scoredInternships.map(({ internship: i, breakdown }) => ({
             id: i.id,
             title: i.title,
             company: i.company?.name ?? "",
             location: i.location,
             paid: i.paid,
             salary: i.salary,
+            matchScore: breakdown.baseScore,
+            skillsAligned: breakdown.matchedSkills,
+            missingSkills: breakdown.missingSkills,
         })),
         success: true,
     }
@@ -1554,6 +1639,165 @@ async function getAutoApplySettings(ctx: UserContext): Promise<ToolResult> {
                 ? `Auto-apply is ON (threshold: ${aiProfile.autoApplyThreshold}%). Linky has auto-applied ${aiProfile.autoApplyCount} time(s).`
                 : "Auto-apply is OFF. Enable it to let Linky apply for you automatically!",
         },
+        success: true,
+    }
+}
+
+async function updateMatchPreferences(
+    args: Record<string, unknown>,
+    ctx: UserContext
+): Promise<ToolResult> {
+    if (!ctx.companyId) {
+        return { tool: "update_match_preferences", cardType: "error", title: "Not a company", data: null, success: false, error: "This tool is only available for companies." }
+    }
+
+    const preferredSkills = Array.isArray(args.preferredSkills) ? args.preferredSkills as string[] : undefined
+    const excludedSkills = Array.isArray(args.excludedSkills) ? args.excludedSkills as string[] : undefined
+    const preferredTraits = typeof args.preferredTraits === "string" ? args.preferredTraits : undefined
+    const notes = typeof args.notes === "string" ? args.notes : undefined
+
+    const result = await prisma.companyMatchPreferences.upsert({
+        where: { companyId: ctx.companyId },
+        update: {
+            ...(preferredSkills !== undefined && { preferredSkills }),
+            ...(excludedSkills !== undefined && { excludedSkills }),
+            ...(preferredTraits !== undefined && { preferredTraits }),
+            ...(notes !== undefined && { notes }),
+        },
+        create: {
+            companyId: ctx.companyId,
+            preferredSkills: preferredSkills ?? [],
+            excludedSkills: excludedSkills ?? [],
+            preferredTraits: preferredTraits ?? null,
+            notes: notes ?? null,
+        },
+    })
+
+    return {
+        tool: "update_match_preferences",
+        cardType: "action-success",
+        title: "Match Preferences Updated",
+        data: {
+            preferredSkills: result.preferredSkills,
+            excludedSkills: result.excludedSkills,
+            preferredTraits: result.preferredTraits,
+            notes: result.notes,
+            message: "Your match preferences have been saved. Linky will use these to push better candidates to you.",
+        },
+        success: true,
+    }
+}
+
+async function previewAutoApply(ctx: UserContext): Promise<ToolResult> {
+    const [aiProfileRaw, portfolio, applications] = await Promise.all([
+        prisma.aIProfile.findUnique({
+            where: { studentId: ctx.userId },
+            select: {
+                autoApplyThreshold: true,
+                autoApplyEnabled: true,
+                skillsAssessment: true,
+                careerGoals: true,
+            },
+        }),
+        prisma.portfolio.findUnique({
+            where: { studentId: ctx.userId },
+            select: { skills: true, headline: true, bio: true },
+        }),
+        prisma.application.findMany({
+            where: { studentId: ctx.userId },
+            select: { internshipId: true },
+        }),
+    ])
+
+    // Cast to include new schema fields that are pending prisma generate
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const aiProfile = aiProfileRaw as typeof aiProfileRaw & { autoApplyPreviewMode?: boolean; autoApplyApprovedCount?: number }
+
+    if (!aiProfile?.autoApplyEnabled) {
+        return {
+            tool: "preview_auto_apply",
+            cardType: "action-success",
+            title: "Auto-Apply is Off",
+            data: { message: "Auto-apply is currently disabled. Enable it first to see match previews." },
+            success: false,
+            error: "Auto-apply is disabled.",
+        }
+    }
+
+    const threshold = aiProfile.autoApplyThreshold ?? 80
+    const appliedIds = new Set(applications.map(a => a.internshipId))
+
+    const openInternships = await prisma.internship.findMany({
+        where: { applicationEnd: { gt: new Date() } },
+        include: { company: { select: { name: true } } },
+        take: 30,
+    })
+
+    const { computeBaseScore, extractStudentSkills } = await import("@/lib/ai/hybrid-scoring")
+
+    const studentSkills = extractStudentSkills(aiProfile.skillsAssessment, portfolio?.skills)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const goals = aiProfile.careerGoals as any
+
+    const studentProfile = {
+        skills: studentSkills,
+        careerGoals: goals ? { industries: goals.industries ?? [], dreamJob: goals.dreamJob ?? null, shortTermGoal: goals.shortTermGoal ?? null } : null,
+        experienceCount: 0,
+        location: null, availabilityStart: null, hoursPerWeek: null, remotePreference: null, salaryExpectation: null,
+    }
+
+    // Score eligible internships and filter by threshold
+    const drafts = openInternships
+        .filter(i => !appliedIds.has(i.id))
+        .map(i => {
+            const internshipProfile = {
+                skills: Array.isArray(i.skills) ? i.skills : [],
+                location: i.location,
+                paid: i.paid,
+                salary: i.salary ? Number(i.salary) : null,
+                startDate: i.startDate?.toISOString() ?? null,
+                endDate: i.endDate?.toISOString() ?? null,
+                description: i.description,
+                title: i.title,
+            }
+            const breakdown = computeBaseScore(studentProfile, internshipProfile)
+            return {
+                id: i.id,
+                title: i.title,
+                company: i.company?.name ?? "",
+                location: i.location,
+                paid: i.paid,
+                salary: i.salary,
+                matchScore: breakdown.baseScore,
+                skillsAligned: breakdown.matchedSkills,
+                missingSkills: breakdown.missingSkills,
+                matchReason: breakdown.matchedSkills.length > 0
+                    ? `${breakdown.matchedSkills.length}/${(Array.isArray(i.skills) ? i.skills : []).length} skills matched — ${breakdown.matchedSkills.slice(0, 2).join(", ")} align well`
+                    : "Career goals and internship type align",
+            }
+        })
+        .filter(d => d.matchScore >= threshold)
+        .sort((a, b) => b.matchScore - a.matchScore)
+        .slice(0, 5)
+
+    if (drafts.length === 0) {
+        return {
+            tool: "preview_auto_apply",
+            cardType: "action-success",
+            title: "No Matches Above Threshold",
+            data: { message: `No internships currently score above your ${threshold}% threshold. Try lowering the threshold or check back when new postings open.` },
+            success: true,
+        }
+    }
+
+    const approvedCount = aiProfile.autoApplyApprovedCount ?? 0
+    const titleSuffix = approvedCount >= 3 ? " — Try Autonomous Mode!" : ` — Review & Confirm`
+
+    return {
+        tool: "preview_auto_apply",
+        cardType: "internship-list",
+        title: `${drafts.length} Auto-Apply Draft${drafts.length > 1 ? "s" : ""} ≥ ${threshold}%${titleSuffix}`,
+        data: drafts,
         success: true,
     }
 }

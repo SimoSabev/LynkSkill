@@ -4,11 +4,11 @@ import React, { useState, useRef, useEffect, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import {
     Send, Sparkles, Plus, Search, FileText, Briefcase,
-    BookOpen, Users, Calendar, MessageSquare, Bookmark,
+    Users, Calendar, MessageSquare, Bookmark,
     BarChart3, Loader2, ChevronDown, History, Trash2,
     X, Copy, Check, Zap, TrendingUp, Target, Brain,
     Shield, Activity, Bot, Wrench, CheckCircle2,
-    Bell, ArrowUp, ArrowDown, Rocket, ToggleLeft, ToggleRight,
+    ArrowUp, ArrowDown, Rocket, ToggleRight,
 } from "lucide-react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
@@ -44,17 +44,15 @@ interface ToolStep {
 // ─── Quick Actions ──────────────────────────────────────────────────────────
 
 const STUDENT_QUICK_ACTIONS = [
-    { icon: Search,        label: "Find internships",    prompt: "Show me available internships that match my skills", color: "from-blue-500 to-cyan-500" },
-    { icon: Target,        label: "Top recommendation",  prompt: "What's the single best internship match for me right now?", color: "from-violet-500 to-purple-500" },
-    { icon: Sparkles,      label: "Apply for me",        prompt: "Find the best match and apply for me automatically", color: "from-emerald-500 to-teal-500" },
-    { icon: FileText,      label: "My portfolio",        prompt: "Show me my portfolio", color: "from-orange-500 to-amber-500" },
-    { icon: Briefcase,     label: "My applications",     prompt: "Show me all my applications and their statuses", color: "from-pink-500 to-rose-500" },
-    { icon: BarChart3,     label: "Dashboard",           prompt: "Give me a full dashboard overview", color: "from-indigo-500 to-blue-500" },
-    { icon: Calendar,      label: "Interviews",          prompt: "Show my upcoming interviews", color: "from-green-500 to-emerald-500" },
-    { icon: Bookmark,      label: "Saved",               prompt: "Show my saved internships", color: "from-yellow-500 to-orange-500" },
-    { icon: MessageSquare, label: "Messages",            prompt: "Show my recent conversations", color: "from-sky-500 to-blue-500" },
-    { icon: BookOpen,      label: "Assignments",         prompt: "Show my pending assignments", color: "from-red-500 to-pink-500" },
-    { icon: ToggleRight,   label: "Auto-apply",          prompt: "Show my auto-apply settings and explain how it works", color: "from-teal-500 to-cyan-500" },
+    { icon: Target,        label: "What should I do today?",   prompt: "What's the most important thing I should focus on today? Check my notifications, pending apps, and any new matches.", color: "from-violet-500 to-purple-500" },
+    { icon: Search,        label: "Any new matches?",          prompt: "Are there any new internships that match my profile? Show me the best ones.", color: "from-blue-500 to-cyan-500" },
+    { icon: Sparkles,      label: "Apply to something for me", prompt: "Find the best match for me right now and apply on my behalf. Surprise me!", color: "from-emerald-500 to-teal-500" },
+    { icon: BarChart3,     label: "How am I doing?",           prompt: "How's my profile looking? Show me my confidence score and tell me what I can improve.", color: "from-indigo-500 to-blue-500" },
+    { icon: FileText,      label: "Help me with my portfolio", prompt: "Review my portfolio and give me specific tips to make it stronger.", color: "from-orange-500 to-amber-500" },
+    { icon: Briefcase,     label: "My applications",           prompt: "Show me all my applications and their statuses", color: "from-pink-500 to-rose-500" },
+    { icon: Calendar,      label: "Upcoming interviews",       prompt: "Do I have any upcoming interviews? Help me prepare.", color: "from-green-500 to-emerald-500" },
+    { icon: Bookmark,      label: "Saved internships",         prompt: "Show my saved internships — any I should apply to?", color: "from-yellow-500 to-orange-500" },
+    { icon: ToggleRight,   label: "Auto-apply settings",       prompt: "Show my auto-apply settings. Should I turn it on or adjust my threshold?", color: "from-teal-500 to-cyan-500" },
 ]
 const COMPANY_QUICK_ACTIONS = [
     { icon: Briefcase,     label: "Our internships",     prompt: "Show all our internship postings", color: "from-blue-500 to-cyan-500" },
@@ -442,7 +440,7 @@ export function AIAgentView({ userType }: AIAgentViewProps) {
             const res = await fetch("/api/assistant/agent", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ message: text, conversationHistory: history, userType: ut, sessionId: currentSessionId })
+                body: JSON.stringify({ message: text, conversationHistory: history, userType: ut, sessionId: currentSessionId, silent: isSilent })
             })
             if (!res.ok || !res.body) throw new Error("Request failed")
 
@@ -546,7 +544,7 @@ export function AIAgentView({ userType }: AIAgentViewProps) {
     useEffect(() => {
         if (messages.length === 0 && !triggeredSessions.current.has(currentSessionId) && !isLoading) {
             triggeredSessions.current.add(currentSessionId)
-            sendMessage("Hello! Please review my memory block and give me a highly personalized greeting. If I am a COMPANY, give me a business greeting. If I am a STUDENT and my Confidence Score is below 100, tell me my exact score and immediately ask exactly 1 deep, thought-provoking question to uncover my potential and continue my profiling seamlessly! If my score is 100, just greet me normally.", true)
+            sendMessage("Hey Linky! Give me a natural, warm greeting based on my personality state and what you know about me. If I'm a COMPANY, give a concise business greeting with my most important pending action. If I'm a STUDENT: for new users, introduce yourself as my career sidekick in 2 sentences and ask what I'm studying or what kind of work excites me. For returning users, greet me by referencing something specific from our history, share my confidence score, and ask exactly 1 thought-provoking profiling question if my score is below 100. Keep it conversational — like a friend checking in, not a system prompt.", true)
         }
     }, [messages.length, isLoading, currentSessionId, sendMessage])
 

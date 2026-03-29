@@ -94,6 +94,13 @@ export const TOOL_REGISTRY: Record<string, ToolDefinition> = {
         description: "Get the student's current auto-apply settings (enabled/disabled, threshold, count of auto-applications).",
         input: z.object({}),
     },
+    preview_auto_apply: {
+        audience: "STUDENT",
+        permission: null,
+        scope: "SELF",
+        description: "Preview what Linky would auto-apply to — shows matching internships above threshold WITHOUT submitting. Student can review the list and confirm via apply_to_internship.",
+        input: z.object({}),
+    },
 
     // ─── Company tools ───────────────────────────────────────────────
     create_internship: {
@@ -225,6 +232,19 @@ export const TOOL_REGISTRY: Record<string, ToolDefinition> = {
         description: "Reject a pending application.",
         input: z.object({
             applicationId: z.string().describe("The application ID to reject"),
+        }),
+    },
+
+    update_match_preferences: {
+        audience: "COMPANY",
+        permission: null,
+        scope: "COMPANY_OWNED",
+        description: "Update the company's candidate matching preferences. Use when a company says 'send me more like this', 'stop sending frontend devs', or specifies what skills they want.",
+        input: z.object({
+            preferredSkills: z.array(z.string()).optional().describe("Skills the company wants to see in pushed candidates"),
+            excludedSkills: z.array(z.string()).optional().describe("Skills to filter OUT — stop pushing candidates with these"),
+            preferredTraits: z.string().optional().describe("Free-text description of desired traits"),
+            notes: z.string().optional().describe("Additional instructions for the matchmaker"),
         }),
     },
 
