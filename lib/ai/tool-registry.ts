@@ -16,11 +16,10 @@ export const TOOL_REGISTRY: Record<string, ToolDefinition> = {
         audience: "STUDENT",
         permission: null,
         scope: "NONE",
-        description: "Search for ONE available internship by keyword, skill, or location.",
+        description: "Search open internships by keyword, skill, or location. Returns up to 10 results. Pass no query to browse all open internships.",
         input: z.object({
-            query: z.string().optional().describe("Search keyword (title, skill, description)"),
-            location: z.string().optional().describe("City or region filter"),
-            limit: z.number().optional().describe("MUST be exactly 1 unless overridden. Never output a list."),
+            query: z.string().optional().describe("Search keyword (title, skill, description). Leave empty to see all open internships."),
+            location: z.string().optional().describe("City or region filter. Leave empty to search all locations."),
         }),
     },
     get_portfolio: {
@@ -52,9 +51,9 @@ export const TOOL_REGISTRY: Record<string, ToolDefinition> = {
         audience: "STUDENT",
         permission: null,
         scope: "SELF",
-        description: "Get ONE personalised internship recommendation ranked by match to the student's skills and interests.",
+        description: "Get personalised internship recommendations ranked by AI match score to the student's full profile (skills, goals, preferences). Returns up to 5 best matches. Always call this when the student wants to see matches, recommendations, or 'what should I apply to'. If no skills are in the profile yet it still returns all open internships sorted by best fit.",
         input: z.object({
-            limit: z.number().optional().describe("MUST be exactly 1. You only recommend the single best match."),
+            limit: z.number().optional().describe("Number of recommendations to return (default 5, max 10)."),
         }),
     },
     withdraw_application: {
@@ -99,6 +98,13 @@ export const TOOL_REGISTRY: Record<string, ToolDefinition> = {
         permission: null,
         scope: "SELF",
         description: "Preview what Linky would auto-apply to — shows matching internships above threshold WITHOUT submitting. Student can review the list and confirm via apply_to_internship.",
+        input: z.object({}),
+    },
+    get_confidence_breakdown: {
+        audience: "STUDENT",
+        permission: null,
+        scope: "SELF",
+        description: "Show the student's full Confidence Score breakdown: the score for each of the 4 components, what is dragging it down, and the top 3 concrete actions to improve it. Always call this when a student asks about their score, why it isn't increasing, or how to improve it.",
         input: z.object({}),
     },
 

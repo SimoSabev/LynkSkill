@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma"
 import { openai } from "@/lib/openai"
 import { searchAcrossSessions } from "@/lib/ai/ai-search"
+import { normalizeSkills } from "@/lib/ai/skill-taxonomy"
+import { calculateAndSaveConfidenceScore } from "@/lib/confidence-score"
 
 export interface UserContext {
     userId: string
@@ -90,6 +92,8 @@ export async function executeTool(
                 return await updateMatchPreferences(args, ctx)
             case "preview_auto_apply":
                 return await previewAutoApply(ctx)
+            case "get_confidence_breakdown":
+                return await getConfidenceBreakdown(ctx)
             default:
                 return {
                     tool: toolName,
@@ -120,12 +124,15 @@ async function searchInternships(
 
     const internships = await prisma.internship.findMany({
         where: {
+            // Only show internships with open applications
+            applicationEnd: { gte: new Date() },
             AND: [
                 query
                     ? {
                           OR: [
                               { title: { contains: query, mode: "insensitive" as const } },
                               { description: { contains: query, mode: "insensitive" as const } },
+                              { qualifications: { contains: query, mode: "insensitive" as const } },
                           ],
                       }
                     : {},
@@ -136,14 +143,24 @@ async function searchInternships(
         },
         include: { company: { select: { name: true } } },
         take: 10,
-        orderBy: { createdAt: "desc" },
+        orderBy: { applicationEnd: "asc" },
     })
+
+    // If no results for a specific query, fall back to all open internships
+    const results = internships.length > 0 ? internships : (
+        !query && !location ? [] : await prisma.internship.findMany({
+            where: { applicationEnd: { gte: new Date() } },
+            include: { company: { select: { name: true } } },
+            take: 10,
+            orderBy: { applicationEnd: "asc" },
+        })
+    )
 
     return {
         tool: "search_internships",
         cardType: "internship-list",
-        title: `Found ${internships.length} internships`,
-        data: internships.map((i) => ({
+        title: `Found ${results.length} internships`,
+        data: results.map((i) => ({
             id: i.id,
             title: i.title,
             company: i.company.name,
@@ -326,17 +343,37 @@ async function updatePortfolio(args: Record<string, unknown>, ctx: UserContext):
     const data: Record<string, unknown> = {}
     if (typeof args.headline === "string") data.headline = args.headline
     if (typeof args.bio === "string") data.bio = args.bio
-    if (Array.isArray(args.skills)) data.skills = args.skills
+
+    // Merge incoming skills with existing instead of replacing
+    if (Array.isArray(args.skills) && args.skills.length > 0) {
+        const existing = await prisma.portfolio.findUnique({
+            where: { studentId: ctx.userId },
+            select: { skills: true },
+        })
+        const incomingNormalized = normalizeSkills(args.skills as string[])
+        const existingNormalized = normalizeSkills(existing?.skills ?? [])
+        // Deduplicate: union of both arrays by lowercase key
+        const merged = normalizeSkills([...existingNormalized, ...incomingNormalized])
+        data.skills = merged
+    }
 
     const portfolio = await prisma.portfolio.upsert({
         where: { studentId: ctx.userId },
         update: data,
         create: {
             studentId: ctx.userId,
-            fullName: "Student", // placeholder if they don't have one
+            fullName: "Student",
             ...data
         }
     })
+
+    // Recalculate score immediately so the student sees the updated value in this turn
+    let updatedScore: { overall: number; profileCompleteness: number; profilingDepth: number; endorsementQuality: number; activityScore: number } | null = null
+    try {
+        updatedScore = await calculateAndSaveConfidenceScore(ctx.userId)
+    } catch {
+        // Non-fatal — score will recalculate at end of turn
+    }
 
     return {
         tool: "update_portfolio",
@@ -353,6 +390,13 @@ async function updatePortfolio(args: Record<string, unknown>, ctx: UserContext):
             linkedin: portfolio.linkedin,
             github: portfolio.github,
             approvalStatus: portfolio.approvalStatus,
+            confidenceScore: updatedScore ? {
+                overall: updatedScore.overall,
+                profileCompleteness: updatedScore.profileCompleteness,
+                profilingDepth: updatedScore.profilingDepth,
+                endorsementQuality: updatedScore.endorsementQuality,
+                activityScore: updatedScore.activityScore,
+            } : null,
         },
         success: true,
     }
@@ -661,39 +705,95 @@ async function getInternshipRecommendations(
         }),
     ])
 
-    const skillsArr = portfolio?.skills ?? []
-    const searchTerms = [...skillsArr, ...(portfolio?.interests ?? [])].slice(0, 5)
+    const skillsArr = normalizeSkills(portfolio?.skills ?? [])
+    const interests = portfolio?.interests ?? []
+    // Use all canonical skills — no slice cap
+    const searchTerms = [...skillsArr, ...interests]
 
-    const internships = await prisma.internship.findMany({
-        where: {
-            applicationEnd: { gte: new Date() },
-            ...(searchTerms.length > 0
-                ? {
-                      OR: searchTerms.map((term) => ({
+    const internshipSelectFields = {
+        id: true,
+        title: true,
+        location: true,
+        paid: true,
+        salary: true,
+        skills: true,
+        description: true,
+        startDate: true,
+        endDate: true,
+        applicationEnd: true,
+        company: { select: { name: true } },
+    } as const
+
+    // ── Tier 1: Match on skills[] array (hasSome) + text search ──────────────
+    // Wrapped in try-catch: hasSome can fail on some Prisma/DB configs — tier 2 always runs as safety net
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let internships: any[] = []
+    try {
+        internships = await prisma.internship.findMany({
+            where: {
+                applicationEnd: { gte: new Date() },
+                ...(skillsArr.length > 0
+                    ? {
                           OR: [
-                              { qualifications: { contains: term, mode: "insensitive" as const } },
-                              { description: { contains: term, mode: "insensitive" as const } },
-                              { title: { contains: term, mode: "insensitive" as const } },
+                              // Direct skills array overlap (PostgreSQL && operator via Prisma hasSome)
+                              { skills: { hasSome: skillsArr } },
+                              // Text search across description/title/qualifications
+                              ...searchTerms.map((term) => ({
+                                  OR: [
+                                      { title: { contains: term, mode: "insensitive" as const } },
+                                      { description: { contains: term, mode: "insensitive" as const } },
+                                      { qualifications: { contains: term, mode: "insensitive" as const } },
+                                  ],
+                              })),
                           ],
-                      })),
-                  }
-                : {}),
-        },
-        take: limit * 2, // Fetch more to filter by score
-        orderBy: { createdAt: "desc" },
-        select: {
-            id: true,
-            title: true,
-            location: true,
-            paid: true,
-            salary: true,
-            skills: true,
-            description: true,
-            startDate: true,
-            endDate: true,
-            company: { select: { name: true } },
-        },
-    })
+                      }
+                    : {}),
+            },
+            take: Math.max(limit * 4, 20),
+            orderBy: { applicationEnd: "asc" },
+            select: internshipSelectFields,
+        })
+    } catch {
+        // hasSome or query failed — fall through to tier 2
+        internships = []
+    }
+
+    // ── Tier 2: All open internships (no skill filter) ────────────────────────
+    if (internships.length < 3) {
+        try {
+            internships = await prisma.internship.findMany({
+                where: { applicationEnd: { gte: new Date() } },
+                take: 20,
+                orderBy: { applicationEnd: "asc" },
+                select: internshipSelectFields,
+            })
+        } catch {
+            internships = []
+        }
+    }
+
+    // ── Tier 3: Absolute fallback — ignore expiry, return anything ────────────
+    if (internships.length === 0) {
+        try {
+            internships = await prisma.internship.findMany({
+                take: 10,
+                orderBy: { createdAt: "desc" },
+                select: internshipSelectFields,
+            })
+        } catch {
+            internships = []
+        }
+    }
+
+    if (internships.length === 0) {
+        return {
+            tool: "get_internship_recommendations",
+            cardType: "internship-list",
+            title: "No internships available",
+            data: [],
+            success: true,
+        }
+    }
 
     // Use hybrid scoring to rank and explain matches
     const { computeBaseScore, extractStudentSkills } = await import("@/lib/ai/hybrid-scoring")
@@ -724,38 +824,46 @@ async function getInternshipRecommendations(
         experienceCount: 0,
     }
 
-    const scoredInternships = internships
-        .map(i => {
-            const internshipProfile = {
-                skills: Array.isArray(i.skills) ? i.skills : [],
-                location: i.location,
-                paid: i.paid,
-                salary: i.salary ? Number(i.salary) : null,
-                startDate: i.startDate?.toISOString() ?? null,
-                endDate: i.endDate?.toISOString() ?? null,
-                description: i.description,
-                title: i.title,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const scoredInternships: any[] = internships
+        .map((i: any) => {
+            try {
+                const internshipProfile = {
+                    skills: Array.isArray(i.skills) ? i.skills : [],
+                    location: i.location,
+                    paid: i.paid,
+                    salary: i.salary ? Number(i.salary) : null,
+                    startDate: i.startDate?.toISOString() ?? null,
+                    endDate: i.endDate?.toISOString() ?? null,
+                    description: i.description,
+                    title: i.title,
+                }
+                const breakdown = computeBaseScore(studentProfile, internshipProfile)
+                return { internship: i, breakdown }
+            } catch {
+                // If scoring fails for this internship, return a base score of 0
+                return { internship: i, breakdown: { baseScore: 0, matchedSkills: [], missingSkills: [] } }
             }
-            const breakdown = computeBaseScore(studentProfile, internshipProfile)
-            return { internship: i, breakdown }
         })
-        .sort((a, b) => b.breakdown.baseScore - a.breakdown.baseScore)
+        .sort((a: any, b: any) => b.breakdown.baseScore - a.breakdown.baseScore)
         .slice(0, limit)
 
     return {
         tool: "get_internship_recommendations",
         cardType: "internship-list",
         title: `Top ${scoredInternships.length} Recommendations for You`,
-        data: scoredInternships.map(({ internship: i, breakdown }) => ({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        data: scoredInternships.map(({ internship: i, breakdown }: any) => ({
             id: i.id,
             title: i.title,
             company: i.company?.name ?? "",
             location: i.location,
             paid: i.paid,
             salary: i.salary,
+            applicationEnd: i.applicationEnd?.toISOString?.() ?? null,
             matchScore: breakdown.baseScore,
-            skillsAligned: breakdown.matchedSkills,
-            missingSkills: breakdown.missingSkills,
+            skillsAligned: breakdown.matchedSkills ?? [],
+            missingSkills: breakdown.missingSkills ?? [],
         })),
         success: true,
     }
@@ -998,9 +1106,9 @@ async function applyToInternship(
             tool: "apply_to_internship",
             cardType: "error",
             title: "Already applied",
-            data: null,
+            data: { errorCode: "ALREADY_APPLIED", applicationId: existing.id, status: existing.status },
             success: false,
-            error: "You have already applied to this internship.",
+            error: `You already applied to this internship and your application is currently ${existing.status}. Want me to find other open internships instead?`,
         }
     }
 
@@ -1025,12 +1133,43 @@ async function applyToInternship(
     ])
 
     if (!internship) {
-        return { tool: "apply_to_internship", cardType: "error", title: "Not found", data: null, success: false, error: "Internship not found" }
+        // Suggest alternatives when the specific internship can't be found
+        const alternatives = await prisma.internship.findMany({
+            where: { applicationEnd: { gte: new Date() } },
+            orderBy: { applicationEnd: "asc" },
+            take: 3,
+            select: { id: true, title: true, location: true, company: { select: { name: true } } },
+        })
+        return {
+            tool: "apply_to_internship",
+            cardType: "error",
+            title: "Internship not found",
+            data: { errorCode: "NOT_FOUND", alternatives },
+            success: false,
+            error: `The internship with ID "${internshipId}" was not found. It may have been removed. Here are open alternatives you can apply to instead.`,
+        }
     }
 
     // Check deadline
     if (internship.applicationEnd && internship.applicationEnd < new Date()) {
-        return { tool: "apply_to_internship", cardType: "error", title: "Deadline passed", data: null, success: false, error: "The application deadline for this internship has passed." }
+        const alternatives = await prisma.internship.findMany({
+            where: { applicationEnd: { gte: new Date() } },
+            orderBy: { applicationEnd: "asc" },
+            take: 3,
+            select: { id: true, title: true, location: true, company: { select: { name: true } } },
+        })
+        return {
+            tool: "apply_to_internship",
+            cardType: "error",
+            title: "Deadline passed",
+            data: {
+                errorCode: "DEADLINE_PASSED",
+                deadline: internship.applicationEnd.toISOString(),
+                alternatives,
+            },
+            success: false,
+            error: `The application deadline for "${internship.title}" was ${internship.applicationEnd.toLocaleDateString("bg-BG")}. Here are internships still open for applications.`,
+        }
     }
 
     const confidenceScore = aiProfile?.confidenceScore?.overallScore ?? 0
@@ -1798,6 +1937,145 @@ async function previewAutoApply(ctx: UserContext): Promise<ToolResult> {
         cardType: "internship-list",
         title: `${drafts.length} Auto-Apply Draft${drafts.length > 1 ? "s" : ""} ≥ ${threshold}%${titleSuffix}`,
         data: drafts,
+        success: true,
+    }
+}
+
+// ─── Confidence Score Breakdown Tool ─────────────────────────────────────────
+
+async function getConfidenceBreakdown(ctx: UserContext): Promise<ToolResult> {
+    const [scoreRow, portfolio, aiProfile] = await Promise.all([
+        prisma.confidenceScore.findFirst({
+            where: { aiProfile: { studentId: ctx.userId } },
+        }),
+        prisma.portfolio.findUnique({
+            where: { studentId: ctx.userId },
+            select: { skills: true },
+        }),
+        prisma.aIProfile.findUnique({
+            where: { studentId: ctx.userId },
+            select: {
+                personalInfo: true,
+                careerGoals: true,
+                personalityTraits: true,
+                skillsAssessment: true,
+                educationDetails: true,
+                availability: true,
+                preferences: true,
+                questionsAnswered: true,
+            },
+        }),
+    ])
+
+    const overall = scoreRow?.overallScore ?? 0
+    const completeness = scoreRow?.profileCompleteness ?? 0
+    const depth = scoreRow?.profilingDepth ?? 0
+    const endorsement = scoreRow?.endorsementQuality ?? 0
+    const activity = scoreRow?.activityScore ?? 0
+
+    // Derive what's populated for actionable guidance
+    const filledFields: string[] = []
+    const missingFields: string[] = []
+    const allFields = [
+        { key: "personalInfo", label: "Personal info (location, lifestyle)" },
+        { key: "careerGoals", label: "Career goals (dream job, industries)" },
+        { key: "personalityTraits", label: "Work style & personality" },
+        { key: "skillsAssessment", label: "Skills assessment" },
+        { key: "educationDetails", label: "Education details" },
+        { key: "availability", label: "Availability (start date, hours/week)" },
+        { key: "preferences", label: "Preferences (salary, company size)" },
+    ]
+    for (const f of allFields) {
+        const val = aiProfile ? (aiProfile as Record<string, unknown>)[f.key] : null
+        if (val && typeof val === "object" && Object.keys(val).length > 0) {
+            filledFields.push(f.label)
+        } else {
+            missingFields.push(f.label)
+        }
+    }
+
+    const portfolioSkillCount = normalizeSkills(portfolio?.skills ?? []).length
+    const aiSkills = aiProfile?.skillsAssessment as { technical?: string[]; soft?: string[] } | null
+    const totalSkills = normalizeSkills([
+        ...(portfolio?.skills ?? []),
+        ...(aiSkills?.technical ?? []),
+        ...(aiSkills?.soft ?? []),
+    ]).length
+    const questionsAnswered = aiProfile?.questionsAnswered ?? 0
+
+    // Build prioritised action roadmap
+    const actions: { impact: number; label: string; detail: string }[] = []
+
+    if (depth < 80) {
+        if (totalSkills < 20) {
+            const needed = 20 - totalSkills
+            actions.push({
+                impact: Math.round((needed / 20) * 50 * 0.3),
+                label: `Add ${needed} more skills to your profile`,
+                detail: `You have ${totalSkills} recognised skills. Reaching 20 gives maximum depth score (+${Math.round((needed / 20) * 15)} pts).`,
+            })
+        }
+        if (missingFields.length > 0) {
+            actions.push({
+                impact: Math.round((missingFields.length / 7) * 30 * 0.3),
+                label: `Complete ${missingFields.length} missing profile section${missingFields.length > 1 ? "s" : ""}`,
+                detail: `Missing: ${missingFields.slice(0, 3).join(", ")}${missingFields.length > 3 ? ` and ${missingFields.length - 3} more` : ""}.`,
+            })
+        }
+        if (questionsAnswered < 15) {
+            actions.push({
+                impact: Math.round(((15 - questionsAnswered) / 15) * 20 * 0.3),
+                label: `Answer ${15 - questionsAnswered} more profiling questions`,
+                detail: "Short Q&A with Linky fills the formal profiling depth bonus.",
+            })
+        }
+    }
+
+    if (completeness < 100 && missingFields.length > 0) {
+        actions.push({
+            impact: Math.round((missingFields.length / 7) * 100 * 0.4),
+            label: "Fill all AI profile sections",
+            detail: `Profile completeness is ${completeness}%. Each section filled adds ${Math.round(100 / 7 * 0.4)} points.`,
+        })
+    }
+
+    if (endorsement < 50) {
+        actions.push({
+            impact: Math.round((50 - endorsement) * 0.2),
+            label: "Get endorsed by a company",
+            detail: "Complete an internship or project where the company rates your skills (1–5). Each endorsement can add up to 20 points.",
+        })
+    }
+
+    actions.sort((a, b) => b.impact - a.impact)
+
+    return {
+        tool: "get_confidence_breakdown",
+        cardType: "confidence-breakdown",
+        title: `Confidence Score: ${overall}/100`,
+        data: {
+            overall,
+            breakdown: {
+                profileCompleteness: { score: completeness, weight: "40%", description: "How many of your 7 AI profile sections are filled" },
+                profilingDepth: { score: depth, weight: "30%", description: "Skill richness (skills count), profile sections filled, and Q&A completed" },
+                endorsementQuality: { score: endorsement, weight: "20%", description: "Company ratings from past internships/experiences" },
+                activityScore: { score: activity, weight: "10%", description: "How active you are on the platform" },
+            },
+            stats: {
+                totalSkills: totalSkills,
+                portfolioSkills: portfolioSkillCount,
+                filledProfileSections: filledFields.length,
+                totalProfileSections: 7,
+                questionsAnswered,
+                targetQuestions: 15,
+            },
+            filledFields,
+            missingFields,
+            topActions: actions.slice(0, 4),
+            scoreHistory: Array.isArray(scoreRow?.scoreHistory)
+                ? (scoreRow.scoreHistory as Array<{ score: number; date: string; reason: string }>).slice(-5)
+                : [],
+        },
         success: true,
     }
 }

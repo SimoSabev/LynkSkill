@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { normalizeSkills } from "@/lib/ai/skill-taxonomy";
 
 export interface ConfidenceScoreBreakdown {
     profileCompleteness: number; // 40% weight
@@ -20,28 +21,51 @@ function calculateProfileCompleteness(aiProfile: Record<string, unknown> | null)
     
     let filledFields = 0;
     for (const field of fieldsToCheck) {
-        if (aiProfile[field] && Object.keys(aiProfile[field]).length > 0) {
+        const val = aiProfile[field];
+        if (val && typeof val === 'object' && Object.keys(val).length > 0) {
             filledFields++;
         }
     }
-    
+
     // Convert to 0-100 scale
     return Math.min(100, Math.round((filledFields / fieldsToCheck.length) * 100));
 }
 
-// Calculate how deep the AI profiling went
-function calculateProfilingDepth(aiProfile: Record<string, unknown> | null): number {
+// Calculate how deep the profiling went — combines:
+//   50% skill richness  (how many distinct canonical skills the student has across all sources)
+//   30% profile fields  (how many of the 7 AI profile JSON fields are populated)
+//   20% formal Q&A bonus (answered questions via the profiling flow, capped at 15)
+function calculateProfilingDepth(
+    aiProfile: Record<string, unknown> | null,
+    portfolioSkills: string[]
+): number {
     if (!aiProfile) return 0;
-    
-    const _asked = typeof aiProfile.questionsAsked === 'number' ? aiProfile.questionsAsked : 0;
+
+    // ── Skill richness (50 pts) ──────────────────────────────────────────────
+    // Pull skills from every possible source and deduplicate via canonical normalisation
+    const aiSkillsAssessment = aiProfile.skillsAssessment as { technical?: string[]; soft?: string[] } | null;
+    const technicalSkills: string[] = Array.isArray(aiSkillsAssessment?.technical) ? aiSkillsAssessment!.technical : [];
+    const softSkills: string[] = Array.isArray(aiSkillsAssessment?.soft) ? aiSkillsAssessment!.soft : [];
+    const allSkills = normalizeSkills([...portfolioSkills, ...technicalSkills, ...softSkills]);
+    // 20 distinct skills = 100% depth on this axis
+    const TARGET_SKILLS = 20;
+    const skillScore = Math.min(50, Math.round((allSkills.length / TARGET_SKILLS) * 50));
+
+    // ── Profile field completeness (30 pts) ──────────────────────────────────
+    const fieldsToCheck = ['personalInfo', 'careerGoals', 'personalityTraits', 'skillsAssessment', 'educationDetails', 'availability', 'preferences'];
+    let filledFields = 0;
+    for (const field of fieldsToCheck) {
+        const val = aiProfile[field];
+        if (val && typeof val === 'object' && Object.keys(val).length > 0) filledFields++;
+    }
+    const fieldScore = Math.round((filledFields / fieldsToCheck.length) * 30);
+
+    // ── Formal Q&A bonus (20 pts) ────────────────────────────────────────────
     const answered = typeof aiProfile.questionsAnswered === 'number' ? aiProfile.questionsAnswered : 0;
-    
-    if (answered === 0) return 0;
-    
-    // Assume 15 questions is "100% depth" for a full profile
     const TARGET_QUESTIONS = 15;
-    
-    return Math.min(100, Math.round((answered / TARGET_QUESTIONS) * 100));
+    const qaScore = Math.min(20, Math.round((answered / TARGET_QUESTIONS) * 20));
+
+    return Math.min(100, skillScore + fieldScore + qaScore);
 }
 
 // Calculate endorsement score from experiences
@@ -102,15 +126,21 @@ function calculateActivityScore(lastLoginDate: Date | null, conversationsCount: 
 
 export async function calculateAndSaveConfidenceScore(studentId: string): Promise<ConfidenceScoreBreakdown> {
     try {
-        const student = await prisma.user.findUnique({
-            where: { id: studentId },
-            include: {
-                aiProfile: true,
-                experiences: true,
-                conversations: true
-            }
-        });
-        
+        const [student, portfolio] = await Promise.all([
+            prisma.user.findUnique({
+                where: { id: studentId },
+                include: {
+                    aiProfile: true,
+                    experiences: true,
+                    conversations: true
+                }
+            }),
+            prisma.portfolio.findUnique({
+                where: { studentId },
+                select: { skills: true }
+            })
+        ]);
+
         if (!student) throw new Error("Student not found");
         if (!student.aiProfile) {
             // If they don't have an AI profile yet, default everything to 0
@@ -123,8 +153,9 @@ export async function calculateAndSaveConfidenceScore(studentId: string): Promis
             };
         }
 
+        const portfolioSkills = portfolio?.skills ?? [];
         const profileCompleteness = calculateProfileCompleteness(student.aiProfile);
-        const profilingDepth = calculateProfilingDepth(student.aiProfile);
+        const profilingDepth = calculateProfilingDepth(student.aiProfile, portfolioSkills);
         const endorsementQuality = calculateEndorsementQuality(student.experiences || []);
         
         // Activity score based on conversations (since we don't have lastLoginAt in schema)
