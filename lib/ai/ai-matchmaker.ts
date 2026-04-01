@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/prisma"
 import { openai } from "@/lib/openai"
-import { NotificationType } from "@prisma/client"
 import { computeBaseScore, computeFinalScore, extractStudentSkills, type StudentProfile, type InternshipProfile } from "./hybrid-scoring"
 
 // Process a batch of students to find matching internships and notify them

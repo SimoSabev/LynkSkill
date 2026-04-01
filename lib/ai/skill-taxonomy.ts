@@ -3,7 +3,7 @@
 
 const SKILL_ALIASES: Record<string, string[]> = {
     // Frontend
-    "React": ["reactjs", "react.js", "react js", "reactjs"],
+    "React": ["reactjs", "react.js", "react js", "reactjs", "реакт"],
     "Vue.js": ["vue", "vuejs", "vue.js", "vue js", "vue3", "vue 3"],
     "Angular": ["angularjs", "angular.js", "angular js", "angular2", "angular 2"],
     "Next.js": ["nextjs", "next.js", "next js", "next"],
@@ -16,10 +16,10 @@ const SKILL_ALIASES: Record<string, string[]> = {
     "Bootstrap": ["bootstrap5", "bootstrap 5", "bootstrap4"],
     "jQuery": ["jquery", "j query"],
 
-    // JavaScript / TypeScript
-    "JavaScript": ["js", "javascript", "ecmascript", "es6", "es2015", "es2020"],
+    // JavaScript / TypeScript (+ Bulgarian aliases)
+    "JavaScript": ["js", "javascript", "ecmascript", "es6", "es2015", "es2020", "джаваскрипт"],
     "TypeScript": ["ts", "typescript"],
-    "Node.js": ["nodejs", "node.js", "node js", "node"],
+    "Node.js": ["nodejs", "node.js", "node js", "node", "нод"],
 
     // Backend Frameworks
     "Express.js": ["express", "expressjs", "express.js"],
@@ -32,11 +32,11 @@ const SKILL_ALIASES: Record<string, string[]> = {
     "Laravel": ["laravel"],
     "ASP.NET": ["asp.net", "aspnet", ".net", "dotnet", "dot net"],
 
-    // Programming Languages
-    "Python": ["python3", "python 3", "py"],
+    // Programming Languages (+ Bulgarian aliases)
+    "Python": ["python3", "python 3", "py", "питон", "пайтън"],
     "Java": ["java"],
     "C#": ["csharp", "c sharp", "c#"],
-    "C++": ["cpp", "c plus plus", "c++"],
+    "C++": ["cpp", "c plus plus", "c++", "с++", "с плюс плюс"],
     "C": ["c language", "c programming"],
     "Go": ["golang", "go lang"],
     "Rust": ["rust", "rust lang", "rustlang"],
@@ -55,7 +55,7 @@ const SKILL_ALIASES: Record<string, string[]> = {
     "Android Development": ["android", "android development", "android dev"],
 
     // Databases
-    "PostgreSQL": ["postgres", "postgresql", "pg"],
+    "PostgreSQL": ["postgres", "postgresql", "pg", "постгрес", "postgresql база"],
     "MySQL": ["mysql", "my sql"],
     "MongoDB": ["mongodb", "mongo", "mongo db"],
     "Redis": ["redis"],
@@ -63,17 +63,17 @@ const SKILL_ALIASES: Record<string, string[]> = {
     "Firebase": ["firebase", "firebase/firestore", "firestore"],
     "Supabase": ["supabase"],
     "Prisma": ["prisma", "prisma orm"],
-    "SQL": ["sql", "structured query language"],
+    "SQL": ["sql", "structured query language", "структурирани заявки", "бази данни", "релационни бази данни"],
 
     // Cloud & DevOps
-    "AWS": ["amazon web services", "aws"],
+    "AWS": ["amazon web services", "aws", "амазон облак", "облачни услуги"],
     "Google Cloud": ["gcp", "google cloud platform", "google cloud"],
     "Azure": ["microsoft azure", "azure"],
-    "Docker": ["docker"],
+    "Docker": ["docker", "докер", "контейнери"],
     "Kubernetes": ["k8s", "kubernetes"],
-    "CI/CD": ["ci/cd", "cicd", "ci cd", "continuous integration", "continuous deployment"],
-    "Linux": ["linux", "ubuntu", "debian"],
-    "Git": ["git"],
+    "CI/CD": ["ci/cd", "cicd", "ci cd", "continuous integration", "continuous deployment", "непрекъсната интеграция", "непрекъснато разгръщане"],
+    "Linux": ["linux", "ubuntu", "debian", "линукс"],
+    "Git": ["git", "версионен контрол", "контрол на версиите"],
     "GitHub": ["github"],
     "GitLab": ["gitlab"],
     "Vercel": ["vercel"],
@@ -81,22 +81,22 @@ const SKILL_ALIASES: Record<string, string[]> = {
     "Heroku": ["heroku"],
     "Nginx": ["nginx"],
 
-    // Data Science / AI
-    "Machine Learning": ["ml", "machine learning"],
-    "Deep Learning": ["dl", "deep learning"],
+    // Data Science / AI (+ Bulgarian aliases)
+    "Machine Learning": ["ml", "machine learning", "машинно обучение", "мл", "машинно самообучение"],
+    "Deep Learning": ["dl", "deep learning", "дълбоко обучение"],
     "TensorFlow": ["tensorflow", "tf"],
     "PyTorch": ["pytorch"],
-    "Data Analysis": ["data analysis", "data analytics"],
-    "Data Science": ["data science"],
+    "Data Analysis": ["data analysis", "data analytics", "анализ на данни", "обработка на данни"],
+    "Data Science": ["data science", "наука за данни"],
     "Pandas": ["pandas"],
     "NumPy": ["numpy"],
     "Scikit-learn": ["sklearn", "scikit-learn", "scikit learn"],
 
     // Design
-    "Figma": ["figma"],
+    "Figma": ["figma", "фигма"],
     "Adobe Photoshop": ["photoshop", "adobe photoshop", "ps"],
     "Adobe Illustrator": ["illustrator", "adobe illustrator", "ai"],
-    "UI/UX Design": ["ui/ux", "ux/ui", "ui ux", "ux ui", "ui design", "ux design", "user experience", "user interface"],
+    "UI/UX Design": ["ui/ux", "ux/ui", "ui ux", "ux ui", "ui design", "ux design", "user experience", "user interface", "потребителски интерфейс", "потребителско изживяване", "ui/ux дизайн", "дизайн на интерфейс"],
     "Canva": ["canva"],
 
     // Testing
@@ -106,28 +106,32 @@ const SKILL_ALIASES: Record<string, string[]> = {
     "Unit Testing": ["unit testing", "unit tests"],
     "E2E Testing": ["e2e testing", "e2e tests", "end to end testing"],
 
-    // Marketing / Business
-    "SEO": ["seo", "search engine optimization"],
+    // Marketing / Business (+ Bulgarian aliases)
+    "SEO": ["seo", "search engine optimization", "seo оптимизация", "търсачка оптимизация"],
     "Google Analytics": ["google analytics", "ga4", "ga"],
     "Social Media Marketing": ["smm", "social media marketing", "social media"],
-    "Content Marketing": ["content marketing"],
+    "Content Marketing": ["content marketing", "контент маркетинг", "съдържателен маркетинг"],
     "Copywriting": ["copywriting", "copy writing"],
-    "Digital Marketing": ["digital marketing"],
+    "Digital Marketing": ["digital marketing", "дигитален маркетинг"],
     "Email Marketing": ["email marketing"],
-    "Project Management": ["project management", "pm"],
-    "Agile": ["agile", "scrum", "kanban"],
+    "Project Management": ["project management", "pm", "управление на проекти", "проектен мениджмънт", "управление на проект"],
+    "Agile": ["agile", "scrum", "kanban", "гъвкава методология", "скръм", "канбан", "скрум"],
 
-    // Soft Skills
-    "Communication": ["communication", "communication skills"],
-    "Teamwork": ["teamwork", "team work", "collaboration"],
-    "Leadership": ["leadership"],
-    "Problem Solving": ["problem solving", "problem-solving"],
-    "Critical Thinking": ["critical thinking"],
-    "Time Management": ["time management"],
-    "Public Speaking": ["public speaking", "presentation skills"],
+    // Soft Skills (English + Bulgarian aliases merged)
+    "Communication": ["communication", "communication skills", "комуникация", "комуникационни умения", "комуникативност"],
+    "Teamwork": ["teamwork", "team work", "collaboration", "екипна работа", "работа в екип", "екипност", "сътрудничество"],
+    "Leadership": ["leadership", "лидерство", "лидерски умения", "ръководство"],
+    "Problem Solving": ["problem solving", "problem-solving", "решаване на проблеми", "проблемно мислене", "аналитично мислене"],
+    "Critical Thinking": ["critical thinking", "критично мислене"],
+    "Time Management": ["time management", "управление на времето", "тайм мениджмънт"],
+    "Public Speaking": ["public speaking", "presentation skills", "публично говорене", "презентационни умения", "презентации"],
+    "Discipline": ["discipline", "self-discipline", "дисциплина", "самодисциплина"],
+    "Focus": ["focus", "concentration", "концентрация", "фокус"],
+    "Stress Management": ["stress management", "управление на стреса", "стрес мениджмънт"],
+    "Physical Coordination": ["physical coordination", "coordination", "физическа координация", "координация"],
 
     // APIs & Tools
-    "REST API": ["rest", "rest api", "restful", "restful api"],
+    "REST API": ["rest", "rest api", "restful", "restful api", "rest api интеграция", "api интеграция", "уеб услуги", "web api"],
     "GraphQL": ["graphql", "graph ql"],
     "WebSocket": ["websocket", "websockets", "ws"],
     "Postman": ["postman"],
@@ -140,72 +144,32 @@ const SKILL_ALIASES: Record<string, string[]> = {
     "PowerPoint": ["microsoft powerpoint", "powerpoint", "ms powerpoint", "ppt"],
     "Word": ["microsoft word", "ms word"],
 
-    // ── Bulgarian language aliases ────────────────────────────────────────────
-    // Soft & professional skills
-    "Communication": ["комуникация", "комуникационни умения", "комуникативност"],
-    "Teamwork": ["екипна работа", "работа в екип", "екипност", "сътрудничество"],
-    "Leadership": ["лидерство", "лидерски умения", "ръководство"],
-    "Problem Solving": ["решаване на проблеми", "проблемно мислене", "аналитично мислене"],
-    "Critical Thinking": ["критично мислене"],
-    "Time Management": ["управление на времето", "тайм мениджмънт"],
-    "Project Management": ["управление на проекти", "проектен мениджмънт", "управление на проект"],
-    "Public Speaking": ["публично говорене", "презентационни умения", "презентации"],
-    "Discipline": ["дисциплина", "самодисциплина"],
-    "Focus": ["концентрация", "фокус"],
-    "Stress Management": ["управление на стреса", "стрес мениджмънт"],
-    "Agile": ["гъвкава методология", "скръм", "kanban", "канбан", "скрум"],
-    "Digital Marketing": ["дигитален маркетинг"],
-    "Content Marketing": ["контент маркетинг", "съдържателен маркетинг"],
-    "SEO": ["seo оптимизация", "търсачка оптимизация"],
-
-    // Technical skills — Bulgarian names, including "разработка на X" verb-prefix forms
-    "JavaScript": ["джаваскрипт"],
-    "Python": ["питон", "пайтън"],
-    "Machine Learning": ["машинно обучение", "мл", "машинно самообучение"],
-    "Deep Learning": ["дълбоко обучение"],
-    "Data Analysis": ["анализ на данни", "обработка на данни"],
-    "Data Science": ["наука за данни"],
+    // ── New canonical skills with Bulgarian aliases ───────────────────────────
     "Embedded Systems": [
-        "вградени системи", "embedded системи",
-        "ems система", "ems system",
-        "разработка на ems система", "разработка на ems",
-        "изграждане на ems", "embedded system разработка",
-        "системи за вградено управление",
+        "embedded systems", "вградени системи", "embedded системи",
+        "ems система", "ems system", "разработка на ems система",
+        "разработка на ems", "изграждане на ems", "системи за вградено управление",
     ],
     "Multi-Agent Systems": [
-        "мултиагентни системи", "мулти агентна система",
-        "мулти-агентна система", "multi agent система",
-        "разработка на мулти агентна система",
+        "multi-agent systems", "multi agent systems", "multiagent",
+        "мултиагентни системи", "мулти агентна система", "мулти-агентна система",
+        "multi agent система", "разработка на мулти агентна система",
         "мулти агентен", "многоагентни системи",
     ],
-    "Systems Design": ["системна архитектура", "проектиране на системи", "дизайн на системи"],
-    "Software Architecture": ["софтуерна архитектура", "архитектура на софтуер"],
-    "C++": ["с++", "с плюс плюс", "c plus plus"],
-    "SQL": ["структурирани заявки", "бази данни", "релационни бази данни"],
-    "Git": ["версионен контрол", "контрол на версиите"],
-    "Docker": ["докер", "контейнери", "docker контейнери"],
-    "REST API": ["rest api интеграция", "api интеграция", "уеб услуги", "web api"],
-    "UI/UX Design": ["потребителски интерфейс", "потребителско изживяване", "ui/ux дизайн", "дизайн на интерфейс"],
-    "React": ["реакт"],
-    "Node.js": ["нод", "nodejs"],
-    "PostgreSQL": ["постгрес", "postgresql база"],
-    "AWS": ["амазон облак", "облачни услуги"],
-    "CI/CD": ["непрекъсната интеграция", "непрекъснато разгръщане"],
-    "Linux": ["линукс"],
-    "Figma": ["фигма"],
-    "Hardware Integration": ["хардуерна интеграция", "интеграция с хардуер"],
-    "Real-time Systems": ["системи в реално време", "real-time системи"],
-    "API Design": ["дизайн на api", "проектиране на api"],
-    "User Research": ["потребителско проучване", "изследване на потребители"],
-    "Frontend Development": ["фронтенд разработка", "разработка на фронтенд"],
-    "Backend Development": ["бекенд разработка", "разработка на бекенд"],
-    "Web Development": ["уеб разработка", "разработване на уеб"],
-    "Mobile Development": ["мобилна разработка", "разработка на мобилни"],
-    "Database Design": ["дизайн на бази данни", "проектиране на бази данни"],
-    "Testing": ["тестване", "тестване на софтуер"],
-    "Cybersecurity": ["киберсигурност", "информационна сигурност"],
-    "Networking": ["мрежи", "компютърни мрежи"],
-    "Physical Coordination": ["физическа координация", "координация"],
+    "Systems Design": ["systems design", "system design", "системна архитектура", "проектиране на системи", "дизайн на системи"],
+    "Software Architecture": ["software architecture", "архитектура", "софтуерна архитектура", "архитектура на софтуер"],
+    "Hardware Integration": ["hardware integration", "хардуерна интеграция", "интеграция с хардуер"],
+    "Real-time Systems": ["real-time systems", "realtime", "системи в реално време", "real-time системи"],
+    "API Design": ["api design", "дизайн на api", "проектиране на api"],
+    "User Research": ["user research", "потребителско проучване", "изследване на потребители"],
+    "Frontend Development": ["frontend development", "front-end", "frontend", "фронтенд разработка", "разработка на фронтенд"],
+    "Backend Development": ["backend development", "back-end", "backend", "бекенд разработка", "разработка на бекенд"],
+    "Web Development": ["web development", "уеб разработка", "разработване на уеб"],
+    "Mobile Development": ["mobile development", "мобилна разработка", "разработка на мобилни"],
+    "Database Design": ["database design", "дизайн на бази данни", "проектиране на бази данни"],
+    "Testing": ["testing", "qa", "quality assurance", "тестване", "тестване на софтуер"],
+    "Cybersecurity": ["cybersecurity", "security", "киберсигурност", "информационна сигурност"],
+    "Networking": ["networking", "computer networks", "мрежи", "компютърни мрежи"],
 }
 
 // Build reverse lookup: lowercase alias -> canonical name

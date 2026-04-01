@@ -8,7 +8,9 @@
       "Bash(cmd.exe /c \"cd /d c:\\\\Users\\\\user\\\\Desktop\\\\LynkSkill && node_modules\\\\.bin\\\\tsc --noEmit 2>&1\")",
       "Bash(cmd.exe /c \"cd /d c:\\\\Users\\\\user\\\\Desktop\\\\LynkSkill && node_modules\\\\.bin\\\\next build 2>&1\")",
       "Bash(cmd.exe /c \"cd /d c:\\\\Users\\\\user\\\\Desktop\\\\LynkSkill && npx next build 2>&1\")",
-      "Bash(cmd.exe /c \"cd /d c:\\\\Users\\\\user\\\\Desktop\\\\LynkSkill && node -e \\\\\"require\\('./node_modules/typescript'\\); console.log\\('ts ok'\\)\\\\\" 2>&1\")"
+      "Bash(cmd.exe /c \"cd /d c:\\\\Users\\\\user\\\\Desktop\\\\LynkSkill && node -e \\\\\"require\\('./node_modules/typescript'\\); console.log\\('ts ok'\\)\\\\\" 2>&1\")",
+      "Bash(cmd.exe /c \"cd /d c:\\\\Users\\\\user\\\\Desktop\\\\LynkSkill && npm run build 2>&1\")",
+      "Bash(npm run:*)"
     ]
   }
 }

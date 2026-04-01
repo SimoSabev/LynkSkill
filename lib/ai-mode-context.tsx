@@ -192,7 +192,7 @@ const openLinky = useCallback((prompt?: string) => {
         // Store the prompt to be sent after the component mounts
         pendingPromptRef.current = prompt
     }
-}, [sendMessage])
+}, [])
 
 const closeLinky = useCallback(() => {
         setIsAIModeState(false)

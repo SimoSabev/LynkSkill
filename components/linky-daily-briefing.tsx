@@ -20,35 +20,34 @@ export function LinkyDailyBriefing({ userType, onOpenLinky }: LinkyDailyBriefing
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
+        async function fetchBriefing() {
+            try {
+                const res = await fetch("/api/assistant/daily-briefing", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ userType: userType.toLowerCase() }),
+                })
+                if (res.ok) {
+                    const data = await res.json()
+                    setBriefing(data)
+                }
+            } catch {
+                // Fallback briefing
+                setBriefing({
+                    greeting: userType === "Student"
+                        ? "Hey! Ready to find your next opportunity? 🚀"
+                        : "Good to see you! Let's find your next star intern. ⭐",
+                    highlights: [],
+                    suggestedPrompt: userType === "Student"
+                        ? "Find me internships that match my skills"
+                        : "Show me my pending applications",
+                })
+            } finally {
+                setLoading(false)
+            }
+        }
         fetchBriefing()
     }, [userType])
-
-    async function fetchBriefing() {
-        try {
-            const res = await fetch("/api/assistant/daily-briefing", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ userType: userType.toLowerCase() }),
-            })
-            if (res.ok) {
-                const data = await res.json()
-                setBriefing(data)
-            }
-        } catch {
-            // Fallback briefing
-            setBriefing({
-                greeting: userType === "Student"
-                    ? "Hey! Ready to find your next opportunity? 🚀"
-                    : "Good to see you! Let's find your next star intern. ⭐",
-                highlights: [],
-                suggestedPrompt: userType === "Student"
-                    ? "Find me internships that match my skills"
-                    : "Show me my pending applications",
-            })
-        } finally {
-            setLoading(false)
-        }
-    }
 
     if (loading) {
         return (

@@ -824,9 +824,9 @@ async function getInternshipRecommendations(
         experienceCount: 0,
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const scoredInternships: any[] = internships
-        .map((i: any) => {
+    type ScoredEntry = { internship: typeof internships[number]; breakdown: { baseScore: number; matchedSkills: string[]; missingSkills: string[] } }
+    const scoredInternships: ScoredEntry[] = internships
+        .map((i) => {
             try {
                 const internshipProfile = {
                     skills: Array.isArray(i.skills) ? i.skills : [],
@@ -841,19 +841,17 @@ async function getInternshipRecommendations(
                 const breakdown = computeBaseScore(studentProfile, internshipProfile)
                 return { internship: i, breakdown }
             } catch {
-                // If scoring fails for this internship, return a base score of 0
                 return { internship: i, breakdown: { baseScore: 0, matchedSkills: [], missingSkills: [] } }
             }
         })
-        .sort((a: any, b: any) => b.breakdown.baseScore - a.breakdown.baseScore)
+        .sort((a, b) => b.breakdown.baseScore - a.breakdown.baseScore)
         .slice(0, limit)
 
     return {
         tool: "get_internship_recommendations",
         cardType: "internship-list",
         title: `Top ${scoredInternships.length} Recommendations for You`,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        data: scoredInternships.map(({ internship: i, breakdown }: any) => ({
+        data: scoredInternships.map(({ internship: i, breakdown }) => ({
             id: i.id,
             title: i.title,
             company: i.company?.name ?? "",
@@ -1263,7 +1261,7 @@ Description: ${internship.description?.slice(0, 300) ?? "N/A"}`,
 
 async function draftInternshipFromDescription(
     args: Record<string, unknown>,
-    ctx: UserContext
+    _ctx: UserContext
 ): Promise<ToolResult> {
     const description = args.naturalDescription as string
     if (!description) {
@@ -1849,7 +1847,6 @@ async function previewAutoApply(ctx: UserContext): Promise<ToolResult> {
     ])
 
     // Cast to include new schema fields that are pending prisma generate
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const aiProfile = aiProfileRaw as typeof aiProfileRaw & { autoApplyPreviewMode?: boolean; autoApplyApprovedCount?: number }
 
     if (!aiProfile?.autoApplyEnabled) {
