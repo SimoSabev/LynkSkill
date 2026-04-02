@@ -119,6 +119,36 @@ const nextConfig: NextConfig = {
             },
         ];
     },
+    // Redirects for SEO canonicalization
+    async redirects() {
+        return [
+            // Redirect www to non-www
+            {
+                source: '/:path*',
+                has: [
+                    {
+                        type: 'host',
+                        value: 'www.lynkskill.net',
+                    },
+                ],
+                destination: 'https://lynkskill.net/:path*',
+                permanent: true,
+            },
+            // Redirect HTTP to HTTPS (handled by hosting, but explicit here)
+            {
+                source: '/:path*',
+                has: [
+                    {
+                        type: 'header',
+                        key: 'x-forwarded-proto',
+                        value: 'http',
+                    },
+                ],
+                destination: 'https://lynkskill.net/:path*',
+                permanent: true,
+            },
+        ];
+    },
 };
 
 export default nextConfig;
