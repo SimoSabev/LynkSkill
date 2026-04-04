@@ -105,31 +105,26 @@ Phase transitions (at the very end, outside JSON):
 - [PHASE:complete]
 `
 
-const COMPANY_SYSTEM_PROMPT = `You are Linky, the AI Hiring Manager for LynkSkill — a platform connecting Bulgarian companies with student talent.
+const COMPANY_SYSTEM_PROMPT = `You are Linky, the AI Hiring Manager for LynkSkill. 
 
-⚠️ CRITICAL RULE: Only answer questions about LynkSkill, hiring, recruitment, internships, and talent management. Politely decline everything else.
+⚠️ CRITICAL DECISIVENESS RULE:
+If the user mentions any technical skill, industry, or job requirement (e.g., "агентови системи", "React", "AI"), you MUST IMMEDIATELY trigger a search. 
+- DO NOT ask "Would you like to search?". 
+- DO NOT offer choices first. 
+- JUST SEARCH.
 
-## LANGUAGE
-Auto-detect language. Bulgarian → respond in Bulgarian (NOT Russian). English → respond in English.
+To search, output exactly this JSON at the end of your message:
+\`\`\`json
+{
+  "type": "ready_for_search",
+  "criteria": {
+    "semanticQuery": "Detailed technical query in English based on the user's needs",
+    "roleType": "internship"
+  }
+}
+\`\`\`
 
-## BULGARIAN CONTEXT
-You know the Bulgarian tech ecosystem, universities, and market rates.
-
-Your role: You are the company's AI hiring pipeline manager. You don't just chat — you ACT.
-
-YOUR SUPERPOWERS:
-1. Draft full internship postings from a single sentence
-2. Search for matching students by skills
-3. Find the best candidates for any role
-
-IMPORTANT WORKFLOW:
-1. When they describe what they need → draft the FULL posting and ask to confirm
-2. When they search for talent → ask 1-2 quick clarifiers, then search
-3. Be proactive: "Want me to draft a posting for that?" / "Should I search for React students in Sofia?"
-
-Keep responses short, direct, action-oriented. Use emojis occasionally 🎯💼✨
-
-NEVER make up candidates — real ones come from the database.
+If and only if the request has ZERO technical or industry hints (e.g. "I want to hire someone" without context), then use the "clarification" type.
 
 Current phase: {phase}`
 
@@ -200,30 +195,43 @@ export async function POST(req: NextRequest) {
             reply = reply.replace("[PHASE:complete]", "").trim()
         }
 
-        // Handle profile updates from the AI Middleman
+        // Handle JSON output from the Assistant
         const jsonBlockRegex = /```json\s*(\{[\s\S]*?\})\s*```/g;
-        const profileUpdateMatch = [...reply.matchAll(jsonBlockRegex)];
+        const jsonMatches = [...reply.matchAll(jsonBlockRegex)];
         
-        if (profileUpdateMatch.length > 0 && userType === "student") {
+        if (jsonMatches.length > 0) {
             try {
                 // Get the last JSON block found
-                const jsonStr = profileUpdateMatch[profileUpdateMatch.length - 1][1];
+                const jsonStr = jsonMatches[jsonMatches.length - 1][1];
                 const jsonData = JSON.parse(jsonStr);
                 
-                if (jsonData.type === "profile_update") {
+                if (userType === "student" && jsonData.type === "profile_update") {
                     responseData = {
+                        ...responseData,
                         profileUpdate: jsonData.data,
                         confidenceDelta: jsonData.confidenceDelta || 1
                     };
-                    
-                    // Clean the reply - remove the JSON blocks from what the user sees
                     reply = reply.replace(jsonBlockRegex, "").trim();
+                } else if (userType === "company" && jsonData.type === "clarification") {
+                    responseData = {
+                        ...responseData,
+                        clarificationOptions: jsonData.options || []
+                    }
+                    reply = reply.replace(jsonBlockRegex, "").trim();
+                } else if (userType === "company" && jsonData.type === "ready_for_search") {
+                    // execute Semantic Search based on the criteria
+                    const matches = await executeSemanticSearch(jsonData.criteria?.semanticQuery || "");
                     
-                    // Automatically transition to complete if confidence score is high enough 
-                    // This logic will be handled mostly on the frontend, but we pass the data here
+                    responseData = {
+                        ...responseData,
+                        matches,
+                        type: "matches_found"
+                    }
+                    reply = reply.replace(jsonBlockRegex, "").trim();
+                    newPhase = "results" as ChatPhase;
                 }
             } catch (e) {
-                console.error("Profile JSON parse error:", e);
+                console.error("Assistant JSON parse error:", e);
             }
         }
 
@@ -335,9 +343,69 @@ async function findMatchingInternships(skills: string[], interests: string[]) {
     }
 }
 
-// Helper function to find matching students for companies
-async function _findMatchingStudents(requiredSkills: string[], field: string) {
+// Technical keyword mapper for Bulgarian-to-English synonyms
+const TECH_MAPPER: Record<string, string[]> = {
+    "агентови": ["agent", "agents", "multi-agent", "agentic"],
+    "агенти": ["agent", "agents", "multi-agent"],
+    "системи": ["systems"],
+    "изкуствен интелект": ["ai", "artificial intelligence"],
+    "програмиране": ["programming", "developer", "coding"],
+    "стаж": ["internship", "intern"],
+    "предна част": ["frontend", "react"],
+    "задна част": ["backend", "node", "python"],
+}
+
+function _preprocessBulgarianQuery(query: string): string {
+    let processed = query.toLowerCase()
+    for (const [bg, engs] of Object.entries(TECH_MAPPER)) {
+        if (processed.includes(bg)) {
+            processed += " " + engs.join(" ")
+        }
+    }
+    return processed
+}
+
+// Use OpenAI to expand a conceptual query into an array of concrete skills and synonyms
+async function expandSearchQuery(semanticQuery: string): Promise<string[]> {
+    const preprocessed = _preprocessBulgarianQuery(semanticQuery)
     try {
+        const response = await openai.chat.completions.create({
+            model: "gpt-4o-mini",
+            messages: [
+                {
+                    role: "system",
+                    content: "You are a specialized CV search expander. The user will give you a job requirement. Output a comma-separated list of 20-30 synonyms, related technologies, and variations. \nExample: 'AI Agents' -> 'agents, multi-agent systems, autonomous agents, langchain, autogen, llm, artificial intelligence, multiagent'. \nCRITICAL: Output terms in English. Include common Bulgarian translations if applicable as well, but focus on tech terms. ONLY output the comma-separated list."
+                },
+                {
+                    role: "user",
+                    content: preprocessed
+                }
+            ],
+            temperature: 0.3,
+        })
+        const text = response.choices[0]?.message?.content || ""
+        // Normalize: lowercase, remove non-alphanumeric except spaces
+        const expanded = text.split(",").map(s => s.trim().toLowerCase().replace(/[^a-z0-9 ]/g, " ")).filter(Boolean)
+        
+        // Ensure the original query is always included (normalized)
+        const originalNormalized = semanticQuery.toLowerCase().replace(/[^a-z0-9 ]/g, " ").trim()
+        if (originalNormalized && !expanded.includes(originalNormalized)) {
+            expanded.unshift(originalNormalized)
+        }
+        
+        return expanded
+    } catch (e) {
+        console.error("Query expansion failed:", e)
+        return [semanticQuery.toLowerCase().replace(/[^a-z0-9 ]/g, " ").trim()]
+    }
+}
+
+// Semantic Candidate Search leveraging Confidence Scores
+async function executeSemanticSearch(semanticQuery: string) {
+    try {
+        const expandedSkills = await expandSearchQuery(semanticQuery)
+        console.log(`[Semantic Search] Original: "${semanticQuery}", Expanded to:`, expandedSkills)
+        
         const students = await prisma.user.findMany({
             where: {
                 role: "STUDENT"
@@ -346,111 +414,104 @@ async function _findMatchingStudents(requiredSkills: string[], field: string) {
                 profile: true,
                 portfolio: true,
                 experiences: true,
-                projects: true
+                projects: true,
+                aiProfile: {
+                    include: { confidenceScore: true }
+                }
             },
-            take: 50
+            take: 500
         })
 
-        console.log("Searching for skills:", requiredSkills, "Field:", field)
-        console.log("Total students in DB:", students.length)
+        console.log(`[Semantic Search] Query: "${semanticQuery}", Expanded to: [${expandedSkills.join(", ")}], Students pool: ${students.length}`)
 
-        // Calculate match scores with proper skill evaluation
         const matches = students.map(student => {
             let score = 0
-            const reasons: string[] = []
-            const foundSkills: string[] = []
+            const reasons: Set<string> = new Set()
+            const foundSkills: Set<string> = new Set()
 
-            // Get student's skills array directly from portfolio
-            const studentSkillsArray = (student.portfolio?.skills || []).map((s: string) => s.toLowerCase())
-            const studentInterests = (student.portfolio?.interests || []).map((s: string) => s.toLowerCase())
-            
-            // Get text content for broader matching
-            const bio = (student.portfolio?.bio || "").toLowerCase()
-            const headline = (student.portfolio?.headline || "").toLowerCase()
-            const experience = (student.portfolio?.experience || "").toLowerCase()
-            const projectsText = student.projects?.map((p: { title: string; description: string; technologies?: string[] }) => 
-                `${p.title} ${p.description} ${(p.technologies || []).join(" ")}`
-            ).join(" ").toLowerCase() || ""
-            
-            const fullText = `${bio} ${headline} ${experience} ${projectsText} ${studentSkillsArray.join(" ")} ${studentInterests.join(" ")}`
+            const studentSkills = student.portfolio?.skills || []
+            const normalizedStudentSkills = studentSkills.map(s => s.toLowerCase().replace(/[^a-z0-9 ]/g, " ").trim()).filter(s => s.length > 1)
 
-            // Match by required skills - weighted scoring
-            for (const skill of requiredSkills) {
-                const skillLower = skill.toLowerCase()
+            // Normalize all student data for matching. Filter out empty strings and very short noise.
+            const studentTextPieces = [
+                ...studentSkills,
+                ...(student.portfolio?.interests || []),
+                student.portfolio?.bio || "",
+                student.portfolio?.headline || "",
+                student.portfolio?.experience || "",
+                ...(student.projects?.map((p: any) => `${p.title} ${p.description} ${(p.technologies || []).join(" ")}`) || [])
+            ]
+            .map(t => t?.toLowerCase()?.replace(/[^a-z0-9 ]/g, " ")?.trim())
+            .filter(t => t && t.length > 1) 
+
+            const fullStudentText = studentTextPieces.join(" ")
+            const studentWords = fullStudentText.split(/\s+/).filter(w => w.length > 2)
+
+            // Match expanded skills
+            for (const skill of expandedSkills) {
+                const skillNormalized = skill.toLowerCase().trim()
+                if (!skillNormalized || skillNormalized.length < 2) continue
+
+                // 1. Core Skill Direct Match (Highest Weight)
+                const isDirectSkill = normalizedStudentSkills.some(s => s === skillNormalized || s.includes(skillNormalized) || skillNormalized.includes(s))
                 
-                // Direct skill match (highest weight)
-                if (studentSkillsArray.some(s => s.includes(skillLower) || skillLower.includes(s))) {
-                    score += 30
-                    foundSkills.push(skill)
-                    reasons.push(`Skilled in ${skill}`)
+                if (isDirectSkill) {
+                    score += 45
+                    foundSkills.add(skill)
+                    reasons.add(`Direct specialized skill: ${skill}`)
+                    continue
                 }
-                // Skill in projects (high weight)
-                else if (projectsText.includes(skillLower)) {
-                    score += 20
-                    foundSkills.push(skill)
-                    reasons.push(`${skill} in projects`)
+
+                // 2. Phrase match in bio/projects
+                const hasPhrase = studentTextPieces.some(p => p.includes(skillNormalized) || (p.length > 2 && skillNormalized.includes(p)))
+                
+                if (hasPhrase) {
+                    score += 25
+                    foundSkills.add(skill)
+                    reasons.add(`Match in profile context: ${skill}`)
+                    continue
                 }
-                // Skill mentioned elsewhere (medium weight)
-                else if (fullText.includes(skillLower)) {
-                    score += 15
-                    foundSkills.push(skill)
-                    reasons.push(`Experience with ${skill}`)
+
+                // 3. Fuzzy word-level overlap
+                const skillWords = skillNormalized.split(/\s+/).filter(w => w.length > 2)
+                let matchedWordsCount = 0
+                
+                for (const sw of skillWords) {
+                    if (studentWords.some(w => w.includes(sw) || sw.includes(w))) {
+                        matchedWordsCount++
+                    }
+                }
+                
+                const wordMatchRatio = skillWords.length > 0 ? matchedWordsCount / skillWords.length : 0
+
+                if (wordMatchRatio >= 0.5) {
+                    score += 15 * wordMatchRatio
+                    foundSkills.add(skill)
+                    reasons.add(`Related context: ${skill}`)
                 }
             }
 
-            // Match by field/interest
-            if (field) {
-                const fieldLower = field.toLowerCase()
-                if (studentInterests.some(i => i.includes(fieldLower) || fieldLower.includes(i))) {
-                    score += 15
-                    reasons.push(`Interested in ${field}`)
-                } else if (fullText.includes(fieldLower)) {
-                    score += 10
-                    reasons.push(`Background in ${field}`)
+            // Include Confidence Score in evaluation
+            const confidenceScore = student.aiProfile?.confidenceScore?.overallScore || 0
+            if (confidenceScore > 0) {
+                // Boost score by up to 20 points based on confidence density
+                score += (confidenceScore / 100) * 20
+                if (confidenceScore >= 75) {
+                    reasons.add(`High confidence profile (${confidenceScore}%)`)
                 }
             }
 
-            // Bonus for complete portfolio
-            if (student.portfolio?.bio && student.portfolio.bio.length > 50) {
-                score += 5
-                reasons.push("Detailed portfolio")
-            }
-
-            // Bonus for projects (shows practical experience)
-            if (student.projects && student.projects.length > 0) {
-                const projectBonus = Math.min(student.projects.length * 5, 15)
-                score += projectBonus
-                reasons.push(`${student.projects.length} project${student.projects.length > 1 ? 's' : ''}`)
-            }
-
-            // Bonus for work experience
-            if (student.experiences && student.experiences.length > 0) {
-                score += 10
-                reasons.push(`${student.experiences.length} experience${student.experiences.length > 1 ? 's' : ''}`)
-            }
-
-            // Calculate match percentage based on how many required skills matched
-            const skillMatchRatio = requiredSkills.length > 0 
-                ? foundSkills.length / requiredSkills.length 
-                : 0
-            
-            // Adjust score based on skill match ratio
-            if (skillMatchRatio >= 0.8) {
-                score += 10 // Bonus for matching most skills
-            }
-            
-            // Cap at 98
+            // Cap and ensure diversity
             score = Math.min(score, 98)
 
             return {
                 id: student.id,
                 name: student.profile?.name || student.portfolio?.fullName || "Student",
                 email: student.email || "",
-                avatar: undefined,
-                matchPercentage: score,
-                reasons: reasons.length > 0 ? reasons : ["Available candidate"],
-                skills: foundSkills.length > 0 ? foundSkills : studentSkillsArray.slice(0, 5),
-                allSkills: studentSkillsArray,
+                matchPercentage: Math.round(score),
+                reasons: Array.from(reasons).slice(0, 3),
+                skills: Array.from(foundSkills).slice(0, 5).length > 0 ? Array.from(foundSkills).slice(0, 5) : studentSkills.slice(0, 5),
+                allSkills: studentSkills,
                 portfolio: {
                     headline: student.portfolio?.headline || undefined,
                     about: student.portfolio?.bio || undefined
@@ -458,28 +519,16 @@ async function _findMatchingStudents(requiredSkills: string[], field: string) {
             }
         })
 
-        // Sort by match percentage and filter
-        const sorted = matches
-            .filter(m => m.matchPercentage > 0) // Must have some match
+        // Sort by match percentage and return top 10
+        console.log(`[Semantic Search] Found ${matches.length} matches after filtering (>15%)`)
+
+        return matches
+            .filter(m => m.matchPercentage > 15) // Needs at least some relevance
             .sort((a, b) => b.matchPercentage - a.matchPercentage)
             .slice(0, 10)
-        
-        console.log("Matches found:", sorted.length, sorted.map(m => ({ name: m.name, score: m.matchPercentage, skills: m.skills })))
-        
-        // If no matches found, return students with portfolios
-        if (sorted.length === 0) {
-            console.log("No skill matches, returning students with portfolios")
-            return matches
-                .filter(m => m.portfolio?.headline || m.portfolio?.about)
-                .sort((a, b) => b.matchPercentage - a.matchPercentage)
-                .slice(0, 5)
-                .map(m => ({ ...m, matchPercentage: Math.max(m.matchPercentage, 20) }))
-        }
-        
-        return sorted
 
     } catch (error) {
-        console.error("Error finding students:", error)
+        console.error("Error finding semantic candidates:", error)
         return []
     }
 }
