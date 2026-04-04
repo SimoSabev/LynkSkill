@@ -53,7 +53,8 @@ export function CompanyAIChat() {
         startNewSession,
         loadSession,
         deleteSession,
-        refreshSessions
+        refreshSessions,
+        isAIMode
     } = useAIMode()
 
     const [inputValue, setInputValue] = useState("")
@@ -62,8 +63,18 @@ export function CompanyAIChat() {
     const [searchStatus, setSearchStatus] = useState("")
     const [_lastSearchQuery, setLastSearchQuery] = useState("")
     const [showSessionsSidebar, setShowSessionsSidebar] = useState(false)
+    const [clarificationOptions, setClarificationOptions] = useState<string[]>([])
     const messagesEndRef = useRef<HTMLDivElement>(null)
     const inputRef = useRef<HTMLInputElement>(null)
+
+    // Autofocus input after message or loading ends
+    useEffect(() => {
+        if (!isLoading && isAIMode) {
+            setTimeout(() => {
+                inputRef.current?.focus()
+            }, 100)
+        }
+    }, [isLoading, isAIMode, messages.length])
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -112,95 +123,18 @@ export function CompanyAIChat() {
             console.error("Error saving evaluation results:", error)
         }
     }, [currentSessionId])
+    const handleSubmit = async (e?: React.FormEvent, directMessage?: string) => {
+        if (e) e.preventDefault()
+        
+        const messageToSend = directMessage || inputValue.trim()
+        if (!messageToSend || isLoading) return
 
-    // Helper function to extract and strip JSON from message
-    const parseMessageForSearch = (text: string): { cleanText: string; searchCriteria: { skills: string[]; roleType: string; field: string } | null } => {
-        // Match JSON that starts with {"type": "ready_for_search" - more aggressive matching
-        const jsonPatterns = [
-            /\{\s*"type"\s*:\s*"ready_for_search"[^}]*\}\}?/g,
-            /\{"type":\s*"ready_for_search"[\s\S]*?\}\}/g,
-            /\{[\s\S]*?"type"\s*:\s*"ready_for_search"[\s\S]*?"requirements"\s*:\s*\[[^\]]*\]\s*\}\s*\}/g
-        ]
-        
-        let cleanText = text
-        let searchCriteria = null
-        
-        for (const regex of jsonPatterns) {
-            const matches = text.match(regex)
-            if (matches) {
-                for (const match of matches) {
-                    try {
-                        // Try to parse the JSON
-                        const jsonData = JSON.parse(match)
-                        if (jsonData.type === "ready_for_search" && jsonData.criteria) {
-                            searchCriteria = {
-                                skills: jsonData.criteria.skills || [],
-                                roleType: jsonData.criteria.roleType || "",
-                                field: jsonData.criteria.field || ""
-                            }
-                            cleanText = cleanText.replace(match, "").trim()
-                        }
-                    } catch {
-                        // Try fixing common JSON issues
-                        try {
-                            const fixedMatch = match.replace(/,\s*\}/, "}").replace(/,\s*\]/, "]")
-                            const jsonData = JSON.parse(fixedMatch)
-                            if (jsonData.type === "ready_for_search" && jsonData.criteria) {
-                                searchCriteria = {
-                                    skills: jsonData.criteria.skills || [],
-                                    roleType: jsonData.criteria.roleType || "",
-                                    field: jsonData.criteria.field || ""
-                                }
-                                cleanText = cleanText.replace(match, "").trim()
-                            }
-                        } catch {
-                            // Still failed, just remove anything that looks like JSON
-                            cleanText = cleanText.replace(match, "").trim()
-                        }
-                    }
-                }
-            }
-        }
-        
-        // Additional cleanup - remove any remaining JSON-like patterns
-        cleanText = cleanText.replace(/\{"type"[^}]*\}\}?/g, "").trim()
-        cleanText = cleanText.replace(/\{"type":[\s\S]*?\}\}/g, "").trim()
-        
-        return { cleanText, searchCriteria }
-    }
-
-    // Callback when search is triggered from AI message
-    const onSearchTriggered = async (_criteria: { skills: string[]; roleType: string; field: string }) => {
-        setIsSearching(true)
-        setSearchStatus(t("ai.searchingDatabase"))
-        
-        // Show search progress
-        const statuses = [
-            t("ai.analyzingRequirements"),
-            t("ai.scanningProfiles"),
-            t("ai.matchingSkills"),
-            t("ai.rankingCandidates")
-        ]
-        
-        for (let i = 0; i < statuses.length; i++) {
-            await new Promise(resolve => setTimeout(resolve, 500))
-            setSearchStatus(statuses[i])
-        }
-        
-        setIsSearching(false)
-        setSearchStatus("")
-    }
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault()
-        if (!inputValue.trim() || isLoading) return
-
-        const userMessage = inputValue.trim()
-        setInputValue("")
+        if (!directMessage) setInputValue("")
+        setClarificationOptions([]) // clear options when user responds
         
         addMessage({
             role: "user",
-            content: userMessage
+            content: messageToSend
         })
 
         setIsLoading(true)
@@ -211,7 +145,7 @@ export function CompanyAIChat() {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    message: userMessage,
+                    message: messageToSend,
                     conversationHistory: messages.map(m => ({
                         role: m.role,
                         content: m.content
@@ -231,21 +165,19 @@ export function CompanyAIChat() {
                     content: t("ai.errorEncountered")
                 })
             } else {
-                // Parse the reply to check for search JSON and strip it
-                const { cleanText, searchCriteria } = parseMessageForSearch(data.reply)
-                
-                // Add the cleaned message (without JSON)
                 addMessage({
                     role: "assistant",
-                    content: cleanText,
+                    content: data.reply,
                     metadata: { type: data.type, data: data.data }
                 })
+                
+                if (data.clarificationOptions && data.clarificationOptions.length > 0) {
+                    setClarificationOptions(data.clarificationOptions)
+                }
 
-                // If search criteria was found, trigger the search callback
-                if (searchCriteria) {
-                    // Trigger search with UI feedback
-                    onSearchTriggered(searchCriteria)
-                    setLastSearchQuery(userMessage)
+                // If semantic search occurred
+                if (data.type === "matches_found") {
+                    setLastSearchQuery(messageToSend)
                 }
 
                 // Update state based on response
@@ -262,7 +194,7 @@ export function CompanyAIChat() {
                     const allSkills: string[] = [...new Set(data.matches.flatMap((m: { skills?: string[] }) => m.skills || []))] as string[]
                     
                     // Save evaluation results to database
-                    saveEvaluationResults(data.matches, userMessage, allSkills)
+                    saveEvaluationResults(data.matches, messageToSend, allSkills)
                     
                     toast.success(`${t("ai.foundCandidates", { count: data.matches.length })}`, {
                         description: t("ai.resultsSaved")
@@ -286,6 +218,10 @@ export function CompanyAIChat() {
         } finally {
             setIsLoading(false)
             setIsTyping(false)
+            // Focus input after a small delay to ensure UI transition finished
+            setTimeout(() => {
+                if (inputRef.current) inputRef.current.focus()
+            }, 100)
             // Refresh sessions list so the sidebar updates
             refreshSessions()
         }
@@ -568,8 +504,40 @@ export function CompanyAIChat() {
                     </ScrollArea>
 
                     {/* Input */}
-                    <form onSubmit={handleSubmit} className="p-4 border-t border-violet-500/10 bg-card/50 backdrop-blur-sm">
-                        <div className="flex gap-3">
+                    <div className="flex flex-col p-4 border-t border-violet-500/10 bg-card/50 backdrop-blur-sm gap-2">
+                        {/* Clarification Options Menu */}
+                        <AnimatePresence>
+                            {clarificationOptions.length > 0 && (
+                                <motion.div 
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: 10 }}
+                                    className="flex flex-wrap gap-2 mb-2"
+                                >
+                                    {clarificationOptions.map((option, idx) => (
+                                        <Button
+                                            key={idx}
+                                            variant="secondary"
+                                            size="sm"
+                                            className="rounded-xl bg-violet-500/10 hover:bg-violet-500/20 text-violet-600 dark:text-violet-400 border border-violet-500/20 text-xs py-1 px-3 h-auto"
+                                            onClick={() => handleSubmit(undefined, option)}
+                                        >
+                                            {String.fromCharCode(65 + idx)}. {option}
+                                        </Button>
+                                    ))}
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="rounded-xl text-muted-foreground text-xs py-1 px-3 h-auto"
+                                        onClick={() => setClarificationOptions([])}
+                                    >
+                                        Type my own answer
+                                    </Button>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                        
+                        <form onSubmit={(e) => handleSubmit(e)} className="flex gap-3">
                             <Input
                                 ref={inputRef}
                                 value={inputValue}
@@ -589,8 +557,8 @@ export function CompanyAIChat() {
                                     <Send className="h-5 w-5" />
                                 )}
                             </Button>
-                        </div>
-                    </form>
+                        </form>
+                    </div>
                 </div>
 
                 {/* Results Sidebar */}

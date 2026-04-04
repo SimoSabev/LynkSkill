@@ -167,15 +167,7 @@ export function AIModeProvider({ children }: { children: ReactNode }) {
 
     const setAIMode = useCallback((open: boolean) => {
         setIsAIModeState(open)
-        if (!open) {
-            // Reset state when closing
-            setMessages([])
-            setChatPhase("intro")
-            setWelcomeSent(false)
-            const nextId = generateSessionId()
-            setCurrentSessionId(nextId)
-            setStoredCurrentSession(nextId)
-        }
+        // We no longer reset state on close to preserve the session
     }, [])
 
     const toggleAIMode = useCallback(() => setAIMode(!isAIMode), [setAIMode, isAIMode])
@@ -194,14 +186,9 @@ const openLinky = useCallback((prompt?: string) => {
     }
 }, [])
 
-const closeLinky = useCallback(() => {
+    const closeLinky = useCallback(() => {
         setIsAIModeState(false)
-        setMessages([])
-        setChatPhase("intro")
-        setWelcomeSent(false)
-        const nextId = generateSessionId()
-        setCurrentSessionId(nextId)
-        setStoredCurrentSession(nextId)
+        // We no longer reset state on close to preserve the session
     }, [])
 
     // ─── Confidence Score ────────────────────────────────────────────
