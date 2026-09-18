@@ -169,7 +169,13 @@ export function HeroSection() {
                         </span>
                     </h1>
 
-                    <motion.p 
+                    {/*
+                      Съзнателно <div>, а не <p>: вътре има абсолютно позиционирани
+                      <motion.div> подчертавания. <p> приема само phrasing content, така че
+                      парсерът го затваряше по-рано и SSR/клиентското дърво се разминаваха
+                      -> "Hydration failed" и пълен re-render на страницата в браузъра.
+                    */}
+                    <motion.div
                         className="text-base sm:text-lg md:text-xl lg:text-2xl text-muted-foreground max-w-4xl mx-auto leading-relaxed font-medium px-4"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
@@ -199,7 +205,7 @@ export function HeroSection() {
                                 transition={{ duration: 1, delay: 1.4 }}
                             />
                         </span>
-                    </motion.p>
+                    </motion.div>
                 </motion.div>
 
                 {/* Enhanced Feature Pills */}

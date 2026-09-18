@@ -35,6 +35,15 @@ const servicesMeta = [
     },
 ]
 
+// Стабилни "псевдослучайни" позиции за декоративните частици.
+// Изчисляват се веднъж от индекса, така че SSR и клиентът дават един и същи резултат.
+const PARTICLES = Array.from({ length: 8 }, (_, i) => ({
+    left: ((i * 37) % 100),
+    top: ((i * 53) % 100),
+    duration: 3 + ((i * 7) % 20) / 10,
+    delay: ((i * 13) % 20) / 10,
+}))
+
 export function ServicesSection() {
     const { t } = useTranslation()
 
@@ -92,13 +101,20 @@ export function ServicesSection() {
                 />
 
                 {/* Floating Particles */}
-                {[...Array(8)].map((_, i) => (
+                {/*
+                  Позициите се извличат детерминистично от индекса, а не от Math.random().
+                  При random сървърът и клиентът генерираха различни стойности за
+                  left/top/duration/delay -> "A tree hydrated but some attributes ...
+                  didn't match" при всяко зареждане. Разпределението изглежда еднакво
+                  разпръснато, но е стабилно между SSR и хидратация.
+                */}
+                {PARTICLES.map((particle, i) => (
                     <motion.div
                         key={i}
                         className="absolute w-2 h-2 bg-gradient-to-r from-purple-400 to-blue-400 rounded-full opacity-60"
                         style={{
-                            left: `${Math.random() * 100}%`,
-                            top: `${Math.random() * 100}%`,
+                            left: `${particle.left}%`,
+                            top: `${particle.top}%`,
                         }}
                         animate={{
                             y: [0, -20, 0],
@@ -106,9 +122,9 @@ export function ServicesSection() {
                             scale: [1, 1.2, 1],
                         }}
                         transition={{
-                            duration: 3 + Math.random() * 2,
+                            duration: particle.duration,
                             repeat: Number.POSITIVE_INFINITY,
-                            delay: Math.random() * 2,
+                            delay: particle.delay,
                             ease: "easeInOut",
                         }}
                     />

@@ -30,7 +30,10 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url)
     const secret = searchParams.get("secret")
 
-    if (process.env.CRON_SECRET && secret !== process.env.CRON_SECRET) {
+    // Fail closed: ако CRON_SECRET липсва в средата, маршрутът се затваря изцяло.
+    // Старият вариант (`if (process.env.CRON_SECRET && ...)`) пропускаше всяка заявка,
+    // когато променливата не е зададена — а този endpoint изтрива стажове.
+    if (!process.env.CRON_SECRET || secret !== process.env.CRON_SECRET) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 

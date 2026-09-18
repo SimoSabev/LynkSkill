@@ -377,21 +377,21 @@ export function TeamTabContent() {
               className="gap-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-500 data-[state=active]:to-indigo-500 data-[state=active]:text-white data-[state=active]:shadow-md py-2.5"
             >
               <Users className="h-4 w-4" />
-              <span className="hidden sm:inline">{t('team.members') || 'Members'}</span>
+              <span className="sr-only sm:not-sr-only">{t('team.members') || 'Members'}</span>
             </TabsTrigger>
             <TabsTrigger
               value="roles"
               className="gap-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-500 data-[state=active]:to-indigo-500 data-[state=active]:text-white data-[state=active]:shadow-md py-2.5"
             >
               <Shield className="h-4 w-4" />
-              <span className="hidden sm:inline">{t('team.roles') || 'Roles'}</span>
+              <span className="sr-only sm:not-sr-only">{t('team.roles') || 'Roles'}</span>
             </TabsTrigger>
             <TabsTrigger
               value="invitations"
               className="gap-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-500 data-[state=active]:to-indigo-500 data-[state=active]:text-white data-[state=active]:shadow-md py-2.5 relative"
             >
               <UserPlus className="h-4 w-4" />
-              <span className="hidden sm:inline">{t('team.invitations') || 'Invitations'}</span>
+              <span className="sr-only sm:not-sr-only">{t('team.invitations') || 'Invitations'}</span>
               {pendingMembers.length > 0 && (
                 <Badge className="absolute -top-1.5 -right-1.5 h-5 min-w-5 rounded-full bg-orange-500 text-white text-[10px] p-0 flex items-center justify-center">
                   {pendingMembers.length}
@@ -403,14 +403,14 @@ export function TeamTabContent() {
               className="gap-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-500 data-[state=active]:to-indigo-500 data-[state=active]:text-white data-[state=active]:shadow-md py-2.5"
             >
               <Key className="h-4 w-4" />
-              <span className="hidden sm:inline">{t('team.code') || 'Code'}</span>
+              <span className="sr-only sm:not-sr-only">{t('team.code') || 'Code'}</span>
             </TabsTrigger>
             <TabsTrigger
               value="ownership"
               className="gap-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-500 data-[state=active]:to-indigo-500 data-[state=active]:text-white data-[state=active]:shadow-md py-2.5"
             >
               <Crown className="h-4 w-4" />
-              <span className="hidden sm:inline">{t('team.ownership') || 'Ownership'}</span>
+              <span className="sr-only sm:not-sr-only">{t('team.ownership') || 'Ownership'}</span>
             </TabsTrigger>
           </TabsList>
         </div>

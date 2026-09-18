@@ -8,6 +8,7 @@ const isPublicRoute = createRouteMatcher([
     "/terms",
     "/privacy",
     "/help",
+    "/help/(.*)",        // Подстраниците (student-guide, company-guide) също са публични
     "/sitemap.xml",
     "/robots.txt",
     "/sign-in(.*)",  // Важно: Clerk страниците трябва да са публични
@@ -25,7 +26,6 @@ const isPublicRoute = createRouteMatcher([
     "/api/company/accept-policies(.*)",
     "/api/student/accept-policies(.*)",
     "/api/upload-logo(.*)",
-    "/api/cleanup(.*)",
     "/api/public/(.*)"
 ]);
 
@@ -40,20 +40,27 @@ const isRoleAgnosticRoute = createRouteMatcher([
     "/invitations(.*)",
 ]);
 
+// Единствен източник на истина за "кой къде живее".
+// Всяка роля има точно едно начално табло -> редиректите винаги са терминални.
+const DASHBOARD_BY_ROLE: Record<string, string> = {
+    STUDENT: "/dashboard/student",
+    COMPANY: "/dashboard/company",
+    TEAM_MEMBER: "/dashboard/team-member",
+};
+
 export default clerkMiddleware(async (auth, req) => {
     const { userId, sessionClaims } = await auth();
     const url = req.nextUrl;
 
-    // ✅ 2. SEO Fix: Пропускаме Googlebot директно, за да не го въртим в редиректи
-    // Това е безопасно, защото ботовете не могат да направят POST заявки или да пипат данни
-    const userAgent = req.headers.get("user-agent") || "";
-    const isBot = /googlebot|bingbot|slurp|duckduckbot|baiduspider|yandex/i.test(userAgent);
+    // ⚠️ Премахнат е старият "Googlebot bypass".
+    // User-Agent се задава от клиента, така че всеки можеше да изпрати
+    // `User-Agent: googlebot` и да прескочи цялата auth логика по-долу (включително POST).
+    // Причината за него (ботове, въртящи се в редиректи) е решена другаде:
+    //   - /help/(.*) вече е публичен маршрут
+    //   - /help препраща анонимните към /help/student-guide, а не към защитен dashboard
+    //   - ролевите редиректи по-долу имат терминален fallback вместо безкраен цикъл
 
-    if (isBot) {
-         return NextResponse.next();
-    }
-
-    // ✅ 3. Логика за публични страници
+    // ✅ 2. Логика за публични страници
     if (isPublicRoute(req)) {
         // Ако потребителят е логнат и се опита да влезе в Home Page ("/"), го пращаме в Dashboard
         if (url.pathname === "/" && userId) {
@@ -61,29 +68,25 @@ export default clerkMiddleware(async (auth, req) => {
             const onboardingComplete = onboardingRaw === true || onboardingRaw?.toString() === "true";
             const role = (sessionClaims?.metadata?.role || "").toString().toUpperCase();
 
-            if (!onboardingComplete) {
+            // Непозната/липсваща роля -> onboarding, а не налучкване на табло.
+            const home = DASHBOARD_BY_ROLE[role];
+            if (!onboardingComplete || !home) {
                 return NextResponse.redirect(new URL("/onboarding", req.url));
             }
-            if (role === "COMPANY") {
-                return NextResponse.redirect(new URL("/dashboard/company", req.url));
-            }
-            if (role === "TEAM_MEMBER") {
-                return NextResponse.redirect(new URL("/dashboard/team-member", req.url));
-            }
-            return NextResponse.redirect(new URL("/dashboard/student", req.url));
+            return NextResponse.redirect(new URL(home, req.url));
         }
         // Ако е публична страница и не е хоумпейдж, просто го пускаме
         return NextResponse.next();
     }
 
-    // ✅ 4. Защита на не-публични страници (Private Routes)
+    // ✅ 3. Защита на не-публични страници (Private Routes)
     // Ако няма UserID и не е публичен път -> Redirect към Home/Sign-in
     if (!userId) {
         // Redirect към sign-in вместо към home е по-добра практика, но нека запазим твоята логика
         return NextResponse.redirect(new URL("/", req.url)); 
     }
 
-    // ✅ 5. Onboarding логика
+    // ✅ 4. Onboarding логика
     const onboardingRaw = sessionClaims?.metadata?.onboardingComplete;
     const onboardingComplete = onboardingRaw === true || onboardingRaw?.toString() === "true";
     const role = (sessionClaims?.metadata?.role || "").toString().toUpperCase();
@@ -92,29 +95,28 @@ export default clerkMiddleware(async (auth, req) => {
         return NextResponse.redirect(new URL("/onboarding", req.url));
     }
 
-    // ✅ 5.5. Allow role-agnostic routes (like invitations) for all authenticated users
+    // ✅ 4.5. Allow role-agnostic routes (like invitations) for all authenticated users
     if (isRoleAgnosticRoute(req)) {
         return NextResponse.next();
     }
 
-    // ✅ 6. Role-based защита
-    if (url.pathname.startsWith("/dashboard/student") && role !== "STUDENT") {
-        if (role === "TEAM_MEMBER") {
-            return NextResponse.redirect(new URL("/dashboard/team-member", req.url));
+    // ✅ 5. Role-based защита.
+    // Старата версия правеше редирект роля->роля: при роля извън
+    // {STUDENT, COMPANY, TEAM_MEMBER} /dashboard/student пращаше към /dashboard/company,
+    // което пращаше обратно към /dashboard/student -> ERR_TOO_MANY_REDIRECTS.
+    // Сега целта се изчислява веднъж и всеки клон е терминален.
+    if (url.pathname.startsWith("/dashboard")) {
+        const home = DASHBOARD_BY_ROLE[role];
+
+        // Непозната или липсваща роля -> onboarding (той не е /dashboard, така че не се зацикля).
+        if (!home) {
+            return NextResponse.redirect(new URL("/onboarding", req.url));
         }
-        return NextResponse.redirect(new URL("/dashboard/company", req.url));
-    }
-    if (url.pathname.startsWith("/dashboard/company") && role !== "COMPANY") {
-        if (role === "TEAM_MEMBER") {
-            return NextResponse.redirect(new URL("/dashboard/team-member", req.url));
+
+        // Чуждо табло -> един редирект към собственото.
+        if (!url.pathname.startsWith(home)) {
+            return NextResponse.redirect(new URL(home, req.url));
         }
-        return NextResponse.redirect(new URL("/dashboard/student", req.url));
-    }
-    if (url.pathname.startsWith("/dashboard/team-member") && role !== "TEAM_MEMBER") {
-        if (role === "COMPANY") {
-            return NextResponse.redirect(new URL("/dashboard/company", req.url));
-        }
-        return NextResponse.redirect(new URL("/dashboard/student", req.url));
     }
 
     return NextResponse.next();

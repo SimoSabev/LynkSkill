@@ -1,25 +1,14 @@
-// app/api/check-user/route.ts
-import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { NextResponse } from "next/server"
 
-export async function GET(request: Request) {
-    const userId = request.headers.get('x-user-id');
-    if (!userId) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+// ПРЕМАХНАТ ENDPOINT — 410 Gone.
+// Причина: Авторизация през подменяем `x-user-id` header; връщаше целия User запис.
+// Нямаше нито един извикващ в app/, components/, lib/, pages/ или hooks/.
+// TODO: файлът трябва да бъде изтрит напълно (`git rm`); тук стои само защото
+// изтриването на файлове беше блокирано в средата, в която беше направена промяната.
 
-    try {
-        const dbUser = await prisma.user.findUnique({
-            where: { clerkId: userId },
-        });
+const gone = () =>
+    NextResponse.json({ error: "This endpoint has been removed." }, { status: 410 })
 
-        if (!dbUser) {
-            return NextResponse.json({ error: 'User not found in DB' }, { status: 403 });
-        }
-
-        return NextResponse.json({ ok: true, user: dbUser });
-    } catch (err) {
-        console.error(err);
-        return NextResponse.json({ error: 'Server error' }, { status: 500 });
-    }
+export async function GET() {
+    return gone()
 }

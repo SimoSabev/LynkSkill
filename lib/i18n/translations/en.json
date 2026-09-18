@@ -354,7 +354,8 @@
     "failedToUpdate": "Failed to update interview",
     "somethingWentWrong": "Something went wrong",
     "pleaseEnterMeetingLink": "Please enter a meeting link",
-    "save": "Save"
+    "save": "Save",
+    "failedToUpdateMeetingLink": "Failed to update the meeting link"
   },
   "reviews": {
     "title": "Reviews",
@@ -924,7 +925,9 @@
     "leaveEmptyForUnlimited": "Leave empty for unlimited team size",
     "saveChanges": "Save Changes",
     "codeDisabledTitle": "Code Disabled",
-    "codeDisabledDescription": "Team members cannot join using this code until it's enabled again."
+    "codeDisabledDescription": "Team members cannot join using this code until it's enabled again.",
+    "code": "Code",
+    "invitationCode": "Company Invitation Code"
   },
   "activeAssignments": {
     "title": "Active Assignments",
@@ -1687,7 +1690,9 @@
     "cannotStartConversation": "Cannot start conversation",
     "studentNotUploadedAssignment": "The student has not uploaded the assignment yet.",
     "age": "Age",
-    "at": "at"
+    "at": "at",
+    "applicationApproved": "Application approved",
+    "applicationRejected": "Application rejected"
   },
   "teamTab": {
     "somethingWentWrong": "Something went wrong. Please try again.",
@@ -1699,7 +1704,8 @@
     "invitationCodeCopied": "Invitation code copied!",
     "shareCodeWithMembers": "Share this code with team members to join your company.",
     "failedToCopyCode": "Failed to copy code",
-    "awaiting": "awaiting"
+    "awaiting": "awaiting",
+    "shareCodeDescription": "Share it with the people you want to invite to your team."
   },
   "savedInternships": {
     "negotiable": "Negotiable"
@@ -1902,7 +1908,8 @@
       "howEnable2faAnswer": "Navigate to Settings > Privacy > Two-Factor Authentication. Follow the setup wizard to add an extra layer of security to your account.",
       "howDeleteAccount": "How do I delete my account?",
       "howDeleteAccountAnswer": "Contact our support team to request account deletion. We'll process your request within 30 days and remove all your personal data."
-    }
+    },
+    "redirecting": "Redirecting..."
   },
   "candidatesPage": {
     "browseAndSearch": "Browse and search for potential candidates",

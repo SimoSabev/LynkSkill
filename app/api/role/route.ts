@@ -1,78 +1,18 @@
-import { auth, currentUser } from "@clerk/nextjs/server";
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { clerkClient } from "@/lib/clerk";
+import { NextResponse } from "next/server"
 
-// ------------------- GET role -------------------
+// ПРЕМАХНАТ ENDPOINT — 410 Gone.
+// Причина: Позволяваше смяна на собствената роля и презаписваше publicMetadata (триеше onboardingComplete).
+// Нямаше нито един извикващ в app/, components/, lib/, pages/ или hooks/.
+// TODO: файлът трябва да бъде изтрит напълно (`git rm`); тук стои само защото
+// изтриването на файлове беше блокирано в средата, в която беше направена промяната.
+
+const gone = () =>
+    NextResponse.json({ error: "This endpoint has been removed." }, { status: 410 })
+
 export async function GET() {
-    try {
-        const { userId } = await auth();
-        if (!userId) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
-
-        const user = await prisma.user.findUnique({
-            where: { clerkId: userId },
-            select: { id: true, role: true },
-        });
-
-        return NextResponse.json(user);
-    } catch (error) {
-        console.error("Error fetching user:", error);
-        return NextResponse.json(
-            { error: "Internal server error" },
-            { status: 500 }
-        );
-    }
+    return gone()
 }
 
-// ------------------- SET role -------------------
-export async function POST(req: Request) {
-    const { role } = await req.json();
-    const validRoles = ["STUDENT", "COMPANY"];
-
-    if (!validRoles.includes(role?.toUpperCase())) {
-        return NextResponse.json({ error: "Invalid role" }, { status: 400 });
-    }
-
-    const user = await currentUser();
-    if (!user) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const email = user.primaryEmailAddress?.emailAddress;
-    if (!email) {
-        return NextResponse.json({ error: "No email found" }, { status: 400 });
-    }
-
-    const finalRole = role.toUpperCase();
-
-    // Update Clerk
-    await clerkClient.users.updateUser(user.id, {
-        publicMetadata: { role: finalRole },
-    });
-
-    // Sync Prisma
-    const existingUser = await prisma.user.findUnique({
-        where: { clerkId: user.id },
-    });
-
-    if (existingUser) {
-        const updated = await prisma.user.update({
-            where: { clerkId: user.id },
-            data: { role: finalRole },
-        });
-        return NextResponse.json(updated);
-    }
-
-    const newUser = await prisma.user.create({
-        data: {
-            clerkId: user.id,
-            email,
-            role: finalRole,
-            profile: { create: { name: "", bio: "" } },
-        },
-    });
-
-    return NextResponse.json(newUser);
+export async function POST() {
+    return gone()
 }

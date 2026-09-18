@@ -385,7 +385,7 @@ export default function TeamPage() {
               className="gap-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-500 data-[state=active]:to-indigo-500 data-[state=active]:text-white data-[state=active]:shadow-md py-2.5"
             >
               <Users className="h-4 w-4" />
-              <span className="hidden sm:inline">{t('teamPage.members')}</span>
+              <span className="sr-only sm:not-sr-only">{t('teamPage.members')}</span>
               <Badge variant="secondary" className="ml-1 data-[state=active]:bg-white/20 data-[state=active]:text-white hidden sm:inline-flex">
                 {activeMembers.length}
               </Badge>
@@ -396,7 +396,7 @@ export default function TeamPage() {
                 className="gap-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-500 data-[state=active]:to-indigo-500 data-[state=active]:text-white data-[state=active]:shadow-md py-2.5"
               >
                 <Shield className="h-4 w-4" />
-                <span className="hidden sm:inline">{t('teamPage.roles')}</span>
+                <span className="sr-only sm:not-sr-only">{t('teamPage.roles')}</span>
               </TabsTrigger>
             )}
             {canInviteMembers && (
@@ -405,7 +405,7 @@ export default function TeamPage() {
                 className="gap-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-500 data-[state=active]:to-indigo-500 data-[state=active]:text-white data-[state=active]:shadow-md py-2.5 relative"
               >
                 <UserPlus className="h-4 w-4" />
-                <span className="hidden sm:inline">{t('teamPage.invitations')}</span>
+                <span className="sr-only sm:not-sr-only">{t('teamPage.invitations')}</span>
                 {pendingMembers.length > 0 && (
                   <Badge className="absolute -top-1.5 -right-1.5 h-5 min-w-5 rounded-full bg-orange-500 text-white text-[10px] p-0 flex items-center justify-center">
                     {pendingMembers.length}
@@ -419,7 +419,7 @@ export default function TeamPage() {
                 className="gap-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-500 data-[state=active]:to-indigo-500 data-[state=active]:text-white data-[state=active]:shadow-md py-2.5"
               >
                 <Key className="h-4 w-4" />
-                <span className="hidden sm:inline">{t('teamPage.code')}</span>
+                <span className="sr-only sm:not-sr-only">{t('teamPage.code')}</span>
               </TabsTrigger>
             )}
             {isOwner && (
@@ -428,7 +428,7 @@ export default function TeamPage() {
                 className="gap-2 rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-500 data-[state=active]:to-indigo-500 data-[state=active]:text-white data-[state=active]:shadow-md py-2.5"
               >
                 <Crown className="h-4 w-4" />
-                <span className="hidden sm:inline">{t('teamPage.ownership')}</span>
+                <span className="sr-only sm:not-sr-only">{t('teamPage.ownership')}</span>
               </TabsTrigger>
             )}
           </TabsList>

@@ -29,8 +29,10 @@ export default function HelpRedirectPage() {
                     router.replace('/dashboard/student/help')
                 })
         } else {
-            // Not signed in, redirect to student help (public)
-            router.replace('/dashboard/student/help')
+            // Анонимните посетители (и търсачките) отиват към публичното ръководство.
+            // Преди тук стоеше '/dashboard/student/help', което е зад auth -> middleware
+            // ги връщаше на '/', така че Help Center нямаше индексируемо съдържание.
+            router.replace('/help/student-guide')
         }
     }, [isLoaded, isSignedIn, router])
 

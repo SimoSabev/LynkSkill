@@ -1,27 +1,14 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { NextResponse } from "next/server"
+
+// ПРЕМАХНАТ ENDPOINT — 410 Gone.
+// Причина: Изтриваше Application + Project + Experience анонимно (беше в isPublicRoute).
+// Нямаше нито един извикващ в app/, components/, lib/, pages/ или hooks/.
+// TODO: файлът трябва да бъде изтрит напълно (`git rm`); тук стои само защото
+// изтриването на файлове беше блокирано в средата, в която беше направена промяната.
+
+const gone = () =>
+    NextResponse.json({ error: "This endpoint has been removed." }, { status: 410 })
 
 export async function GET() {
-    try {
-        const expiredApplications = await prisma.application.findMany({
-            where: { internship: { testAssignmentDueDate: { lt: new Date() } } },
-        });
-
-        for (const app of expiredApplications) {
-            await prisma.experience.deleteMany({
-                where: { project: { applicationId: app.id } },
-            });
-            await prisma.project.deleteMany({
-                where: { applicationId: app.id },
-            });
-            await prisma.application.delete({
-                where: { id: app.id },
-            });
-        }
-
-        return NextResponse.json({ message: "Cleanup completed" });
-    } catch (error) {
-        console.error(error);
-        return NextResponse.json({ error: "Cleanup failed" }, { status: 500 });
-    }
+    return gone()
 }

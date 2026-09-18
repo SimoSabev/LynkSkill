@@ -292,7 +292,7 @@ export function DashboardShell({ children, userType, memberPermissions = [] }: D
                         className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-full bg-gradient-to-r from-violet-600 to-purple-600 px-5 py-3.5 text-white shadow-2xl shadow-violet-500/25 hover:shadow-violet-500/40 transition-shadow group"
                     >
                         <MessageCircle className="h-5 w-5 group-hover:rotate-12 transition-transform" />
-                        <span className="text-sm font-semibold hidden sm:inline">Talk to Linky</span>
+                        <span className="text-sm font-semibold sr-only sm:not-sr-only">Talk to Linky</span>
                         <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-emerald-400 ring-2 ring-background animate-pulse" />
                     </motion.button>
                 )}

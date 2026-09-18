@@ -141,7 +141,7 @@ export function InternshipFiltersComponent({
                             className="gap-2 h-11 px-5 rounded-xl md:rounded-2xl border-2 border-border/50 hover:border-purple-500/50 bg-background/80 backdrop-blur-sm shadow-md hover:shadow-lg transition-all font-semibold"
                         >
                             <Filter className="h-4 w-4" />
-                            <span className="hidden sm:inline">{t("filters.filters")}</span>
+                            <span className="sr-only sm:not-sr-only">{t("filters.filters")}</span>
                             {activeFilterCount > 0 && (
                                 <span className="ml-1 h-5 min-w-5 px-1.5 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 text-white text-xs font-bold flex items-center justify-center">
                                     {activeFilterCount}
