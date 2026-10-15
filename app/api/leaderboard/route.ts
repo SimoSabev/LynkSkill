@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { clerkClient } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic" // Uses request.url
@@ -35,8 +35,16 @@ function calculateExperienceScore(exp: {
 
 export async function GET(req: NextRequest) {
     try {
-        const limit = parseInt(req.nextUrl.searchParams.get("limit") || "50");
-        const offset = parseInt(req.nextUrl.searchParams.get("offset") || "0");
+        const { userId } = await auth();
+        if (!userId) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+        const viewer = await prisma.user.findUnique({ where: { clerkId: userId }, select: { role: true } });
+        // Students see each other's names/scores, not contact details
+        const canSeeEmails = viewer?.role === "COMPANY" || viewer?.role === "TEAM_MEMBER";
+
+        const limit = Math.min(Math.max(parseInt(req.nextUrl.searchParams.get("limit") || "50") || 50, 1), 100);
+        const offset = Math.max(parseInt(req.nextUrl.searchParams.get("offset") || "0") || 0, 0);
 
         // 1️⃣ Fetch paginated students from Prisma
         const students = await prisma.user.findMany({
@@ -103,7 +111,7 @@ export async function GET(req: NextRequest) {
                     clerkUser?.firstName && clerkUser?.lastName
                         ? `${clerkUser.firstName} ${clerkUser.lastName}`
                         : "Unnamed",
-                email: clerkUser?.emailAddresses?.[0]?.emailAddress || student.email,
+                email: canSeeEmails ? (clerkUser?.emailAddresses?.[0]?.emailAddress || student.email) : "",
                 imageUrl: clerkUser?.imageUrl || "/default-avatar.png",
                 // New metrics
                 totalExperiences,
