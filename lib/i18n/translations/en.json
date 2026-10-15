@@ -410,5 +410,24 @@
     "grade": "Grade",
     "feedback": "Feedback",
     "noAssignments": "No assignments yet"
+  },
+  "companyFixes": {
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "toggleSidebar": "Toggle sidebar",
+    "signOut": "Sign out",
+    "yourCompany": "Your company",
+    "comingSoon": "Coming soon"
+  },
+  "studentFixes": {
+    "portfolioLoadErrorTitle": "Couldn't load your portfolio",
+    "somethingWentWrong": "Something went wrong.",
+    "retry": "Retry",
+    "portfolioNotLoaded": "Portfolio is not loaded. Please retry before saving.",
+    "experienceSelectRequired": "Please select company, project and files",
+    "experienceUploaded": "Experience uploaded",
+    "uploadFailed": "Upload failed",
+    "bulkDownloadDescription": "Each file will open in a new tab.",
+    "filesToDownload": "Files to download:"
   }
 }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -49,6 +49,7 @@ import {
     Paintbrush,
     Settings,
     AlertCircle,
+    RefreshCw,
 } from "lucide-react"
 import AIMascotScene from "./AIMascotScene"
 import { useTranslation } from "@/lib/i18n"
@@ -180,9 +181,9 @@ const AttachmentDisplay = ({ attachments }: { attachments?: FileAttachment[] }) 
         <div className="mt-4 space-y-2">
             <h5 className="text-sm font-semibold text-muted-foreground">Attachments:</h5>
             <div className="flex flex-wrap gap-2">
-                {attachments.map((file) => (
+                {attachments.map((file, idx) => (
                     <motion.a
-                        key={file.id}
+                        key={file.path ?? file.url ?? `${file.name}-${idx}`}
                         href={file.url}
                         target="_blank"
                         rel="noopener noreferrer"
@@ -223,64 +224,39 @@ export function Portfolio({ userType }: { userType: "Student" | "Company" }) {
 
     const { user } = useUser()
 
-    useEffect(() => {
-        async function fetchPortfolio() {
+    const [loadError, setLoadError] = useState<string | null>(null)
+
+    const fetchPortfolio = useCallback(async () => {
+        setLoading(true)
+        setLoadError(null)
+        try {
             const res = await fetch("/api/portfolio")
-            if (res.ok) {
-                const data = await res.json()
-                setPortfolio({
-                    ...data,
-                    skills: data.skills ?? [],
-                    interests: data.interests ?? [],
-                    education: data.education ?? [],
-                    projects: data.projects ?? [],
-                    certifications: data.certifications ?? [],
-                })
-            } else {
-                setPortfolio({
-                    fullName: "John Doe",
-                    headline: "Full Stack Developer",
-                    age: 15,
-                    bio: "Passionate developer with experience in modern web technologies. I love creating innovative solutions and learning new technologies.",
-                    skills: ["JavaScript", "React", "Node.js", "TypeScript"],
-                    interests: ["Technology", "Photography", "Travel"],
-                    education: [
-                        {
-                            school: "University of Technology",
-                            degree: "Bachelor of Computer Science",
-                            startYear: 2020,
-                            endYear: 2024,
-                            attachments: [],
-                        },
-                    ],
-                    projects: [
-                        {
-                            title: "E-commerce Platform",
-                            description: "A full-stack e-commerce solution built with React and Node.js",
-                            link: "https://github.com/johndoe/ecommerce",
-                            attachments: [],
-                        },
-                    ],
-                    certifications: [
-                        {
-                            name: "AWS Certified Developer",
-                            authority: "Amazon Web Services",
-                            issuedAt: "2024-01-15",
-                            attachments: [],
-                        },
-                    ],
-                    linkedin: "https://linkedin.com/in/johndoe",
-                    github: "https://github.com/johndoe",
-                    portfolioUrl: "https://johndoe.dev",
-                    needsApproval: false,
-                    approvalStatus: "APPROVED",
-                })
+            if (!res.ok) {
+                const data = await res.json().catch(() => null)
+                throw new Error((data && typeof data.error === "string" && data.error) || "Failed to load portfolio")
             }
+            const data = await res.json()
+            setPortfolio({
+                ...data,
+                skills: data.skills ?? [],
+                interests: data.interests ?? [],
+                education: data.education ?? [],
+                projects: data.projects ?? [],
+                certifications: data.certifications ?? [],
+            })
+        } catch (err) {
+            console.error("Portfolio load error:", err)
+            // Never seed placeholder data here: saving it would overwrite the real portfolio
+            setPortfolio(null)
+            setLoadError(err instanceof Error ? err.message : "Failed to load portfolio")
+        } finally {
             setLoading(false)
         }
-
-        fetchPortfolio()
     }, [])
+
+    useEffect(() => {
+        fetchPortfolio()
+    }, [fetchPortfolio])
 
     async function handleSave() {
         const errors: Record<string, string> = {}
@@ -324,6 +300,11 @@ export function Portfolio({ userType }: { userType: "Student" | "Company" }) {
         }
 
         setValidationErrors({})
+
+        if (!portfolio || loadError) {
+            toast.error(t("studentFixes.portfolioNotLoaded"))
+            return
+        }
 
         try {
             const res = await fetch("/api/portfolio", {
@@ -414,6 +395,34 @@ export function Portfolio({ userType }: { userType: "Student" | "Company" }) {
         }))
     }
 
+    // Immutable, functional updates for list items (avoid mutating shared objects / stale closures)
+    const updateProject = (index: number, patch: Partial<Project>) => {
+        setPortfolio((prev) =>
+            prev
+                ? { ...prev, projects: prev.projects.map((p, idx) => (idx === index ? { ...p, ...patch } : p)) }
+                : prev,
+        )
+    }
+
+    const updateEducation = (index: number, patch: Partial<Education>) => {
+        setPortfolio((prev) =>
+            prev
+                ? { ...prev, education: prev.education.map((e, idx) => (idx === index ? { ...e, ...patch } : e)) }
+                : prev,
+        )
+    }
+
+    const updateCertification = (index: number, patch: Partial<Certification>) => {
+        setPortfolio((prev) =>
+            prev
+                ? {
+                      ...prev,
+                      certifications: prev.certifications.map((c, idx) => (idx === index ? { ...c, ...patch } : c)),
+                  }
+                : prev,
+        )
+    }
+
     // AI FUNCTION - Available for future AI recommendations feature
     const _getAiRecommendations = async () => {
         if (!portfolio) return
@@ -443,6 +452,24 @@ export function Portfolio({ userType }: { userType: "Student" | "Company" }) {
                     {Array.from({ length: 6 }).map((_, i) => (
                         <div key={i} className="h-48 bg-card/60 rounded-3xl animate-pulse shadow-sm" />
                     ))}
+                </div>
+            </div>
+        )
+    }
+
+    if (loadError || !portfolio) {
+        return (
+            <div className="min-h-[400px] flex items-center justify-center bg-background px-4">
+                <div className="max-w-md w-full text-center space-y-4 p-8 rounded-3xl border border-border bg-card shadow-sm">
+                    <div className="mx-auto h-14 w-14 rounded-full bg-red-500/10 flex items-center justify-center">
+                        <AlertCircle className="h-7 w-7 text-red-500" />
+                    </div>
+                    <h2 className="text-xl font-semibold text-foreground">{t("studentFixes.portfolioLoadErrorTitle")}</h2>
+                    <p className="text-sm text-muted-foreground">{loadError || t("studentFixes.somethingWentWrong")}</p>
+                    <Button onClick={() => fetchPortfolio()} className="rounded-xl">
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        {t("studentFixes.retry")}
+                    </Button>
                 </div>
             </div>
         )
@@ -494,7 +521,7 @@ export function Portfolio({ userType }: { userType: "Student" | "Company" }) {
                                 </motion.div>
 
                                 <div className="space-y-4">
-                                    <h1 className="text-6xl font-bold text-balance leading-tight">{displayName}</h1>
+                                    <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold text-balance leading-tight break-words">{displayName}</h1>
                                     <p className="text-2xl font-semibold text-white/95">
                                         {portfolio?.headline || "Professional Portfolio"}
                                     </p>
@@ -1025,9 +1052,7 @@ export function Portfolio({ userType }: { userType: "Student" | "Company" }) {
                                                     placeholder="Project Title"
                                                     value={proj.title || ""}
                                                     onChange={(e) => {
-                                                        const copy = [...(portfolio?.projects || [])]
-                                                        copy[i].title = e.target.value
-                                                        setPortfolio((prev) => ({ ...prev!, projects: copy }))
+                                                        updateProject(i, { title: e.target.value })
                                                     }}
                                                     className="rounded-[1.25rem] border-2 focus:ring-2 focus:ring-purple-500"
                                                 />
@@ -1035,9 +1060,7 @@ export function Portfolio({ userType }: { userType: "Student" | "Company" }) {
                                                     placeholder="Project Description"
                                                     value={proj.description || ""}
                                                     onChange={(e) => {
-                                                        const copy = [...(portfolio?.projects || [])]
-                                                        copy[i].description = e.target.value
-                                                        setPortfolio((prev) => ({ ...prev!, projects: copy }))
+                                                        updateProject(i, { description: e.target.value })
                                                     }}
                                                     className="rounded-[1.25rem] border-2 focus:ring-2 focus:ring-purple-500"
                                                 />
@@ -1045,9 +1068,7 @@ export function Portfolio({ userType }: { userType: "Student" | "Company" }) {
                                                     placeholder="Project Link (optional)"
                                                     value={proj.link || ""}
                                                     onChange={(e) => {
-                                                        const copy = [...(portfolio?.projects || [])]
-                                                        copy[i].link = e.target.value
-                                                        setPortfolio((prev) => ({ ...prev!, projects: copy }))
+                                                        updateProject(i, { link: e.target.value })
                                                     }}
                                                     className="rounded-[1.25rem] border-2 focus:ring-2 focus:ring-purple-500"
                                                 />
@@ -1059,9 +1080,7 @@ export function Portfolio({ userType }: { userType: "Student" | "Company" }) {
                                                         section="projects"
                                                         attachments={proj.attachments ?? []}
                                                         onAttachmentsChange={(newAttachments) => {
-                                                            const copy = [...(portfolio?.projects || [])]
-                                                            copy[i].attachments = newAttachments
-                                                            setPortfolio((prev) => ({ ...prev!, projects: copy }))
+                                                            updateProject(i, { attachments: newAttachments })
                                                         }}
                                                         maxFiles={10}
                                                     />
@@ -1174,11 +1193,7 @@ export function Portfolio({ userType }: { userType: "Student" | "Company" }) {
                                                             placeholder="School/University"
                                                             value={edu.school || ""}
                                                             onChange={(e) =>
-                                                                setPortfolio((prev) => {
-                                                                    const copy = [...(prev?.education || [])]
-                                                                    copy[i].school = e.target.value
-                                                                    return { ...prev!, education: copy }
-                                                                })
+                                                                updateEducation(i, { school: e.target.value })
                                                             }
                                                             className="rounded-[1.25rem] border-2 focus:ring-2 focus:ring-purple-500"
                                                         />
@@ -1186,11 +1201,7 @@ export function Portfolio({ userType }: { userType: "Student" | "Company" }) {
                                                             placeholder="Degree/Program"
                                                             value={edu.degree || ""}
                                                             onChange={(e) =>
-                                                                setPortfolio((prev) => {
-                                                                    const copy = [...(prev?.education || [])]
-                                                                    copy[i].degree = e.target.value
-                                                                    return { ...prev!, education: copy }
-                                                                })
+                                                                updateEducation(i, { degree: e.target.value })
                                                             }
                                                             className="rounded-[1.25rem] border-2 focus:ring-2 focus:ring-purple-500"
                                                         />
@@ -1200,11 +1211,7 @@ export function Portfolio({ userType }: { userType: "Student" | "Company" }) {
                                                                 type="number"
                                                                 value={edu.startYear || ""}
                                                                 onChange={(e) =>
-                                                                    setPortfolio((prev) => {
-                                                                        const copy = [...(prev?.education || [])]
-                                                                        copy[i].startYear = Number(e.target.value)
-                                                                        return { ...prev!, education: copy }
-                                                                    })
+                                                                    updateEducation(i, { startYear: Number(e.target.value) })
                                                                 }
                                                                 className={`rounded-[1.25rem] border-2 focus:ring-2 focus:ring-purple-500 ${
                                                                     validationErrors[`education-${i}-start`] ? "border-destructive" : ""
@@ -1223,11 +1230,7 @@ export function Portfolio({ userType }: { userType: "Student" | "Company" }) {
                                                                 type="number"
                                                                 value={edu.endYear || ""}
                                                                 onChange={(e) =>
-                                                                    setPortfolio((prev) => {
-                                                                        const copy = [...(prev?.education || [])]
-                                                                        copy[i].endYear = Number(e.target.value)
-                                                                        return { ...prev!, education: copy }
-                                                                    })
+                                                                    updateEducation(i, { endYear: Number(e.target.value) })
                                                                 }
                                                                 className={`rounded-[1.25rem] border-2 focus:ring-2 focus:ring-purple-500 ${
                                                                     validationErrors[`education-${i}-end`] ? "border-destructive" : ""
@@ -1249,9 +1252,7 @@ export function Portfolio({ userType }: { userType: "Student" | "Company" }) {
                                                             section="education"
                                                             attachments={edu.attachments ?? []}
                                                             onAttachmentsChange={(newAttachments) => {
-                                                                const copy = [...(portfolio?.education || [])]
-                                                                copy[i].attachments = newAttachments
-                                                                setPortfolio((prev) => ({ ...prev!, education: copy }))
+                                                                updateEducation(i, { attachments: newAttachments })
                                                             }}
                                                         />
                                                     </div>
@@ -1357,12 +1358,7 @@ export function Portfolio({ userType }: { userType: "Student" | "Company" }) {
                                                             placeholder="Certification Name"
                                                             value={cert.name || ""}
                                                             onChange={(e) => {
-                                                                const copy = [...(portfolio?.certifications || [])]
-                                                                copy[i].name = e.target.value
-                                                                setPortfolio((prev) => ({
-                                                                    ...prev!,
-                                                                    certifications: copy,
-                                                                }))
+                                                                updateCertification(i, { name: e.target.value })
                                                             }}
                                                             className="rounded-[1.25rem] border-2 focus:ring-2 focus:ring-purple-500"
                                                         />
@@ -1370,12 +1366,7 @@ export function Portfolio({ userType }: { userType: "Student" | "Company" }) {
                                                             placeholder="Issuing Authority"
                                                             value={cert.authority || ""}
                                                             onChange={(e) => {
-                                                                const copy = [...(portfolio?.certifications || [])]
-                                                                copy[i].authority = e.target.value
-                                                                setPortfolio((prev) => ({
-                                                                    ...prev!,
-                                                                    certifications: copy,
-                                                                }))
+                                                                updateCertification(i, { authority: e.target.value })
                                                             }}
                                                             className="rounded-[1.25rem] border-2 focus:ring-2 focus:ring-purple-500"
                                                         />
@@ -1384,12 +1375,7 @@ export function Portfolio({ userType }: { userType: "Student" | "Company" }) {
                                                                 placeholder="Issue Date (YYYY-MM-DD)"
                                                                 value={cert.issuedAt || ""}
                                                                 onChange={(e) => {
-                                                                    const copy = [...(portfolio?.certifications || [])]
-                                                                    copy[i].issuedAt = e.target.value
-                                                                    setPortfolio((prev) => ({
-                                                                        ...prev!,
-                                                                        certifications: copy,
-                                                                    }))
+                                                                    updateCertification(i, { issuedAt: e.target.value })
                                                                 }}
                                                                 className={`rounded-[1.25rem] border-2 focus:ring-2 focus:ring-purple-500 ${
                                                                     validationErrors[`cert-${i}-issued`] ? "border-destructive" : ""
@@ -1407,12 +1393,7 @@ export function Portfolio({ userType }: { userType: "Student" | "Company" }) {
                                                                 placeholder="Expiry Date (optional)"
                                                                 value={cert.expiresAt || ""}
                                                                 onChange={(e) => {
-                                                                    const copy = [...(portfolio?.certifications || [])]
-                                                                    copy[i].expiresAt = e.target.value
-                                                                    setPortfolio((prev) => ({
-                                                                        ...prev!,
-                                                                        certifications: copy,
-                                                                    }))
+                                                                    updateCertification(i, { expiresAt: e.target.value })
                                                                 }}
                                                                 className={`rounded-[1.25rem] border-2 focus:ring-2 focus:ring-purple-500 ${
                                                                     validationErrors[`cert-${i}-expires`] ? "border-destructive" : ""
@@ -1434,12 +1415,7 @@ export function Portfolio({ userType }: { userType: "Student" | "Company" }) {
                                                             section="certifications"
                                                             attachments={cert.attachments ?? []}
                                                             onAttachmentsChange={(newAttachments) => {
-                                                                const copy = [...(portfolio?.certifications || [])]
-                                                                copy[i].attachments = newAttachments
-                                                                setPortfolio((prev) => ({
-                                                                    ...prev!,
-                                                                    certifications: copy,
-                                                                }))
+                                                                updateCertification(i, { attachments: newAttachments })
                                                             }}
                                                             maxFiles={5}
                                                         />

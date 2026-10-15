@@ -410,5 +410,24 @@
     "grade": "Оценка",
     "feedback": "Обратна връзка",
     "noAssignments": "Все още няма задания"
+  },
+  "companyFixes": {
+    "openMenu": "Отвори менюто",
+    "closeMenu": "Затвори менюто",
+    "toggleSidebar": "Покажи/скрий страничната лента",
+    "signOut": "Изход",
+    "yourCompany": "Вашата компания",
+    "comingSoon": "Очаквайте скоро"
+  },
+  "studentFixes": {
+    "portfolioLoadErrorTitle": "Портфолиото не можа да се зареди",
+    "somethingWentWrong": "Нещо се обърка.",
+    "retry": "Опитай отново",
+    "portfolioNotLoaded": "Портфолиото не е заредено. Опитайте отново, преди да запазите.",
+    "experienceSelectRequired": "Моля, изберете компания, проект и файлове",
+    "experienceUploaded": "Опитът е качен успешно",
+    "uploadFailed": "Качването не бе успешно",
+    "bulkDownloadDescription": "Всеки файл ще се отвори в нов раздел.",
+    "filesToDownload": "Файлове за изтегляне:"
   }
 }

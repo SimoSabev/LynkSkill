@@ -17,7 +17,8 @@ export const ALLOWED_FILE_TYPES = {
     ],
 }
 
-export const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
+export const MAX_FILE_SIZE_MB = 5
+export const MAX_FILE_SIZE = MAX_FILE_SIZE_MB * 1024 * 1024 // 5MB (matches the portfolio upload API limit)
 
 export function validateFile(file: File): { valid: boolean; error?: string } {
     const allowedTypes = [...ALLOWED_FILE_TYPES.images, ...ALLOWED_FILE_TYPES.documents]
@@ -32,7 +33,7 @@ export function validateFile(file: File): { valid: boolean; error?: string } {
     if (file.size > MAX_FILE_SIZE) {
         return {
             valid: false,
-            error: "File too large. Maximum size is 10MB.",
+            error: `File too large. Maximum size is ${MAX_FILE_SIZE_MB}MB.`,
         }
     }
 
@@ -67,14 +68,22 @@ export async function uploadFile(file: File, section: string): Promise<FileAttac
     formData.append("file", file)
     formData.append("section", section)
 
-    const response = await fetch("/api/portfolio/upload", { // 👈 correct path
+    const response = await fetch("/api/portfolio/upload", {
         method: "POST",
         body: formData,
     })
 
     if (!response.ok) {
-        const text = await response.text() // 👈 debug
-        throw new Error(`Upload failed: ${text}`)
+        let message = `Upload failed (${response.status})`
+        try {
+            const data = await response.json()
+            if (data && typeof data.error === "string" && data.error) {
+                message = data.error
+            }
+        } catch {
+            // Non-JSON error body: keep the generic message
+        }
+        throw new Error(message)
     }
 
     const result = await response.json()
@@ -88,8 +97,8 @@ export async function deleteFile(filePath: string): Promise<void> {
     });
 
     if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Delete failed");
+        const error = await response.json().catch(() => null);
+        throw new Error((error && error.error) || "Delete failed");
     }
 }
 

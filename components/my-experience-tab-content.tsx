@@ -20,8 +20,6 @@ import {
   RefreshCw,
   Search,
   Layers,
-  ShieldCheck,
-  ShieldAlert,
   Eye,
   DownloadCloud,
   Star,
@@ -49,6 +47,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { StudentSummary } from "@/components/student-summary"
 import { useTranslation } from "@/lib/i18n"
+import { toast } from "sonner"
 
 type Experience = {
   id: string
@@ -98,7 +97,8 @@ export default function ExperienceTabContent() {
   const [experiences, setExperiences] = useState<Experience[]>([])
   const [summary, setSummary] = useState<Summary | null>(null)
   const [companies, setCompanies] = useState<Company[]>([])
-  const [loading, setLoading] = useState(false)
+  const [listLoading, setListLoading] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [files, setFiles] = useState<FileList | null>(null)
   const [companyId, setCompanyId] = useState<string>("")
   const [dragActive, setDragActive] = useState(false)
@@ -108,15 +108,9 @@ export default function ExperienceTabContent() {
   const [searchQuery, setSearchQuery] = useState("")
   const [filter, setFilter] = useState<"all" | "recent">("all")
 
-  const [selectedFile, setSelectedFile] = useState<string | null>(null)
-  const [scanProgress, setScanProgress] = useState(0)
-  const [scanStatus, setScanStatus] = useState<"idle" | "scanning" | "safe" | "danger">("idle")
-
   const [viewAllFilesExp, setViewAllFilesExp] = useState<Experience | null>(null)
 
   const [bulkDownloadExp, setBulkDownloadExp] = useState<Experience | null>(null)
-  const [bulkScanProgress, setBulkScanProgress] = useState(0)
-  const [bulkScanStatus, setBulkScanStatus] = useState<"idle" | "scanning" | "safe" | "danger">("idle")
 
   const [fileSizeError, setFileSizeError] = useState<string | null>(null)
 
@@ -139,9 +133,7 @@ export default function ExperienceTabContent() {
   const [, setApprovingExpId] = useState<string | null>(null)
 
   const handleDownloadClick = (url: string) => {
-    setSelectedFile(url)
-    setScanProgress(0)
-    setScanStatus("idle")
+    window.open(url, "_blank", "noopener,noreferrer")
   }
 
   const MAX_TOTAL_SIZE = 50 * 1024 * 1024
@@ -155,57 +147,20 @@ export default function ExperienceTabContent() {
     return true
   }
 
-  const startScan = () => {
-    setScanStatus("scanning")
-    let progress = 0
-    const interval = setInterval(() => {
-      progress += 20
-      setScanProgress(progress)
-      if (progress >= 100) {
-        clearInterval(interval)
-        const safe = Math.random() > 0.1
-        setScanStatus(safe ? "safe" : "danger")
-      }
-    }, 500)
-  }
-
-  const confirmDownload = () => {
-    if (selectedFile && scanStatus === "safe") {
-      window.open(selectedFile, "_blank")
-      setSelectedFile(null)
-    }
-  }
-
-  const startBulkScan = () => {
-    setBulkScanStatus("scanning")
-    let progress = 0
-    const interval = setInterval(() => {
-      progress += 15
-      setBulkScanProgress(progress)
-      if (progress >= 100) {
-        clearInterval(interval)
-        const safe = Math.random() > 0.05
-        setBulkScanStatus(safe ? "safe" : "danger")
-      }
-    }, 600)
-  }
-
   const confirmBulkDownload = () => {
-    if (bulkDownloadExp && bulkScanStatus === "safe") {
+    if (bulkDownloadExp) {
       bulkDownloadExp.mediaUrls.forEach((url, index) => {
         setTimeout(() => {
-          window.open(url, "_blank")
+          window.open(url, "_blank", "noopener,noreferrer")
         }, index * 300)
       })
       setBulkDownloadExp(null)
-      setBulkScanProgress(0)
-      setBulkScanStatus("idle")
     }
   }
 
   const loadExperiences = useCallback(async () => {
     if (!role) return
-    setLoading(true)
+    setListLoading(true)
     try {
       const res = await fetch("/api/experience")
       if (!res.ok) throw new Error("Failed to load experiences")
@@ -223,7 +178,7 @@ export default function ExperienceTabContent() {
       setExperiences([])
       setSummary(null)
     } finally {
-      setLoading(false)
+      setListLoading(false)
     }
   }, [role])
 
@@ -332,30 +287,35 @@ export default function ExperienceTabContent() {
 
   const handleUpload = async () => {
     if (!files || !companyId || !projectId) {
-      alert("Please select company, project and files")
+      toast.error(t("studentFixes.experienceSelectRequired"))
       return
     }
 
-    setLoading(true)
+    setUploading(true)
     setUploadProgress(0)
+    let progressInterval: ReturnType<typeof setInterval> | null = null
     try {
       const formData = new FormData()
       formData.append("companyId", companyId)
       formData.append("projectId", projectId)
       Array.from(files).forEach((file) => formData.append("files", file))
 
-      const progressInterval = setInterval(() => {
+      progressInterval = setInterval(() => {
         setUploadProgress((prev) => Math.min(prev + 10, 90))
       }, 200)
 
       const res = await fetch("/api/experience", { method: "POST", body: formData })
 
       clearInterval(progressInterval)
+      progressInterval = null
       setUploadProgress(100)
 
       if (!res.ok) {
-        const errorData = await res.json()
-        throw new Error(errorData.error || "Upload failed")
+        const errorData = await res.json().catch(() => null)
+        throw new Error(
+          (errorData && typeof errorData.error === "string" && errorData.error) ||
+            `Upload failed (${res.status})`,
+        )
       }
 
       const newExp = await res.json()
@@ -364,12 +324,14 @@ export default function ExperienceTabContent() {
       setCompanyId("")
       setProjectId("")
       setUploadProgress(0)
+      toast.success(t("studentFixes.experienceUploaded"))
     } catch (err) {
       console.error(err)
-      alert(err instanceof Error ? err.message : "Upload failed")
+      toast.error(err instanceof Error ? err.message : t("studentFixes.uploadFailed"))
       setUploadProgress(0)
     } finally {
-      setLoading(false)
+      if (progressInterval) clearInterval(progressInterval)
+      setUploading(false)
     }
   }
 
@@ -404,7 +366,7 @@ export default function ExperienceTabContent() {
       
       if (!res.ok) {
         console.error("API error:", data)
-        alert(data.error || "Action failed")
+        toast.error(data.error || "Action failed")
         return
       }
       
@@ -421,7 +383,7 @@ export default function ExperienceTabContent() {
       setApprovingExpId(null)
     } catch (err) {
       console.error("Network error:", err)
-      alert("Action failed - please check your connection")
+      toast.error("Action failed - please check your connection")
     }
   }
 
@@ -546,7 +508,7 @@ export default function ExperienceTabContent() {
               size="sm"
               variant="ghost"
               onClick={handleRefresh}
-              disabled={refreshing || loading}
+              disabled={refreshing || listLoading}
               className="rounded-2xl"
           >
             <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
@@ -747,7 +709,7 @@ export default function ExperienceTabContent() {
                   )}
 
                   {/* Upload Progress */}
-                  {loading && (
+                  {uploading && (
                       <div className="space-y-2">
                         <div className="flex items-center justify-between text-sm">
                           <span>Uploading...</span>
@@ -760,10 +722,10 @@ export default function ExperienceTabContent() {
                   {/* Upload Button */}
                   <Button
                       onClick={handleUpload}
-                      disabled={loading || !companyId || !projectId || !files}
+                      disabled={uploading || !companyId || !projectId || !files}
                       className="w-full rounded-2xl bg-[var(--experience-button-primary)] hover:bg-[var(--experience-button-primary-hover)] text-white py-3 font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {loading ? (
+                    {uploading ? (
                         <div className="flex items-center gap-2">
                           <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                           Uploading Experience...
@@ -789,7 +751,7 @@ export default function ExperienceTabContent() {
             <h3 className="text-xl font-semibold">{role === "STUDENT" ? "Your Experiences" : "Student Submissions"}</h3>
           </div>
 
-          {loading ? (
+          {listLoading ? (
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {Array.from({ length: 6 }).map((_, i) => (
                     <Card key={i} className="rounded-3xl animate-pulse">
@@ -944,8 +906,6 @@ export default function ExperienceTabContent() {
                                             className={`${exp.mediaUrls.length > 4 ? "flex-1" : "w-full"} rounded-xl text-xs`}
                                             onClick={() => {
                                               setBulkDownloadExp(exp)
-                                              setBulkScanProgress(0)
-                                              setBulkScanStatus("idle")
                                             }}
                                         >
                                           <DownloadCloud className="h-3 w-3 mr-1" />
@@ -1246,90 +1206,6 @@ export default function ExperienceTabContent() {
           )}
         </section>
 
-        <Dialog open={!!selectedFile} onOpenChange={() => setSelectedFile(null)}>
-          <DialogContent className="sm:max-w-md rounded-3xl border-2 border-[var(--experience-step-border)]">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Download className="h-5 w-5 text-[var(--experience-accent)]" />
-                Download File
-              </DialogTitle>
-              <DialogDescription>
-                Before downloading, we&apos;ll quickly scan this file for potential risks.
-              </DialogDescription>
-            </DialogHeader>
-
-            {scanStatus === "idle" && (
-                <div className="space-y-4 py-4">
-                  <div className="p-4 rounded-xl bg-muted/50 border border-[var(--experience-step-border)]">
-                    <p className="text-sm text-muted-foreground mb-1">File:</p>
-                    <p className="text-sm font-medium break-all">{selectedFile?.split("/").pop()}</p>
-                  </div>
-                  <Button
-                      onClick={startScan}
-                      className="w-full rounded-2xl bg-[var(--experience-accent)] hover:bg-[var(--experience-accent)]/90"
-                  >
-                    <ShieldCheck className="h-4 w-4 mr-2" />
-                    Start Security Scan
-                  </Button>
-                </div>
-            )}
-
-            {scanStatus === "scanning" && (
-                <div className="space-y-4 py-4">
-                  <div className="flex flex-col items-center gap-3">
-                    <div className="h-16 w-16 rounded-full bg-[var(--experience-accent)]/10 flex items-center justify-center">
-                      <ShieldCheck className="h-8 w-8 text-[var(--experience-accent)] animate-pulse" />
-                    </div>
-                    <p className="text-sm font-medium">Scanning for threats...</p>
-                  </div>
-                  <Progress value={scanProgress} className="h-2" />
-                  <p className="text-xs text-center text-muted-foreground">{scanProgress}% complete</p>
-                </div>
-            )}
-
-            {scanStatus === "safe" && (
-                <div className="flex flex-col items-center gap-4 py-6">
-                  <div className="h-16 w-16 rounded-full bg-green-500/10 flex items-center justify-center">
-                    <ShieldCheck className="h-8 w-8 text-green-600" />
-                  </div>
-                  <div className="text-center">
-                    <p className="text-sm font-semibold text-green-600 mb-1">File is Safe</p>
-                    <p className="text-xs text-muted-foreground">No threats detected. Ready to download.</p>
-                  </div>
-                </div>
-            )}
-
-            {scanStatus === "danger" && (
-                <div className="flex flex-col items-center gap-4 py-6">
-                  <div className="h-16 w-16 rounded-full bg-red-500/10 flex items-center justify-center">
-                    <ShieldAlert className="h-8 w-8 text-red-600" />
-                  </div>
-                  <div className="text-center">
-                    <p className="text-sm font-semibold text-red-600 mb-1">Warning: Suspicious Content</p>
-                    <p className="text-xs text-muted-foreground">
-                      This file may contain harmful content. Download at your own risk.
-                    </p>
-                  </div>
-                </div>
-            )}
-
-            <DialogFooter className="flex gap-2 sm:gap-2">
-              <Button variant="outline" onClick={() => setSelectedFile(null)} className="flex-1 rounded-2xl">
-                Cancel
-              </Button>
-              {scanStatus === "safe" && (
-                  <Button
-                      onClick={confirmDownload}
-                      className="flex-1 rounded-2xl bg-green-600 hover:bg-green-700 text-white"
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Download
-                  </Button>
-              )}
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
         <Dialog open={!!viewAllFilesExp} onOpenChange={() => setViewAllFilesExp(null)}>
           <DialogContent className="sm:max-w-4xl max-h-[80vh] rounded-3xl border-2 border-[var(--experience-step-border)]">
             <DialogHeader>
@@ -1389,8 +1265,6 @@ export default function ExperienceTabContent() {
                   onClick={() => {
                     if (viewAllFilesExp) {
                       setBulkDownloadExp(viewAllFilesExp)
-                      setBulkScanProgress(0)
-                      setBulkScanStatus("idle")
                       setViewAllFilesExp(null)
                     }
                   }}
@@ -1411,95 +1285,36 @@ export default function ExperienceTabContent() {
                 Download All Files
               </DialogTitle>
               <DialogDescription>
-                Scanning {bulkDownloadExp?.mediaUrls.length || 0} files before download.
+                {t("studentFixes.bulkDownloadDescription")}
               </DialogDescription>
             </DialogHeader>
 
-            {bulkScanStatus === "idle" && (
-                <div className="space-y-4 py-4">
-                  <div className="p-4 rounded-xl bg-muted/50 border border-[var(--experience-step-border)]">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-sm font-medium">Files to download:</p>
-                      <Badge variant="outline" className="rounded-xl">
-                        {bulkDownloadExp?.mediaUrls.length || 0} files
-                      </Badge>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      All files will be scanned for security threats before downloading.
-                    </p>
-                  </div>
-                  <Button
-                      onClick={startBulkScan}
-                      className="w-full rounded-2xl bg-[var(--experience-accent)] hover:bg-[var(--experience-accent)]/90"
-                  >
-                    <ShieldCheck className="h-4 w-4 mr-2" />
-                    Start Bulk Security Scan
-                  </Button>
+            <div className="space-y-4 py-4">
+              <div className="p-4 rounded-xl bg-muted/50 border border-[var(--experience-step-border)]">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium">{t("studentFixes.filesToDownload")}</p>
+                  <Badge variant="outline" className="rounded-xl">
+                    {bulkDownloadExp?.mediaUrls.length || 0} files
+                  </Badge>
                 </div>
-            )}
-
-            {bulkScanStatus === "scanning" && (
-                <div className="space-y-4 py-4">
-                  <div className="flex flex-col items-center gap-3">
-                    <div className="h-16 w-16 rounded-full bg-[var(--experience-accent)]/10 flex items-center justify-center">
-                      <ShieldCheck className="h-8 w-8 text-[var(--experience-accent)] animate-pulse" />
-                    </div>
-                    <p className="text-sm font-medium">Scanning {bulkDownloadExp?.mediaUrls.length || 0} files...</p>
-                  </div>
-                  <Progress value={bulkScanProgress} className="h-2" />
-                  <p className="text-xs text-center text-muted-foreground">{bulkScanProgress}% complete</p>
-                </div>
-            )}
-
-            {bulkScanStatus === "safe" && (
-                <div className="flex flex-col items-center gap-4 py-6">
-                  <div className="h-16 w-16 rounded-full bg-green-500/10 flex items-center justify-center">
-                    <ShieldCheck className="h-8 w-8 text-green-600" />
-                  </div>
-                  <div className="text-center">
-                    <p className="text-sm font-semibold text-green-600 mb-1">All Files are Safe</p>
-                    <p className="text-xs text-muted-foreground">
-                      No threats detected in {bulkDownloadExp?.mediaUrls.length || 0} files. Ready to download.
-                    </p>
-                  </div>
-                </div>
-            )}
-
-            {bulkScanStatus === "danger" && (
-                <div className="flex flex-col items-center gap-4 py-6">
-                  <div className="h-16 w-16 rounded-full bg-red-500/10 flex items-center justify-center">
-                    <ShieldAlert className="h-8 w-8 text-red-600" />
-                  </div>
-                  <div className="text-center">
-                    <p className="text-sm font-semibold text-red-600 mb-1">Warning: Suspicious Content Detected</p>
-                    <p className="text-xs text-muted-foreground">
-                      Some files may contain harmful content. Download at your own risk.
-                    </p>
-                  </div>
-                </div>
-            )}
+              </div>
+            </div>
 
             <DialogFooter className="flex gap-2 sm:gap-2">
               <Button
                   variant="outline"
-                  onClick={() => {
-                    setBulkDownloadExp(null)
-                    setBulkScanProgress(0)
-                    setBulkScanStatus("idle")
-                  }}
+                  onClick={() => setBulkDownloadExp(null)}
                   className="flex-1 rounded-2xl"
               >
                 Cancel
               </Button>
-              {bulkScanStatus === "safe" && (
-                  <Button
-                      onClick={confirmBulkDownload}
-                      className="flex-1 rounded-2xl bg-green-600 hover:bg-green-700 text-white"
-                  >
-                    <DownloadCloud className="h-4 w-4 mr-2" />
-                    Download All
-                  </Button>
-              )}
+              <Button
+                  onClick={confirmBulkDownload}
+                  className="flex-1 rounded-2xl bg-[var(--experience-accent)] hover:bg-[var(--experience-accent)]/90 text-white"
+              >
+                <DownloadCloud className="h-4 w-4 mr-2" />
+                Download All
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

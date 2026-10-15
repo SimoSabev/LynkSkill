@@ -62,6 +62,13 @@ export async function GET(
             }
         }
 
+        // Same authorization as above: the assigned student or the owning company
+        const submissions = await prisma.assignmentFile.findMany({
+            where: { assignmentId: assignment.id },
+            select: { id: true, name: true, size: true, url: true, createdAt: true },
+            orderBy: { createdAt: "desc" },
+        })
+
         return NextResponse.json({
             id: assignment.id,
             title: assignment.title,
@@ -69,6 +76,9 @@ export async function GET(
             dueDate: assignment.dueDate,
             internshipTitle: assignment.internship.title,
             companyName: assignment.internship.company.name,
+            submissions,
+            // Only the assigned student may upload (mirrors the upload route check)
+            canUpload: dbUser.role === "STUDENT" && assignment.studentId === dbUser.id,
         })
     } catch (error) {
         console.error("Error fetching assignment:", error)

@@ -6,9 +6,20 @@ import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { FileText, Clock, AlertCircle, Upload, X, CheckCircle2, File, TrendingUp, Sparkles } from "lucide-react"
+import { FileText, Clock, AlertCircle, Upload, X, CheckCircle2, File, TrendingUp, Sparkles, Download, ArrowLeft } from "lucide-react"
 import { format } from "date-fns"
 import { motion, AnimatePresence } from "framer-motion"
+import { toast } from "sonner"
+
+// Mirrors the server-side assignment upload rules (lib/upload-utils.ts)
+const ACCEPTED_FILE_TYPES = [
+    "image/jpeg", "image/png", "image/gif", "image/webp",
+    ".pdf", ".doc", ".docx", ".ppt", ".pptx",
+    ".zip", ".rar", ".7z", ".tar", ".gz",
+    ".txt", ".csv", ".md", ".json", ".xls", ".xlsx",
+    ".mp4", ".webm", ".mov",
+].join(",")
+const MAX_ASSIGNMENT_FILE_MB = 50
 
 interface Assignment {
     id: string
@@ -17,13 +28,26 @@ interface Assignment {
     dueDate: string
     internshipTitle: string
     companyName: string
+    submissions?: UploadedFile[]
+    canUpload?: boolean
 }
 
 interface UploadedFile {
     id: string
     name: string
     size: number
-    uploadedAt: Date
+    url?: string
+    createdAt: string
+}
+
+async function readErrorMessage(res: Response, fallback: string): Promise<string> {
+    try {
+        const data = await res.json()
+        if (data && typeof data.error === "string" && data.error) return data.error
+    } catch {
+        // non-JSON body
+    }
+    return `${fallback} (${res.status})`
 }
 
 export default function AssignmentPage() {
@@ -35,6 +59,7 @@ export default function AssignmentPage() {
     const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
     const [uploading, setUploading] = useState(false)
     const [dragActive, setDragActive] = useState(false)
+    const [justSubmitted, setJustSubmitted] = useState(false)
 
     const router = useRouter()
 
@@ -43,9 +68,10 @@ export default function AssignmentPage() {
             if (!params?.id) return
             try {
                 const res = await fetch(`/api/assignments/${params.id}`)
-                if (!res.ok) throw new Error("Failed to fetch assignment")
-                const data = await res.json()
+                if (!res.ok) throw new Error(await readErrorMessage(res, "Failed to fetch assignment"))
+                const data: Assignment = await res.json()
                 setAssignment(data)
+                setUploadedFiles(Array.isArray(data.submissions) ? data.submissions : [])
             } catch (err) {
                 setError(err instanceof Error ? err.message : "Failed to load assignment")
             } finally {
@@ -80,10 +106,20 @@ export default function AssignmentPage() {
         if (e.target.files && e.target.files[0]) {
             handleFiles(Array.from(e.target.files))
         }
+        // Allow re-selecting the same file after removing it
+        e.target.value = ""
     }
 
     const handleFiles = (newFiles: File[]) => {
-        setFiles((prev) => [...prev, ...newFiles])
+        const tooLarge = newFiles.filter((f) => f.size > MAX_ASSIGNMENT_FILE_MB * 1024 * 1024)
+        if (tooLarge.length > 0) {
+            toast.error(`File too large: ${tooLarge[0].name} (max ${MAX_ASSIGNMENT_FILE_MB}MB)`)
+        }
+        const accepted = newFiles.filter((f) => f.size <= MAX_ASSIGNMENT_FILE_MB * 1024 * 1024)
+        if (accepted.length > 0) {
+            setJustSubmitted(false)
+            setFiles((prev) => [...prev, ...accepted])
+        }
     }
 
     const removeFile = (index: number) => {
@@ -104,22 +140,21 @@ export default function AssignmentPage() {
             })
 
             if (!res.ok) {
-                const text = await res.text()
-                console.error("❌ Upload failed:", res.status, res.statusText, text)
-                throw new Error(`Upload failed (${res.status}): ${text}`)
+                throw new Error(await readErrorMessage(res, "Upload failed"))
             }
 
             const data = await res.json()
-            console.log("✅ Upload success:", data)
+            const newFiles: UploadedFile[] = Array.isArray(data.files) ? data.files : []
 
-            setUploadedFiles((prev) => [...prev, ...data.files])
+            setUploadedFiles((prev) => [...newFiles, ...prev])
             setFiles([])
-
-            // ✅ Redirect to dashboard on success
-            router.push("/dashboard/student")
+            setJustSubmitted(true)
+            toast.success(
+                newFiles.length === 1 ? "File submitted successfully" : `${newFiles.length} files submitted successfully`,
+            )
         } catch (err) {
-            console.error("🚨 Upload failed:", err)
-            alert(err instanceof Error ? err.message : "Failed to upload files")
+            console.error("Upload failed:", err)
+            toast.error(err instanceof Error ? err.message : "Failed to upload files")
         } finally {
             setUploading(false)
         }
@@ -282,6 +317,7 @@ export default function AssignmentPage() {
                     </Card>
                 </motion.div>
 
+                {assignment.canUpload && (
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -316,6 +352,8 @@ export default function AssignmentPage() {
                                     onChange={handleFileInput}
                                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                     id="file-upload"
+                                    accept={ACCEPTED_FILE_TYPES}
+                                    aria-label="Choose files to upload"
                                 />
                                 <div className="text-center space-y-4">
                                     <div className="mx-auto w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 flex items-center justify-center shadow-lg border border-purple-500/20">
@@ -325,7 +363,9 @@ export default function AssignmentPage() {
                                         <p className="text-lg font-medium text-card-foreground mb-1">
                                             Drop your files here, or <span className="text-purple-400 font-semibold">browse</span>
                                         </p>
-                                        <p className="text-sm text-muted-foreground">Support for PDF, DOC, DOCX, ZIP, and more</p>
+                                        <p className="text-sm text-muted-foreground">
+                                            PDF, Office documents, images, archives, CSV/JSON and videos (max {MAX_ASSIGNMENT_FILE_MB}MB each)
+                                        </p>
                                     </div>
                                 </div>
                             </div>
@@ -365,7 +405,8 @@ export default function AssignmentPage() {
                                                         variant="ghost"
                                                         size="sm"
                                                         onClick={() => removeFile(index)}
-                                                        className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-red-400 hover:bg-red-500/10 rounded-lg"
+                                                        aria-label={`Remove ${file.name}`}
+                                                        className="sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity text-muted-foreground hover:text-red-400 hover:bg-red-500/10 rounded-lg"
                                                     >
                                                         <X className="h-4 w-4" />
                                                     </Button>
@@ -396,37 +437,87 @@ export default function AssignmentPage() {
                                 )}
                             </AnimatePresence>
 
-                            {uploadedFiles.length > 0 && (
-                                <div className="pt-6 border-t border-border/50">
-                                    <h4 className="text-sm font-semibold text-card-foreground mb-4 flex items-center gap-2">
-                                        <div className="p-1.5 bg-green-500/20 rounded-lg">
-                                            <CheckCircle2 className="h-4 w-4 text-green-400" />
-                                        </div>
-                                        Previously Submitted ({uploadedFiles.length})
-                                    </h4>
-                                    <div className="space-y-2">
-                                        {uploadedFiles.map((file) => (
-                                            <motion.div
-                                                key={file.id}
-                                                initial={{ opacity: 0, y: 10 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-br from-green-500/5 to-emerald-500/5 border border-green-500/20"
-                                            >
-                                                <div className="flex items-center gap-3">
-                                                    <div className="p-2.5 rounded-lg bg-green-500/20">
-                                                        <CheckCircle2 className="h-5 w-5 text-green-400" />
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-sm font-medium text-card-foreground">{file.name}</p>
-                                                        <p className="text-xs text-muted-foreground">
-                                                            {formatFileSize(file.size)} • Uploaded{" "}
-                                                            {formatDate(file.uploadedAt, "MMM d, yyyy 'at' h:mm a")}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </motion.div>
-                                        ))}
+                            {justSubmitted && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl bg-green-500/10 border border-green-500/20"
+                                >
+                                    <div className="flex items-center gap-2 text-sm font-medium text-green-600 dark:text-green-400">
+                                        <CheckCircle2 className="h-5 w-5 shrink-0" />
+                                        Your submission was received. You can add more files or head back.
                                     </div>
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => router.push("/dashboard/student")}
+                                        className="rounded-xl shrink-0"
+                                    >
+                                        <ArrowLeft className="h-4 w-4 mr-2" />
+                                        Back to dashboard
+                                    </Button>
+                                </motion.div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </motion.div>
+                )}
+
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.3 }}
+                >
+                    <Card className="rounded-2xl border border-border/50 bg-gradient-to-br from-[var(--application-card-gradient-from)] to-[var(--application-card-gradient-to)] backdrop-blur-sm shadow-[0_8px_30px_var(--application-shadow-light)]">
+                        <CardHeader>
+                            <CardTitle className="text-xl font-semibold text-card-foreground flex items-center gap-3">
+                                <div className="p-2 bg-green-500/20 rounded-xl">
+                                    <CheckCircle2 className="h-5 w-5 text-green-400" />
+                                </div>
+                                {assignment.canUpload ? "Previously Submitted" : "Submissions"} ({uploadedFiles.length})
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            {uploadedFiles.length === 0 ? (
+                                <p className="text-sm text-muted-foreground">
+                                    {assignment.canUpload
+                                        ? "You haven't submitted any files yet."
+                                        : "The student hasn't submitted any files yet."}
+                                </p>
+                            ) : (
+                                <div className="space-y-2">
+                                    {uploadedFiles.map((file) => (
+                                        <motion.div
+                                            key={file.id}
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            className="flex items-center justify-between gap-3 p-4 rounded-xl bg-gradient-to-br from-green-500/5 to-emerald-500/5 border border-green-500/20"
+                                        >
+                                            <div className="flex items-center gap-3 min-w-0">
+                                                <div className="p-2.5 rounded-lg bg-green-500/20 shrink-0">
+                                                    <CheckCircle2 className="h-5 w-5 text-green-400" />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className="text-sm font-medium text-card-foreground truncate">{file.name}</p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {formatFileSize(file.size)} • Uploaded{" "}
+                                                        {formatDate(file.createdAt, "MMM d, yyyy 'at' h:mm a")}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            {file.url && (
+                                                <Button asChild variant="ghost" size="sm" className="rounded-lg shrink-0">
+                                                    <a
+                                                        href={file.url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        aria-label={`Open ${file.name}`}
+                                                    >
+                                                        <Download className="h-4 w-4" />
+                                                    </a>
+                                                </Button>
+                                            )}
+                                        </motion.div>
+                                    ))}
                                 </div>
                             )}
                         </CardContent>

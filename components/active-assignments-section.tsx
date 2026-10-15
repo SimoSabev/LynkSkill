@@ -23,11 +23,15 @@ type ApiProject = {
     status: "ONGOING" | "COMPLETED" | "PENDING"
     createdAt: string
     assignment?: {
+        id?: string
         title: string
         description: string
         dueDate: string
     } | null
 }
+
+// /api/projects also returns `assignment` (with its id); the context type does not declare it
+type ContextAssignment = { id?: string; title: string; description: string; dueDate: string }
 
 
 interface ActiveProjectsSectionProps {
@@ -38,12 +42,21 @@ interface ActiveProjectsSectionProps {
 export function ActiveAssignmentsSection({ setActiveTab, userType = "Student" }: ActiveProjectsSectionProps) {
     const router = useRouter()
     
+    const basePath = userType === "Student" ? "/dashboard/student" : "/dashboard/company"
+
     const handleNavigateToProjects = () => {
         if (setActiveTab) {
             setActiveTab("projects")
         } else {
-            const basePath = userType === "Student" ? "/dashboard/student" : "/dashboard/company"
             router.push(`${basePath}/experience`)
+        }
+    }
+
+    const handleOpenProject = (proj: ApiProject) => {
+        if (proj.assignment?.id) {
+            router.push(`/assignments/${proj.assignment.id}`)
+        } else {
+            handleNavigateToProjects()
         }
     }
     
@@ -52,21 +65,43 @@ export function ActiveAssignmentsSection({ setActiveTab, userType = "Student" }:
 
     // Transform context projects to match expected ApiProject type
     const projects = useMemo(() => {
-        return contextProjects.map(p => ({
-            id: p.id,
-            internship: {
-                title: p.internship.title,
-                company: p.internship.company,
-                startDate: p.internship.startDate ?? null,
-                endDate: p.internship.endDate ?? null,
-            },
-            student: { 
-                name: p.student.profile?.name || p.student.email, 
-                email: p.student.email 
-            },
-            status: (p.application?.status === "APPROVED" ? "ONGOING" : "PENDING") as "ONGOING" | "COMPLETED" | "PENDING",
-            createdAt: p.createdAt,
-        })) as ApiProject[]
+        return contextProjects.map(p => {
+            const apiAssignment = (p as typeof p & { assignment?: ContextAssignment | null }).assignment
+            // Fallback for server-rendered initial data, which carries the internship's assignments list
+            const related = apiAssignment ?? p.internship.assignments?.find(a => a.studentId === p.studentId) ?? null
+            const appStatus = p.application?.status
+            const status: ApiProject["status"] = appStatus
+                ? appStatus === "APPROVED"
+                    ? "ONGOING"
+                    : appStatus === "REJECTED"
+                        ? "COMPLETED"
+                        : "PENDING"
+                : p.status ?? "PENDING"
+
+            return {
+                id: p.id,
+                internship: {
+                    title: p.internship.title,
+                    company: p.internship.company,
+                    startDate: p.internship.startDate ?? null,
+                    endDate: p.internship.endDate ?? null,
+                },
+                student: {
+                    name: p.student.name || p.student.profile?.name || p.student.email,
+                    email: p.student.email
+                },
+                status,
+                createdAt: p.createdAt,
+                assignment: related
+                    ? {
+                        id: "id" in related ? related.id : undefined,
+                        title: related.title,
+                        description: related.description,
+                        dueDate: related.dueDate,
+                    }
+                    : null,
+            }
+        }) as ApiProject[]
     }, [contextProjects])
 
     const isLoading = isLoadingProjects
@@ -180,7 +215,7 @@ export function ActiveAssignmentsSection({ setActiveTab, userType = "Student" }:
                 </Card>
             ) : (
                 <div className="space-y-4">
-                    {projects
+                    {[...projects]
                         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) // newest first
                         .slice(0, 3)
                         .map((proj, index) => {
@@ -192,7 +227,15 @@ export function ActiveAssignmentsSection({ setActiveTab, userType = "Student" }:
                                     initial={{ opacity: 0, x: -20 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     transition={{ duration: 0.3, delay: index * 0.05 }}
-                                    onClick={handleNavigateToProjects}
+                                    onClick={() => handleOpenProject(proj)}
+                                    role="link"
+                                    tabIndex={0}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter" || e.key === " ") {
+                                            e.preventDefault()
+                                            handleOpenProject(proj)
+                                        }
+                                    }}
                                     className="cursor-pointer"
                                 >
                                     <Card className="hover:shadow-[var(--application-shadow-light)] transition-all duration-300 group border-l-4 border-l-[var(--experience-accent)]">

@@ -306,7 +306,7 @@ export default function InternshipDetailsModal({internshipId, open, onClose}: In
                                                 </div>
                                                 {internship.company.website && (
                                                     <a
-                                                        href={internship.company.website}
+                                                        href={/^https?:\/\//i.test(internship.company.website) ? internship.company.website : `https://${internship.company.website}`}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
                                                         className="flex items-center gap-1.5 text-blue-400 hover:text-blue-300 transition-colors"

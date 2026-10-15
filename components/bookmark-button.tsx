@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Bookmark, BookmarkCheck, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -25,6 +25,11 @@ export function BookmarkButton({
     const [isSaved, setIsSaved] = useState(initialSaved)
     const [isLoading, setIsLoading] = useState(false)
 
+    // Re-sync when the saved list loads/changes asynchronously in the parent
+    useEffect(() => {
+        setIsSaved(initialSaved)
+    }, [initialSaved])
+
     const handleToggle = async (e: React.MouseEvent) => {
         e.preventDefault()
         e.stopPropagation()
@@ -45,7 +50,8 @@ export function BookmarkButton({
                     onToggle?.(false)
                     toast.success("Removed from saved")
                 } else {
-                    throw new Error("Failed to remove")
+                    const data = await res.json().catch(() => ({}))
+                    throw new Error(data.error || "Failed to remove")
                 }
             } else {
                 // Add bookmark
@@ -60,9 +66,11 @@ export function BookmarkButton({
                     onToggle?.(true)
                     toast.success("Saved to bookmarks")
                 } else {
-                    const data = await res.json()
+                    const data = await res.json().catch(() => ({}))
                     if (data.error === "Already saved") {
+                        // Server already has it saved: treat as success
                         setIsSaved(true)
+                        onToggle?.(true)
                     } else {
                         throw new Error(data.error || "Failed to save")
                     }
@@ -70,7 +78,7 @@ export function BookmarkButton({
             }
         } catch (error) {
             console.error("Bookmark toggle error:", error)
-            toast.error("Something went wrong")
+            toast.error(error instanceof Error && error.message ? error.message : "Something went wrong")
         } finally {
             setIsLoading(false)
         }
@@ -83,6 +91,8 @@ export function BookmarkButton({
                 size="icon"
                 onClick={handleToggle}
                 disabled={isLoading}
+                aria-label={isSaved ? "Remove from saved internships" : "Save internship"}
+                aria-pressed={isSaved}
                 className={cn(
                     "h-8 w-8 rounded-full transition-all",
                     isSaved && "text-yellow-500 hover:text-yellow-600",

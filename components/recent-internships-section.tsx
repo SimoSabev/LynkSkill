@@ -1,7 +1,9 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { useState, useMemo, useCallback } from "react"
+import { useState, useMemo, useCallback, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 import type { Internship } from "@/app/types"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -26,7 +28,15 @@ interface RecentAppsSectionProps {
     setActiveTab?: (tab: string) => void
 }
 
-export function RecentInternshipsSection({ userType, setActiveTab }: RecentAppsSectionProps) {
+// API returns skills as string[]; older data/types used a comma string
+const skillsText = (skills: Internship["skills"]): string =>
+    Array.isArray(skills) ? skills.join(", ") : (skills ?? "")
+
+export function RecentInternshipsSection({ userType }: RecentAppsSectionProps) {
+    const router = useRouter()
+    // Time-dependent UI is computed after mount to avoid hydration mismatches
+    const [nowTs, setNowTs] = useState<number | null>(null)
+    useEffect(() => setNowTs(Date.now()), [])
     const { t } = useTranslation()
     
     // Use centralized context - no more individual fetches
@@ -105,9 +115,9 @@ export function RecentInternshipsSection({ userType, setActiveTab }: RecentAppsS
                 const searchLower = filters.search.toLowerCase()
                 const matchesSearch = 
                     internship.title.toLowerCase().includes(searchLower) ||
-                    internship.description.toLowerCase().includes(searchLower) ||
+                    (internship.description ?? "").toLowerCase().includes(searchLower) ||
                     internship.location?.toLowerCase().includes(searchLower) ||
-                    internship.skills?.toLowerCase().includes(searchLower)
+                    skillsText(internship.skills).toLowerCase().includes(searchLower)
                 if (!matchesSearch) return false
             }
 
@@ -136,7 +146,7 @@ export function RecentInternshipsSection({ userType, setActiveTab }: RecentAppsS
 
             // Skills filter
             if (filters.skills.length > 0) {
-                const internshipSkills = internship.skills?.toLowerCase() || ""
+                const internshipSkills = skillsText(internship.skills).toLowerCase()
                 const hasMatchingSkill = filters.skills.some(skill => 
                     internshipSkills.includes(skill.toLowerCase())
                 )
@@ -147,10 +157,11 @@ export function RecentInternshipsSection({ userType, setActiveTab }: RecentAppsS
         })
     }, [internships, filters])
 
-    const now = Date.now()
+    const now = nowTs ?? 0
     const finalInternships =
         filter === "recent"
             ? filteredInternships.filter((internship) => {
+                if (!internship.createdAt) return false
                 const createdAt = new Date(internship.createdAt).getTime()
                 const diffDays = (now - createdAt) / (1000 * 60 * 60 * 24)
                 return diffDays <= 5
@@ -283,20 +294,16 @@ export function RecentInternshipsSection({ userType, setActiveTab }: RecentAppsS
                                                                     const res = await fetch(`/api/internship/delete?id=${item.id}`, {
                                                                         method: "DELETE"
                                                                     });
-                                                        
-                                                                    const data = await res.json();
-                                                                    if (data.error) throw new Error(data.error);
-                                                        
-                                                                    // Refresh UI
-                                                                    window.dispatchEvent(
-                                                                        new CustomEvent("internshipDeleted", {
-                                                                            detail: item.id,
-                                                                        })
-                                                                    );
+                                                                    const data = await res.json().catch(() => ({}));
+                                                                    if (!res.ok) throw new Error(data.error || "Failed to delete internship");
+
+                                                                    await mutateInternships();
+                                                                    toast.success("Internship deleted");
                                                                 } catch (err) {
-                                                                    console.error("Delete internship error:", err);
+                                                                    toast.error(err instanceof Error ? err.message : "Failed to delete internship");
                                                                 }
                                                             }}
+                                                            aria-label="Delete internship"
                                                             className="p-1.5 md:p-2 rounded-lg md:rounded-xl cursor-pointer bg-destructive/10 hover:bg-destructive/20 transition-all duration-200 shadow-md hover:shadow-lg"
                                                         >
                                                             <Trash2 className="w-3.5 h-3.5 md:w-4 md:h-4 text-destructive" />
@@ -372,10 +379,10 @@ export function RecentInternshipsSection({ userType, setActiveTab }: RecentAppsS
                                                             </div>
                                                         )}
 
-                                                        {item.skills && (
+                                                        {skillsText(item.skills) && (
                                                             <div className="flex items-start gap-1.5 md:gap-2">
                                                                 <Wrench className="h-3 w-3 md:h-3.5 md:w-3.5 text-purple-600 dark:text-purple-400 flex-shrink-0 mt-0.5" />
-                                                                <span className="line-clamp-2">{item.skills}</span>
+                                                                <span className="line-clamp-2">{skillsText(item.skills)}</span>
                                                             </div>
                                                         )}
                                                     </div>
@@ -385,8 +392,7 @@ export function RecentInternshipsSection({ userType, setActiveTab }: RecentAppsS
                                                 {item.applicationStart && item.applicationEnd && (() => {
                                                     const start = new Date(item.applicationStart).getTime()
                                                     const end = new Date(item.applicationEnd).getTime()
-                                                    const now = Date.now()
-                                                    const progress = Math.min(100, Math.max(0, ((now - start) / (end - start)) * 100))
+                                                    const progress = nowTs === null ? 0 : Math.min(100, Math.max(0, ((nowTs - start) / (end - start)) * 100))
 
                                                     return (
                                                         <div className="space-y-1.5 md:space-y-2 pt-2 border-t border-border/50">
@@ -454,7 +460,9 @@ export function RecentInternshipsSection({ userType, setActiveTab }: RecentAppsS
                                                             <div className="w-full flex flex-col gap-2">
                                                                 <ApplyButton
                                                                     internshipId={item.id}
-                                                                    goToPortfolioTab={() => setActiveTab?.("apps")}
+                                                                    applicationStart={item.applicationStart}
+                                                                    applicationEnd={item.applicationEnd}
+                                                                    goToPortfolioTab={() => router.push("/dashboard/student/portfolio")}
                                                                     onApplied={() => {
                                                                         // Revalidate applications via SWR
                                                                         mutateApplications()
@@ -491,12 +499,6 @@ export function RecentInternshipsSection({ userType, setActiveTab }: RecentAppsS
                                                 )}
                                             </CardFooter>
                                         </Card>
-
-                                        <InternshipDetailsModal
-                                            open={open}
-                                            onClose={() => setOpen(false)}
-                                            internshipId={selectedInternship?.id || null}
-                                        />
                                     </motion.div>
                                 )
                             })}
@@ -540,6 +542,11 @@ export function RecentInternshipsSection({ userType, setActiveTab }: RecentAppsS
                     )}
                 </>
             )}
+            <InternshipDetailsModal
+                open={open}
+                onClose={() => setOpen(false)}
+                internshipId={selectedInternship?.id || null}
+            />
         </section>
     )
 }

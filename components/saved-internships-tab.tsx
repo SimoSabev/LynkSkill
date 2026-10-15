@@ -189,6 +189,8 @@ export function SavedInternshipsTab() {
                                             ) : (
                                                 <ApplyButton
                                                     internshipId={item.id}
+                                                    applicationStart={item.applicationStart}
+                                                    applicationEnd={item.applicationEnd}
                                                     onApplied={() => mutateApplications()}
                                                 />
                                             )}
