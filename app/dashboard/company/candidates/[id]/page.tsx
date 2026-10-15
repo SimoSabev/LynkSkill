@@ -178,7 +178,7 @@ export default function CandidateProfilePage({ params }: { params: Promise<{ id:
                     <div className="flex gap-2">
                         <Button 
                             className="rounded-xl bg-gradient-to-r from-violet-600 to-purple-600"
-                            onClick={() => router.push(`/dashboard/company/candidates?message=${id}`)}
+                            onClick={() => router.push(`/dashboard/company/candidates?message=${encodeURIComponent(id)}`)}
                         >
                             <Mail className="h-4 w-4 mr-2" />
                             {t('candidateProfile.sendMessage')}
@@ -186,10 +186,10 @@ export default function CandidateProfilePage({ params }: { params: Promise<{ id:
                         <Button 
                             variant="outline"
                             className="rounded-xl border-green-500/30 text-green-600 hover:bg-green-500/10"
-                            onClick={() => router.push(`/dashboard/company/candidates?interview=${id}`)}
+                            onClick={() => router.push(`/dashboard/company/candidates?interview=${encodeURIComponent(id)}`)}
                         >
                             <Calendar className="h-4 w-4 mr-2" />
-                            {t('candidateProfile.scheduleInterview')}
+                            {t('candidatesPage.inviteToInterview')}
                         </Button>
                     </div>
                 </div>

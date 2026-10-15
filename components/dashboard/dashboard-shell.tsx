@@ -64,6 +64,8 @@ export function DashboardShell({ children, userType, memberPermissions = [] }: D
     const {
         user,
         company,
+        isLoadingUser,
+        isLoadingCompany,
         isInitialLoading,
     } = useDashboard()
 
@@ -178,6 +180,7 @@ export function DashboardShell({ children, userType, memberPermissions = [] }: D
                 memberPermissions={memberPermissions}
                 userName={userName}
                 memberRole={memberRole || null}
+                headerLoading={userType === "TeamMember" ? isLoadingUser : isLoadingCompany}
             />
 
             {/* Sidebar - Desktop */}
@@ -190,6 +193,7 @@ export function DashboardShell({ children, userType, memberPermissions = [] }: D
                 memberPermissions={memberPermissions}
                 userName={userName}
                 memberRole={memberRole || null}
+                headerLoading={userType === "TeamMember" ? isLoadingUser : isLoadingCompany}
             />
 
             {/* Main Content */}
@@ -204,6 +208,7 @@ export function DashboardShell({ children, userType, memberPermissions = [] }: D
                         size="icon"
                         className="sm:hidden rounded-xl hover:bg-primary/10"
                         onClick={() => setMobileMenuOpen(true)}
+                        aria-label={t('dashboard.openMenu')}
                     >
                         <Menu className="h-5 w-5" />
                     </Button>
@@ -213,6 +218,8 @@ export function DashboardShell({ children, userType, memberPermissions = [] }: D
                         size="icon"
                         className="hidden sm:flex rounded-xl hover:bg-purple-500/10"
                         onClick={() => setSidebarOpen(!sidebarOpen)}
+                        aria-label={t('dashboard.toggleSidebar')}
+                        aria-expanded={sidebarOpen}
                     >
                         <PanelLeft className="h-5 w-5" />
                     </Button>

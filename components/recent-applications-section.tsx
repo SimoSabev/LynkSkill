@@ -1,7 +1,8 @@
 "use client"
 
 import { useMemo } from "react"
-import { useRouter } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
+import { format } from "date-fns"
 import {
   Calendar,
   Briefcase,
@@ -17,6 +18,14 @@ import type { Application } from "@/app/types"
 import { useDashboard } from "@/lib/dashboard-context"
 import { useTranslation } from "@/lib/i18n"
 
+function formatAppliedDate(value: string | number | Date | undefined | null): string {
+  if (!value) return ""
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return ""
+  // Fixed format (no locale-dependent toLocaleDateString) to avoid hydration mismatches
+  return format(d, "dd MMM yyyy")
+}
+
 interface RecentApplicationsSectionProps {
   userType: "Student" | "Company"
   setActiveTab?: (tab: string) => void   // 👈 optional callback from parent (legacy)
@@ -27,6 +36,7 @@ export function RecentApplicationsSection({
                                             setActiveTab,
                                           }: RecentApplicationsSectionProps) {
   const router = useRouter()
+  const pathname = usePathname()
   const { t } = useTranslation()
   
   // Use centralized context - no more individual fetches
@@ -40,6 +50,20 @@ export function RecentApplicationsSection({
   }, [contextApplications])
 
   const isLoading = isLoadingApplications
+
+  const openApplications = () => {
+    if (setActiveTab) {
+      setActiveTab("files")
+    } else if (userType === "Student") {
+      router.push("/dashboard/student/internships/applied")
+    } else {
+      router.push(
+          pathname?.startsWith("/dashboard/team-member")
+              ? "/dashboard/team-member/applications"
+              : "/dashboard/company/applications"
+      )
+    }
+  }
 
   const getStatusConfig = (status: string) => {
     switch (status) {
@@ -177,15 +201,17 @@ export function RecentApplicationsSection({
                   return (
                       <div
                           key={app.id}
-                          onClick={() => {
-                            if (setActiveTab) {
-                              setActiveTab("files")
-                            } else {
-                              const basePath = userType === "Student" ? "/dashboard/student" : "/dashboard/company"
-                              router.push(`${basePath}/internships/applied`)
+                          role="button"
+                          tabIndex={0}
+                          aria-label={`${app.internship?.title ?? t("recentApplications.unknownInternship")} - ${statusConfig.label}`}
+                          onClick={openApplications}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault()
+                              openApplications()
                             }
                           }}
-                          className="cursor-pointer group relative overflow-hidden bg-card rounded-xl p-4 shadow-sm hover:shadow-md border border-border/50 hover:border-primary/20 transition-colors duration-150"
+                          className="cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary group relative overflow-hidden bg-card rounded-xl p-4 shadow-sm hover:shadow-md border border-border/50 hover:border-primary/20 transition-colors duration-150"
                       >
                         <div className="relative z-10">
                           <div className="flex items-start justify-between mb-3">
@@ -216,8 +242,9 @@ export function RecentApplicationsSection({
                                         <User className="w-3 h-3 text-muted-foreground" />
                                       </div>
                                       <span className="font-medium text-muted-foreground">
-                                {app.student?.name ??
-                                    app.student?.email ??
+                                {app.student?.profile?.name ||
+                                    app.student?.name ||
+                                    app.student?.email ||
                                     t("recentApplications.unknownStudent")}
                               </span>
                                     </>
@@ -240,7 +267,7 @@ export function RecentApplicationsSection({
                               </div>
                               <span className="font-medium">
                           {t("recentApplications.appliedOn")}{" "}
-                                {new Date(app.createdAt).toLocaleDateString()}
+                                {formatAppliedDate(app.createdAt)}
                         </span>
                             </div>
 

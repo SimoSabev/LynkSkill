@@ -591,10 +591,11 @@ export default function OnboardingPage() {
         }
     }
 
+    // CompanyPolicyModal awaits this and shows a thrown error inline (keeping the modal open),
+    // so failures are rethrown instead of being swallowed behind the modal.
     const handleAcceptPolicies = async () => {
         if (!createdCompanyId) {
-            setError(t("onboarding.companyNotCreated"))
-            return
+            throw new Error(t("onboarding.companyNotCreated"))
         }
 
         try {
@@ -624,7 +625,7 @@ export default function OnboardingPage() {
             setShowPolicyModal(false)
         } catch (err) {
             console.error("❌ handleAcceptPolicies error:", err)
-            setError(err instanceof Error ? err.message : t("onboarding.failedToAcceptPolicies"))
+            throw err instanceof Error && err.message ? err : new Error(t("onboarding.failedToAcceptPolicies"))
         }
     }
 
@@ -843,8 +844,18 @@ export default function OnboardingPage() {
                                 return (
                                     <Card
                                         key={r.value}
+                                        role="button"
+                                        tabIndex={0}
+                                        aria-pressed={isSelected}
                                         onClick={() => setSelectedRole(r.value)}
-                                        className={`cursor-pointer transition-all duration-300 group relative overflow-hidden border animate-in fade-in slide-in-from-bottom-4 ${
+                                        onKeyDown={(e) => {
+                                            if (e.target !== e.currentTarget) return
+                                            if (e.key === "Enter" || e.key === " ") {
+                                                e.preventDefault()
+                                                setSelectedRole(r.value)
+                                            }
+                                        }}
+                                        className={`cursor-pointer transition-all duration-300 group relative overflow-hidden border animate-in fade-in slide-in-from-bottom-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-500 ${
                                             isSelected
                                                 ? "ring-2 ring-purple-500 shadow-lg border-purple-500/50 bg-gradient-to-br from-purple-500/5 to-blue-500/5"
                                                 : "hover:ring-1 hover:ring-purple-400/50 hover:shadow-md hover:-translate-y-1 border-border/50 bg-background/80"
