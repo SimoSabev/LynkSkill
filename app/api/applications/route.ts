@@ -1,7 +1,8 @@
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
-import { notifyNewApplication, notifyNewAssignment } from "@/lib/notifications";
+import { notifyNewApplication } from "@/lib/notifications";
+import { createTestAssignmentForApplication } from "@/lib/services/applications";
 import { autoPreScreenApplication } from "@/lib/ai/auto-prescreen";
 
 export async function POST(req: Request) {
@@ -113,33 +114,10 @@ export async function POST(req: Request) {
     // ------------------------------------------------------------
     // ✔ ONLY CREATE ASSIGNMENT IF INTERNSHIP HAS A TEST ASSIGNMENT
     // ------------------------------------------------------------
-    const hasTest =
-        internship.testAssignmentTitle &&
-        internship.testAssignmentDescription &&
-        internship.testAssignmentDueDate;
-
-    if (hasTest) {
-        try {
-            await prisma.assignment.create({
-                data: {
-                    internshipId: application.internshipId,
-                    studentId: application.studentId,
-                    title: internship.testAssignmentTitle!,
-                    description: internship.testAssignmentDescription!,
-                    dueDate: internship.testAssignmentDueDate!,
-                },
-            });
-            
-            // 📧 Notify student about new assignment
-            await notifyNewAssignment(
-                application.studentId,
-                internship.testAssignmentTitle!,
-                internship.company.name,
-                internship.testAssignmentDueDate!
-            );
-        } catch (err) {
-            console.error("Failed to create test assignment:", err);
-        }
+    try {
+        await createTestAssignmentForApplication(application.internshipId, application.studentId);
+    } catch (err) {
+        console.error("Failed to create test assignment:", err);
     }
 
     // 🤖 Auto pre-screen: fire-and-forget AI evaluation

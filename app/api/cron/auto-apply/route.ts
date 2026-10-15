@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { openai } from "@/lib/openai"
 import { isAuthorizedCron } from "@/lib/api-guards"
+import { createTestAssignmentForApplication } from "@/lib/services/applications"
 
 /**
  * Cron endpoint: Auto-apply for students with autoApplyEnabled=true.
@@ -123,6 +124,7 @@ Return an empty matches array if no match exceeds the threshold.`,
                         status: "PENDING",
                     },
                 })
+                await createTestAssignmentForApplication(match.internshipId, student.id)
 
                 // Notify student
                 await prisma.notification.create({

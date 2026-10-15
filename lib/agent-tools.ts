@@ -3,6 +3,7 @@ import { openai } from "@/lib/openai"
 import { searchAcrossSessions } from "@/lib/ai/ai-search"
 import { normalizeSkills } from "@/lib/ai/skill-taxonomy"
 import { calculateAndSaveConfidenceScore } from "@/lib/confidence-score"
+import { createTestAssignmentForApplication } from "@/lib/services/applications"
 
 export interface UserContext {
     userId: string
@@ -1213,6 +1214,13 @@ Description: ${internship.description?.slice(0, 300) ?? "N/A"}`,
             status: "PENDING",
         },
     })
+
+    // Same side effects as POST /api/applications: the student gets the test task
+    try {
+        await createTestAssignmentForApplication(internshipId, ctx.userId)
+    } catch (err) {
+        console.error("[apply_to_internship] Failed to create test assignment:", err)
+    }
 
     // Notify the company with Linky's AI evaluation
     const companyOwner = internship.company?.id
