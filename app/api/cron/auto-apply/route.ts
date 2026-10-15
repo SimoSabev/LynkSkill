@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { openai } from "@/lib/openai"
+import { isAuthorizedCron } from "@/lib/api-guards"
 
 /**
  * Cron endpoint: Auto-apply for students with autoApplyEnabled=true.
@@ -8,8 +9,7 @@ import { openai } from "@/lib/openai"
  * Secured by CRON_SECRET header.
  */
 export async function POST(req: Request) {
-    const secret = req.headers.get("x-cron-secret")
-    if (secret !== process.env.CRON_SECRET) {
+    if (!isAuthorizedCron(req)) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 

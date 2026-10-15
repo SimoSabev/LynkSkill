@@ -1,9 +1,11 @@
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { clerkClient } from "@/lib/clerk";
 
-// ------------------- GET role -------------------
+// GET /api/role - current user's role.
+// Role is assigned exactly once, during onboarding (app/onboarding/_actions.ts).
+// There is deliberately no endpoint to change it afterwards: a self-service
+// role switch would let a student turn into a company account.
 export async function GET() {
     try {
         const { userId } = await auth();
@@ -24,55 +26,4 @@ export async function GET() {
             { status: 500 }
         );
     }
-}
-
-// ------------------- SET role -------------------
-export async function POST(req: Request) {
-    const { role } = await req.json();
-    const validRoles = ["STUDENT", "COMPANY"];
-
-    if (!validRoles.includes(role?.toUpperCase())) {
-        return NextResponse.json({ error: "Invalid role" }, { status: 400 });
-    }
-
-    const user = await currentUser();
-    if (!user) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const email = user.primaryEmailAddress?.emailAddress;
-    if (!email) {
-        return NextResponse.json({ error: "No email found" }, { status: 400 });
-    }
-
-    const finalRole = role.toUpperCase();
-
-    // Update Clerk
-    await clerkClient.users.updateUser(user.id, {
-        publicMetadata: { role: finalRole },
-    });
-
-    // Sync Prisma
-    const existingUser = await prisma.user.findUnique({
-        where: { clerkId: user.id },
-    });
-
-    if (existingUser) {
-        const updated = await prisma.user.update({
-            where: { clerkId: user.id },
-            data: { role: finalRole },
-        });
-        return NextResponse.json(updated);
-    }
-
-    const newUser = await prisma.user.create({
-        data: {
-            clerkId: user.id,
-            email,
-            role: finalRole,
-            profile: { create: { name: "", bio: "" } },
-        },
-    });
-
-    return NextResponse.json(newUser);
 }

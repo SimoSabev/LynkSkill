@@ -25,7 +25,9 @@ const isPublicRoute = createRouteMatcher([
     "/api/company/accept-policies(.*)",
     "/api/student/accept-policies(.*)",
     "/api/upload-logo(.*)",
+    // Cron/maintenance: няма Clerk сесия, защитени са с CRON_SECRET (lib/api-guards.ts)
     "/api/cleanup(.*)",
+    "/api/cron/(.*)",
     "/api/public/(.*)"
 ]);
 
@@ -44,14 +46,9 @@ export default clerkMiddleware(async (auth, req) => {
     const { userId, sessionClaims } = await auth();
     const url = req.nextUrl;
 
-    // ✅ 2. SEO Fix: Пропускаме Googlebot директно, за да не го въртим в редиректи
-    // Това е безопасно, защото ботовете не могат да направят POST заявки или да пипат данни
-    const userAgent = req.headers.get("user-agent") || "";
-    const isBot = /googlebot|bingbot|slurp|duckduckbot|baiduspider|yandex/i.test(userAgent);
-
-    if (isBot) {
-         return NextResponse.next();
-    }
+    // ✅ 2. Ботовете минават през същите правила като всички останали.
+    // User-Agent се контролира изцяло от клиента, така че байпас по него
+    // отваряше всеки защитен маршрут. Публичните страници са в isPublicRoute.
 
     // ✅ 3. Логика за публични страници
     if (isPublicRoute(req)) {

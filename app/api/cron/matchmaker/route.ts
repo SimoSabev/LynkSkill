@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server"
 import { runStudentMatchmaker, runCompanyMatchmaker } from "@/lib/ai/ai-matchmaker"
+import { isAuthorizedCron } from "@/lib/api-guards"
 
 export const maxDuration = 300 // Set max duration for Vercel Hobby max to 5 mins
 
 export async function GET(req: Request) {
-    // Basic security for the cron job pattern
-    const authHeader = req.headers.get("authorization")
-    if (authHeader !== `Bearer ${process.env.CRON_SECRET}` && process.env.NODE_ENV !== "development") {
+    if (!isAuthorizedCron(req)) {
         return new NextResponse("Unauthorized", { status: 401 })
     }
 
