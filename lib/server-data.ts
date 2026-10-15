@@ -192,7 +192,9 @@ export const getStudentApplications = cache(async (studentId: string) => {
                 select: {
                     id: true,
                     title: true,
-                    company: { select: { id: true, name: true, logo: true } }
+                    description: true,
+                    location: true,
+                    company: { select: { id: true, name: true, logo: true, description: true, location: true, website: true } }
                 }
             }
         }

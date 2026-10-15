@@ -21,9 +21,30 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
-import { useRouter } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { useTranslation } from "@/lib/i18n"
+
+// Older notifications were stored with "/dashboard/<role>?tab=<x>" links (or other
+// routes that no longer exist) that no page reads. Rewrite them to real routes.
+const LEGACY_TAB_PATHS: Record<string, Record<string, string>> = {
+    student: { applications: "internships/applied", experience: "experience", home: "internships", interviews: "interviews", messages: "messages", files: "interviews" },
+    company: { applications: "applications", experience: "experience", interviews: "interviews", messages: "messages" },
+}
+
+function resolveNotificationLink(link: string): string {
+    if (link === "/dashboard") return "/redirect-after-signin"
+    if (link === "/dashboard/student/applications") return "/dashboard/student/internships/applied"
+    const match = link.match(/^\/dashboard\/(student|company)\?(.*)$/)
+    if (!match) return link
+    const [, role, query] = match
+    const params = new URLSearchParams(query)
+    const sub = LEGACY_TAB_PATHS[role]?.[params.get("tab") ?? ""]
+    if (!sub) return `/dashboard/${role}`
+    params.delete("tab")
+    const rest = params.toString()
+    return `/dashboard/${role}/${sub}${rest ? `?${rest}` : ""}`
+}
 
 interface NotificationMetadata {
     applicationId?: string
@@ -45,6 +66,7 @@ interface Notification extends NotificationMetadata {
 
 export function NotificationBell() {
     const router = useRouter()
+    const pathname = usePathname()
     const { t } = useTranslation()
     const [notifications, setNotifications] = useState<Notification[]>([])
     const [unreadCount, setUnreadCount] = useState(0)
@@ -126,6 +148,21 @@ export function NotificationBell() {
         }
     }
 
+    const clearRead = async () => {
+        try {
+            const res = await fetch("/api/notifications", {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ deleteAllRead: true })
+            })
+            if (res.ok) {
+                setNotifications(prev => prev.filter(n => !n.read))
+            }
+        } catch (error) {
+            console.error("Failed to clear notifications:", error)
+        }
+    }
+
     // Handle notification click - show action modal or navigate
     const handleNotificationClick = (notification: Notification) => {
         console.log("Notification clicked:", notification) // Debug log
@@ -144,7 +181,7 @@ export function NotificationBell() {
             // For other notifications with links, navigate directly
             console.log("Navigating to:", notification.link) // Debug log
             setOpen(false)
-            router.push(notification.link)
+            router.push(resolveNotificationLink(notification.link))
         } else if (notification.type === "TEAM_INVITATION") {
             // Fallback for old team invitation notifications without links
             toast.info(t('team.checkEmailInvitation'))
@@ -262,7 +299,12 @@ export function NotificationBell() {
         <>
             <DropdownMenu open={open} onOpenChange={setOpen}>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="relative">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="relative"
+                        aria-label={unreadCount > 0 ? `${t('notifications.title')} (${unreadCount})` : t('notifications.title')}
+                    >
                         <Bell className="h-5 w-5" />
                         <AnimatePresence>
                             {unreadCount > 0 && (
@@ -312,7 +354,16 @@ export function NotificationBell() {
                                 {notifications.map((notification) => (
                                     <div
                                         key={notification.id}
+                                        role="button"
+                                        tabIndex={0}
                                         onClick={() => handleNotificationClick(notification)}
+                                        onKeyDown={(e) => {
+                                            if (e.target !== e.currentTarget) return
+                                            if (e.key === "Enter" || e.key === " ") {
+                                                e.preventDefault()
+                                                handleNotificationClick(notification)
+                                            }
+                                        }}
                                         className={cn(
                                             "p-4 hover:bg-muted/50 transition-colors relative group cursor-pointer",
                                             !notification.read && "bg-primary/5",
@@ -359,7 +410,7 @@ export function NotificationBell() {
                                                     <span className="text-xs text-muted-foreground">
                                                         {formatTime(notification.createdAt)}
                                                     </span>
-                                                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <div className="flex gap-1 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 transition-opacity">
                                                         {!notification.read && (
                                                             <Button 
                                                                 variant="ghost" 
@@ -370,6 +421,7 @@ export function NotificationBell() {
                                                                     markAsRead(notification.id)
                                                                 }}
                                                                 title={t('notifications.markAsRead')}
+                                                                aria-label={t('notifications.markAsRead')}
                                                             >
                                                                 <Check className="h-3 w-3" />
                                                             </Button>
@@ -380,6 +432,7 @@ export function NotificationBell() {
                                                             className="h-6 w-6 text-destructive hover:text-destructive"
                                                             onClick={(e) => deleteNotification(notification.id, e)}
                                                             title={t('common.delete')}
+                                                            aria-label={t('common.delete')}
                                                         >
                                                             <Trash2 className="h-3 w-3" />
                                                         </Button>
@@ -395,17 +448,33 @@ export function NotificationBell() {
                     {notifications.length > 0 && (
                         <>
                             <DropdownMenuSeparator />
-                            <div className="p-2">
+                            <div className="p-2 flex gap-2">
                                 <Button 
                                     variant="ghost" 
-                                    className="w-full text-sm"
+                                    className="flex-1 text-sm"
                                     onClick={() => {
                                         setOpen(false)
-                                        router.push("/dashboard/student/internships/applied")
+                                        router.push(
+                                            pathname?.startsWith("/dashboard/company")
+                                                ? "/dashboard/company/applications"
+                                                : pathname?.startsWith("/dashboard/team-member")
+                                                    ? "/dashboard/team-member/applications"
+                                                    : "/dashboard/student/internships/applied"
+                                        )
                                     }}
                                 >
                                     {t('notifications.viewAllApplications')}
                                 </Button>
+                                {notifications.some(n => n.read) && (
+                                    <Button
+                                        variant="ghost"
+                                        className="text-sm"
+                                        onClick={clearRead}
+                                    >
+                                        <Trash2 className="h-3 w-3 mr-1" />
+                                        {t('notifications.clearRead')}
+                                    </Button>
+                                )}
                             </div>
                         </>
                     )}

@@ -1009,7 +1009,8 @@
     "congratulations": "Congratulations! You've accepted the internship offer!",
     "failedToAccept": "Failed to accept offer",
     "noApplicationFound": "No application found",
-    "justNow": "Just now"
+    "justNow": "Just now",
+    "clearRead": "Clear read"
   },
   "reviewModal": {
     "leaveReview": "Leave a Review",
@@ -1671,6 +1672,9 @@
     "linksAndResources": "Links & Resources",
     "noWebsiteAvailable": "No website available",
     "applicationSubmittedInfo": "Your application has been submitted to this company. You'll be notified of any status updates via email.",
+    "applicationApprovedInfo": "🎉 Your application was approved! You can now message the company.",
+    "applicationRejectedInfo": "This application was not selected. Keep applying — the right fit is out there.",
+    "applicationUnderReviewInfo": "Your application is under review. You'll get a notification when the status changes.",
     "internshipDetails": "Internship Details",
     "noInternshipDescription": "No internship description available.",
     "notSpecified": "Not specified",

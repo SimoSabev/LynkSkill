@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useMemo } from "react"
-import { useRouter } from "next/navigation"
+import { useEffect, useState, useMemo } from "react"
+import { usePathname, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import type { Application, Portfolio } from "@/app/types"
@@ -47,6 +47,8 @@ interface ApplicationsTabContentProps {
 export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps) {
     const { t } = useTranslation()
     const router = useRouter()
+    const pathname = usePathname()
+    const [reviewedIds, setReviewedIds] = useState<Set<string>>(new Set())
     
     // Use context for initial data
     const { applications: contextApplications, isLoadingApplications, mutateApplications } = useDashboard()
@@ -75,6 +77,8 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
         internship: {
             id: string
             title: string
+            description?: string
+            location?: string
         } | null
         application: Application | null
         assignmentRequired: boolean
@@ -110,6 +114,19 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
         applicationId: string
         studentName?: string
     }>({ open: false, applicationId: "" })
+
+    // Which applications the student already reviewed (hide the Review button)
+    useEffect(() => {
+        if (userType !== "Student") return
+        fetch("/api/reviews")
+            .then(res => (res.ok ? res.json() : []))
+            .then((reviews: { applicationId?: string }[]) => {
+                if (Array.isArray(reviews)) {
+                    setReviewedIds(new Set(reviews.map(r => r.applicationId).filter((id): id is string => Boolean(id))))
+                }
+            })
+            .catch(() => {})
+    }, [userType])
 
     async function handleRefresh() {
         setRefreshing(true)
@@ -160,7 +177,7 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                 )
                 toast.success(t("applyTab.applicationWithdrawn"))
             } else {
-                const data = await res.json()
+                const data = await res.json().catch(() => ({}))
                 toast.error(data.error || t("applyTab.failedToWithdraw"))
             }
         } catch (error) {
@@ -179,15 +196,15 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                 body: JSON.stringify({ applicationId }),
             })
             
-            if (res.ok) {
-                // Navigate to the messages page
-                const messagesPath = userType === "Company" 
-                    ? "/dashboard/company/messages" 
-                    : "/dashboard/student/messages"
-                router.push(messagesPath)
+            const data = await res.json().catch(() => ({}))
+            if (res.ok && data.id) {
+                // Open the messages page with this conversation selected
+                const role = userType === "Student"
+                    ? "student"
+                    : pathname?.startsWith("/dashboard/team-member") ? "team-member" : "company"
+                router.push(`/dashboard/${role}/messages?conversation=${data.id}`)
                 toast.success(t("applyTab.openingConversation"))
             } else {
-                const data = await res.json()
                 toast.error(data.error || t("applyTab.cannotStartConversation"))
             }
         } catch (error) {
@@ -353,16 +370,18 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                                     {userType === "Student" ? t('applications.myApplications') : t('applications.applicationsReceived')}
                                 </h1>
                             </div>
-                            <p className="text-white/80 font-medium">
-                                {userType === "Student"
-                                    ? t('applications.noApplicationsDescription')
-                                    : t('applications.noApplicationsCompanyDescription')}
-                            </p>
+                            {applications.length === 0 && (
+                                <p className="text-white/80 font-medium">
+                                    {userType === "Student"
+                                        ? t('applications.noApplicationsDescription')
+                                        : t('applications.noApplicationsCompanyDescription')}
+                                </p>
+                            )}
                         </div>
                         <div className="text-right">
                             <div className="text-3xl font-bold text-white mb-1">{applications.length}</div>
                             <div className="text-white/70 text-sm font-medium">
-                                {applications.length === 1 ? t('applications.title').slice(0, -1) : t('applications.title')}
+                                {t('applications.title')}
                             </div>
                         </div>
                     </div>
@@ -739,6 +758,7 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                                                                     <MessageSquare className="w-4 h-4 mr-2" />
                                                                     {t('applyTab.message')}
                                                                 </Button>
+                                                                {!reviewedIds.has(app.id) && (
                                                                 <Button
                                                                     size="sm"
                                                                     variant="outline"
@@ -753,6 +773,7 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                                                                     <Star className="w-4 h-4 mr-2" />
                                                                     {t('applyTab.review')}
                                                                 </Button>
+                                                                )}
                                                             </div>
                                                         )}
                                                     </div>
@@ -1067,7 +1088,11 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                                             <div
                                                 className="bg-primary/5 rounded-xl p-4">
                                                 <p className="text-sm text-foreground font-medium">
-                                                    {t('applyTab.applicationSubmittedInfo')}
+                                                    {showCompany?.application?.status === "APPROVED"
+                                                        ? t('applyTab.applicationApprovedInfo')
+                                                        : showCompany?.application?.status === "REJECTED"
+                                                            ? t('applyTab.applicationRejectedInfo')
+                                                            : t('applyTab.applicationUnderReviewInfo')}
                                                 </p>
                                             </div>
                                         </div>
@@ -1087,7 +1112,7 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                                                 <>
                                                     {/* Replace with dynamic internship data */}
                                                     <p className="text-muted-foreground mb-3">
-                                                        {showCompany.company?.description ||
+                                                        {showCompany.internship?.description ||
                                                             t('applyTab.noInternshipDescription')}
                                                     </p>
 
@@ -1095,16 +1120,16 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                                                         <div>
                                                             <span
                                                                 className="font-medium text-foreground">{t('company.location')}:</span>{" "}
-                                                            {showCompany.company?.location || t('applyTab.notSpecified')}
+                                                            {showCompany.internship?.location || showCompany.company?.location || t('applyTab.notSpecified')}
                                                         </div>
                                                     </div>
 
-                                                    {(showCompany?.assignmentRequired || showCompany?.project) && (
+                                                    {showCompany?.project?.id && (
                                                         <div className="mt-4">
                                                             <Button
                                                                 onClick={() =>
                                                                     window.location.assign(
-                                                                        `/assignments/${showCompany.project?.id ?? showCompany.internship?.id}`
+                                                                        `/assignments/${showCompany.project?.id}`
                                                                     )
                                                                 }
                                                                 className="rounded-xl text-foreground px-4 py-2 text-sm font-semibold flex items-center justify-center"
@@ -1155,7 +1180,10 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                 applicationId={reviewModal.applicationId}
                 companyName={reviewModal.companyName}
                 internshipTitle={reviewModal.internshipTitle}
-                onSuccess={handleRefresh}
+                onSuccess={() => {
+                    setReviewedIds(prev => new Set(prev).add(reviewModal.applicationId))
+                    handleRefresh()
+                }}
             />
         </div>
     )

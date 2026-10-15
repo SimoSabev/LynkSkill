@@ -6,6 +6,7 @@ import './globals.css'
 import { ThemeProvider } from "@/components/theme-provider"
 import { I18nProvider } from "@/lib/i18n"
 import { AIModeProvider } from "@/lib/ai-mode-context"
+import { Toaster } from "sonner"
 
 // Custom Clerk appearance for LynkSkill branding
 const clerkAppearance = {
@@ -301,6 +302,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <I18nProvider>
                     <AIModeProvider>
                         <main>{children}</main>
+                        <Toaster richColors closeButton position="top-right" />
                     </AIModeProvider>
                 </I18nProvider>
             </ThemeProvider>
