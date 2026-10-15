@@ -34,6 +34,7 @@ import { useAIMode } from "@/lib/ai-mode-context"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { useOptionalDashboard } from "@/lib/dashboard-context"
+import { ChatMarkdown } from "@/components/chat-markdown"
 
 type AgentAction = { tool: string; ok: boolean; summary: string }
 
@@ -400,7 +401,11 @@ export function StudentAIChat() {
                                                 ? "bg-gradient-to-r from-violet-600 to-purple-600 text-white"
                                                 : "bg-card/80 border border-border/50"
                                         )}>
-                                            <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                                            {message.role === "assistant" ? (
+                                                <ChatMarkdown content={message.content} />
+                                            ) : (
+                                                <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                                            )}
                                         </div>
 
                                         {message.role === "user" && (
