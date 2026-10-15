@@ -1,148 +1,29 @@
 // app/api/applications/[id]/route.ts
 import { NextResponse } from "next/server"
-import { prisma } from "@/lib/prisma"
-import { auth } from "@clerk/nextjs/server"
-import { notifyApplicationStatusChange } from "@/lib/notifications"
+import { requireDbUser } from "@/lib/api-guards"
+import { setApplicationStatus } from "@/lib/services/applications"
 
 export async function PATCH(
     req: Request,
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { userId } = await auth()
-        if (!userId)
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+        const guard = await requireDbUser("COMPANY")
+        if (!guard.ok) return guard.response
 
         const { id } = await params
-        const { status } = await req.json()
+        const { status } = await req.json().catch(() => ({}))
 
-        if (!["APPROVED", "REJECTED"].includes(status)) {
+        if (status !== "APPROVED" && status !== "REJECTED") {
             return NextResponse.json({ error: "Invalid status" }, { status: 400 })
         }
 
-        // Get the current user
-        const user = await prisma.user.findUnique({
-            where: { clerkId: userId },
-            select: { id: true, role: true, companies: true }
-        })
-
-        if (!user) {
-            return NextResponse.json({ error: "User not found" }, { status: 404 })
+        const result = await setApplicationStatus(guard.user.id, id, status)
+        if (!result.ok) {
+            return NextResponse.json({ error: result.error }, { status: result.status })
         }
 
-        // ======================================================
-        // 1) Load the application + internship + project
-        // ======================================================
-        const data = await prisma.application.findUnique({
-            where: { id },
-            include: {
-                internship: {
-                    include: { company: true }
-                },
-                student: true,
-                project: true,   // IMPORTANT for project creation check
-            },
-        })
-
-        if (!data)
-            return NextResponse.json(
-                { error: "Application not found" },
-                { status: 404 }
-            )
-
-        // ======================================================
-        // 1.5) Verify the company user owns this internship
-        // ======================================================
-        if (user.role !== "COMPANY") {
-            return NextResponse.json(
-                { error: "Only companies can approve/reject applications" },
-                { status: 403 }
-            )
-        }
-
-        const userCompanyId = user.companies[0]?.id
-        if (!userCompanyId || data.internship.companyId !== userCompanyId) {
-            return NextResponse.json(
-                { error: "You can only manage applications for your own internships" },
-                { status: 403 }
-            )
-        }
-
-        // ======================================================
-        // 2) Check assignment upload ONLY IF internship requires it
-        // ======================================================
-        const assignmentRequired = Boolean(data.internship.testAssignmentTitle)
-
-        if (assignmentRequired && status === "APPROVED") {
-            const assignments = await prisma.assignment.findMany({
-                where: {
-                    internshipId: data.internshipId,
-                    studentId: data.studentId,
-                },
-                include: {
-                    submissions: { select: { id: true } },
-                },
-            })
-
-            const hasUploadedFiles = assignments.some(
-                (a: { submissions: { id: string }[] }) => a.submissions.length > 0
-            )
-
-            if (!hasUploadedFiles) {
-                return NextResponse.json(
-                    {
-                        error:
-                            "The student must upload the internship assignment before approval.",
-                    },
-                    { status: 400 }
-                )
-            }
-        }
-
-        // ======================================================
-        // 3) Update application status
-        // ======================================================
-        const updatedApplication = await prisma.application.update({
-            where: { id },
-            data: { status },
-            include: {
-                internship: true,
-                student: true,
-            },
-        })
-
-        // ======================================================
-        // 4) Create project if APPROVED and no project exists
-        // ======================================================
-        if (status === "APPROVED" && data.project === null) {
-            await prisma.project.create({
-                data: {
-                    title: updatedApplication.internship.title,
-                    description: updatedApplication.internship.description || "",
-                    internshipId: updatedApplication.internshipId,
-                    applicationId: updatedApplication.id,
-                    studentId: updatedApplication.studentId,
-                    companyId: updatedApplication.internship.companyId,
-                },
-            })
-        }
-
-        // ======================================================
-        // 5) Send notification to student about status change
-        // ======================================================
-        const company = await prisma.company.findFirst({
-            where: { id: updatedApplication.internship.companyId },
-            select: { name: true }
-        })
-        
-        await notifyApplicationStatusChange(
-            updatedApplication.studentId,
-            updatedApplication.internship.title,
-            company?.name || "Company",
-            status as "APPROVED" | "REJECTED"
-        )
-
-        return NextResponse.json(updatedApplication)
+        return NextResponse.json(result.data)
     } catch (error) {
         console.error("Error updating application:", error)
         return NextResponse.json(

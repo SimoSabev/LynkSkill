@@ -1,6 +1,7 @@
 "use client"
 
 import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect, useRef } from "react"
+import { useLocale } from "@/lib/i18n"
 
 // Generate unique session ID
 function generateSessionId() {
@@ -113,6 +114,7 @@ interface AIModeContextType {
 const AIModeContext = createContext<AIModeContextType | undefined>(undefined)
 
 export function AIModeProvider({ children }: { children: ReactNode }) {
+    const { locale } = useLocale()
     const [isAIMode, setIsAIMode] = useState(false)
     const [messages, setMessages] = useState<AIMessage[]>([])
     const [isLoading, setIsLoading] = useState(false)
@@ -309,10 +311,15 @@ export function AIModeProvider({ children }: { children: ReactNode }) {
         setWelcomeSent(true)
         setCurrentUserType(userType)
         
-        const welcomeContent = userType === "company" 
-            ? "👋 Hello! I'm Linky, your AI Talent Scout here at LynkSkill! I'm here to help you find the perfect candidates for your team without manually creating job postings.\n\nJust describe what kind of talent you're looking for - the skills needed, the type of role, experience level, or any specific requirements. I'll search through our student database and find the best matches for you!\n\n💡 Try something like: \"I need a React developer\" or \"Looking for a design intern with Figma skills\""
-            : "👋 Hey there! I'm Linky, your AI Career Assistant here at LynkSkill! 🚀\n\nI'm here to help you build an awesome professional portfolio and find the perfect internship match for your skills and interests.\n\nTell me about yourself - What's your name, what are you studying, and what kind of work excites you? The more you share, the better I can help you stand out!"
-        
+        const isBg = locale === "bg"
+        const welcomeContent = userType === "company"
+            ? (isBg
+                ? "👋 Здравей! Аз съм Linky — твоят AI асистент за наемане в LynkSkill.\n\nМога да:\n- 🔍 намирам и класирам кандидати по умения\n- 📋 преглеждам кандидатурите ви и статуса на тестовите задачи\n- ✅ одобрявам/отхвърлям и насрочвам интервюта\n- 📝 публикувам нова стажантска позиция\n\nПробвай: „Намери ми React стажанти“ или „Покажи чакащите кандидатури“."
+                : "👋 Hi! I'm Linky, your AI recruiting assistant at LynkSkill.\n\nI can:\n- 🔍 find and rank candidates by skills\n- 📋 review your applications and test-assignment status\n- ✅ approve/reject and schedule interviews\n- 📝 publish a new internship\n\nTry: \"Find me React interns\" or \"Show pending applications\".")
+            : (isBg
+                ? "👋 Здравей! Аз съм Linky — твоят AI кариерен асистент в LynkSkill. 🚀\n\nМога да:\n- ✨ изградя и запазя портфолиото ти\n- 🎯 намеря стажове, които пасват на уменията ти\n- 📨 кандидатствам от твое име (с твое потвърждение)\n- 📅 следя кандидатурите, задачите и интервютата ти\n\nРазкажи ми за себе си — какво учиш и какво те вълнува?"
+                : "👋 Hey! I'm Linky, your AI career assistant at LynkSkill. 🚀\n\nI can:\n- ✨ build and save your portfolio\n- 🎯 find internships that fit your skills\n- 📨 apply for you (after you confirm)\n- 📅 track your applications, assignments and interviews\n\nTell me about yourself — what are you studying and what excites you?")
+
         const newMessage: AIMessage = {
             id: `msg-welcome-${Date.now()}`,
             role: "assistant",
@@ -323,7 +330,7 @@ export function AIModeProvider({ children }: { children: ReactNode }) {
         
         setMessages([newMessage])
         setChatPhase("gathering")
-    }, [welcomeSent])
+    }, [welcomeSent, locale])
 
     return (
         <AIModeContext.Provider value={{

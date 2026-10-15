@@ -32,6 +32,26 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { useAIMode } from "@/lib/ai-mode-context"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
+import { useOptionalDashboard } from "@/lib/dashboard-context"
+
+type AgentAction = { tool: string; ok: boolean; summary: string }
+
+/** Surface what the agent actually did and refresh dashboard data after writes. */
+function reportAgentActions(actions: AgentAction[] | undefined, refresh?: () => Promise<void>) {
+    if (!actions?.length) return
+    for (const a of actions) {
+        if (a.ok) toast.success(a.summary)
+        else toast.error(a.summary)
+    }
+    if (actions.some((a) => a.ok)) void refresh?.()
+}
+
+function agentErrorMessage(status: number, error?: string): string {
+    if (status === 429) return "⏳ Too many messages in a short time — wait a minute and try again. / Твърде много съобщения — изчакай минута."
+    if (status === 503) return "⚙️ The AI assistant isn't configured on the server yet. / AI асистентът още не е конфигуриран."
+    if (status === 400 && error) return `⚠️ ${error}`
+    return "I apologize, but I encountered an issue. Please try again or rephrase your message."
+}
 
 export function CompanyAIChat() {
     const { 
@@ -53,6 +73,7 @@ export function CompanyAIChat() {
         deleteSession
     } = useAIMode()
 
+    const dashboard = useOptionalDashboard()
     const [inputValue, setInputValue] = useState("")
     const [isTyping, setIsTyping] = useState(false)
     const [isSearching, setIsSearching] = useState(false)
@@ -218,14 +239,15 @@ export function CompanyAIChat() {
                 })
             })
 
-            const data = await response.json()
+            const data = await response.json().catch(() => ({}))
 
-            if (data.error) {
+            if (!response.ok || data.error) {
                 addMessage({
                     role: "assistant",
-                    content: "I apologize, but I encountered an issue. Please try again or rephrase your message."
+                    content: agentErrorMessage(response.status, data.error)
                 })
             } else {
+                reportAgentActions(data.actions, dashboard?.refreshAll)
                 // Parse the reply to check for search JSON and strip it
                 const { cleanText, searchCriteria } = parseMessageForSearch(data.reply)
                 

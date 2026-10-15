@@ -333,6 +333,11 @@ export function useDashboard() {
     return context
 }
 
+// For components that may render outside a DashboardProvider (e.g. AI chat)
+export function useOptionalDashboard() {
+    return useContext(DashboardContext)
+}
+
 // Export types
 export type { 
     DashboardContextType, 
