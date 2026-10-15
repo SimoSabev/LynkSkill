@@ -10,7 +10,7 @@ import {
     ThumbsUp, ThumbsDown, ShieldCheck, Loader2
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
-import { cn } from "@/lib/utils"
+import { cn, safeExternalUrl } from "@/lib/utils"
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -694,12 +694,12 @@ function PortfolioCard({ data, onAction }: { data: PortfolioData; onAction?: (p:
                 )}
                 <div className="flex flex-wrap gap-3 text-[10px] text-muted-foreground">
                     {data.linkedin && (
-                        <a href={data.linkedin} target="_blank" rel="noopener noreferrer" className="flex items-center gap-0.5 hover:text-primary transition-colors">
+                        <a href={safeExternalUrl(data.linkedin)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-0.5 hover:text-primary transition-colors">
                             <ExternalLink className="h-3 w-3" /> LinkedIn
                         </a>
                     )}
                     {data.github && (
-                        <a href={data.github} target="_blank" rel="noopener noreferrer" className="flex items-center gap-0.5 hover:text-primary transition-colors">
+                        <a href={safeExternalUrl(data.github)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-0.5 hover:text-primary transition-colors">
                             <ExternalLink className="h-3 w-3" /> GitHub
                         </a>
                     )}

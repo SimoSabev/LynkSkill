@@ -39,6 +39,7 @@ import { ScheduleInterviewModal } from "@/components/schedule-interview-modal"
 import { ReviewModal } from "@/components/review-modal"
 import { CoverLetterViewer } from "@/components/cover-letter-viewer"
 import { useTranslation } from "@/lib/i18n"
+import { safeExternalUrl } from "@/lib/utils"
 
 interface ApplicationsTabContentProps {
     userType: "Student" | "Company"
@@ -876,7 +877,7 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                                                 {portfolio.linkedin && (
                                                     <Button size="sm" variant="outline" asChild
                                                         className="font-semibold bg-transparent">
-                                                        <a href={portfolio.linkedin} target="_blank"
+                                                        <a href={safeExternalUrl(portfolio.linkedin)} target="_blank"
                                                             rel="noopener noreferrer">
                                                             <Linkedin className="w-4 h-4 mr-2" />
                                                             LinkedIn
@@ -886,7 +887,7 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                                                 {portfolio.github && (
                                                     <Button size="sm" variant="outline" asChild
                                                         className="font-semibold bg-transparent">
-                                                        <a href={portfolio.github} target="_blank"
+                                                        <a href={safeExternalUrl(portfolio.github)} target="_blank"
                                                             rel="noopener noreferrer">
                                                             <Github className="w-4 h-4 mr-2" />
                                                             GitHub
@@ -1059,7 +1060,7 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                                                         className="w-full font-semibold bg-transparent border-2 border-primary/20 hover:bg-primary hover:text-primary-foreground"
                                                     >
                                                         <a
-                                                            href={showCompany.company?.website}
+                                                            href={safeExternalUrl(showCompany.company?.website)}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
                                                         >
