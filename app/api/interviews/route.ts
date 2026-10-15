@@ -73,6 +73,10 @@ export async function GET(req: NextRequest) {
         }
 
         if (status) {
+            const allowed = ["SCHEDULED", "CONFIRMED", "COMPLETED", "CANCELLED", "RESCHEDULED"]
+            if (!allowed.includes(status)) {
+                return NextResponse.json({ error: "Invalid status filter" }, { status: 400 })
+            }
             whereClause.status = status
         }
 

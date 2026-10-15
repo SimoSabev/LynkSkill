@@ -12,16 +12,16 @@ interface CleanupResult {
 }
 
 /**
- * Safely deletes expired test-only applications and their related data.
+ * Deletes applications whose test assignment deadline passed without a submission.
  *
- * This function handles the deletion in the correct dependency order to avoid
- * foreign key constraint violations (P2003):
- * 1. First: Delete Experience records that reference Projects
- * 2. Second: Delete Project records (they cascade to Application via FK)
- * 3. Third: Delete Application records
+ * Only PENDING applications are eligible. Approved/rejected applications are
+ * history (projects, experiences, reviews, conversations hang off them) and
+ * must never be removed just because the test due date is in the past.
  *
- * The function includes comprehensive error handling to ensure that if one
- * application deletion fails, the process continues with other applications.
+ * Each application is removed in a transaction, in FK dependency order:
+ * 1. the student's (empty) test Assignments for that internship
+ * 2. Experience records referencing the application's Project
+ * 3. the Application (Project/Interview/Conversation/Review cascade)
  *
  * @returns Promise<CleanupResult> Summary of the cleanup operation
  */
@@ -33,58 +33,56 @@ export async function deleteExpiredApplications(): Promise<CleanupResult> {
         errors: []
     }
 
-    try {
-        // Find all expired test-only applications
-        const expiredApplications = await prisma.application.findMany({
-            where: {
-                internship: {
-                    testAssignmentDueDate: { lt: new Date() }
-                }
+    const candidates = await prisma.application.findMany({
+        where: {
+            status: "PENDING",
+            internship: {
+                testAssignmentDueDate: { lt: new Date() }
             }
+        },
+        select: { id: true, internshipId: true, studentId: true }
+    })
+
+    // Keep applications where the student did upload something
+    const submitted = candidates.length
+        ? await prisma.assignment.findMany({
+            where: {
+                internshipId: { in: candidates.map((a) => a.internshipId) },
+                studentId: { in: candidates.map((a) => a.studentId) },
+                submissions: { some: {} }
+            },
+            select: { internshipId: true, studentId: true }
         })
+        : []
+    const submittedPairs = new Set(submitted.map((s) => `${s.internshipId}|${s.studentId}`))
+    const expired = candidates.filter((a) => !submittedPairs.has(`${a.internshipId}|${a.studentId}`))
 
-        result.totalFound = expiredApplications.length
+    result.totalFound = expired.length
 
-        // Delete each application with its related data in correct order
-        for (const app of expiredApplications) {
-            try {
-                // 1. Delete Experience records that reference Projects linked to this Application
-                await prisma.experience.deleteMany({
+    for (const app of expired) {
+        try {
+            await prisma.$transaction([
+                prisma.assignment.deleteMany({
                     where: {
-                        project: {
-                            applicationId: app.id
-                        }
+                        internshipId: app.internshipId,
+                        studentId: app.studentId,
+                        submissions: { none: {} }
                     }
-                })
-
-                // 2. Delete Project records (they have onDelete: Cascade to Application)
-                await prisma.project.deleteMany({
-                    where: {
-                        applicationId: app.id
-                    }
-                })
-
-                // 3. Delete the Application record
-                await prisma.application.delete({
+                }),
+                prisma.experience.deleteMany({
+                    where: { project: { applicationId: app.id } }
+                }),
+                prisma.application.delete({
                     where: { id: app.id }
                 })
-
-                result.successCount++
-            } catch (error) {
-                result.failureCount++
-                const errorMessage = error instanceof Error ? error.message : String(error)
-                result.errors.push({
-                    applicationId: app.id,
-                    error: errorMessage
-                })
-                console.error(`Failed to delete application ${app.id}:`, errorMessage)
-            }
+            ])
+            result.successCount++
+        } catch (error) {
+            result.failureCount++
+            const errorMessage = error instanceof Error ? error.message : String(error)
+            result.errors.push({ applicationId: app.id, error: errorMessage })
+            console.error(`Failed to delete application ${app.id}:`, errorMessage)
         }
-    } catch (error) {
-        // This catch handles errors in the initial query or other unexpected issues
-        const errorMessage = error instanceof Error ? error.message : String(error)
-        console.error('Error during cleanup operation:', errorMessage)
-        throw error
     }
 
     return result

@@ -16,9 +16,26 @@ export async function POST(req: Request) {
     }
 
     const { internshipId } = await req.json();
-    if (!internshipId) {
+    if (!internshipId || typeof internshipId !== "string") {
         return NextResponse.json(
             { error: "Internship ID required" },
+            { status: 400 }
+        );
+    }
+
+    const target = await prisma.internship.findUnique({
+        where: { id: internshipId },
+        select: { applicationStart: true, applicationEnd: true },
+    });
+    if (!target) {
+        return NextResponse.json({ error: "Internship not found" }, { status: 404 });
+    }
+    // Dates are stored as calendar days (midnight UTC); the end day is inclusive
+    const now = new Date();
+    const closesAt = new Date(target.applicationEnd.getTime() + 24 * 60 * 60 * 1000);
+    if (now < target.applicationStart || now >= closesAt) {
+        return NextResponse.json(
+            { error: "Applications for this internship are closed" },
             { status: 400 }
         );
     }
@@ -40,7 +57,7 @@ export async function POST(req: Request) {
         );
     }
 
-    // ✅ Create the application
+    // ✅ Create the application (unique [internshipId, studentId] guards double-submit races)
     const application = await prisma.application.create({
         data: {
             studentId: student.id,

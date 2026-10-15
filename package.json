@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "cross-env NEXT_DISABLE_TYPECHECK=1 next build",
+    "build": "next build",
     "start": "next start",
     "postinstall": "prisma generate",
     "sync:vectors": "ts-node -r tsconfig-paths/register --project tsconfig.scripts.json scripts/syncVectors.ts"

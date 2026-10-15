@@ -37,6 +37,15 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
 
         const { id } = await params
 
+        const user = await prisma.user.findUnique({
+            where: { clerkId },
+            select: { id: true, companies: { select: { id: true } } }
+        })
+
+        if (!user) {
+            return NextResponse.json({ error: "User not found" }, { status: 404 })
+        }
+
         const interview = await prisma.interview.findUnique({
             where: { id },
             include: {
@@ -65,6 +74,12 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
 
         if (!interview) {
             return NextResponse.json({ error: "Interview not found" }, { status: 404 })
+        }
+
+        const isStudent = interview.application.student.id === user.id
+        const isCompany = user.companies.some(c => c.id === interview.application.internship.company.id)
+        if (!isStudent && !isCompany) {
+            return NextResponse.json({ error: "Not authorized to view this interview" }, { status: 403 })
         }
 
         return NextResponse.json(interview)

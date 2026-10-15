@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { createClient } from "@supabase/supabase-js";
 import { prisma } from "@/lib/prisma";
+import { UPLOAD_RULES, safeStorageName, validateUpload } from "@/lib/upload-utils";
 
 // ✅ Ensure this is a route handler, not a Server Action
 export async function POST(req: Request) {
@@ -17,17 +18,16 @@ export async function POST(req: Request) {
         if (!file)
             return NextResponse.json({ error: "No file provided" }, { status: 400 });
 
-        // ✅ Validate file type
-        const validTypes = ["image/jpeg", "image/png", "image/webp"];
-        if (!validTypes.includes(file.type)) {
-            return NextResponse.json({ error: "Invalid file type" }, { status: 400 });
+        // ✅ Validate file type + size (max 5MB)
+        const invalid = validateUpload(file, UPLOAD_RULES.logo);
+        if (invalid) {
+            return NextResponse.json({ error: invalid }, { status: 400 });
         }
 
         // ✅ Convert to buffer
         const buffer = Buffer.from(await file.arrayBuffer());
         const timestamp = Date.now();
-        const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
-        const filePath = `company/${userId}/${timestamp}-${safeName}`;
+        const filePath = `company/${userId}/${timestamp}-${safeStorageName(file.name)}`;
 
         // ✅ Initialize Supabase client (service key required)
         const supabase = createClient(
@@ -46,7 +46,7 @@ export async function POST(req: Request) {
         if (uploadError) {
             console.error("Supabase upload error:", uploadError.message);
             return NextResponse.json(
-                { error: uploadError.message },
+                { error: "Upload failed" },
                 { status: 500 }
             );
         }
@@ -85,7 +85,7 @@ export async function POST(req: Request) {
     } catch (err) {
         console.error("Upload error:", err);
         return NextResponse.json(
-            { error: (err as Error).message || "Upload failed" },
+            { error: "Upload failed" },
             { status: 500 }
         );
     }

@@ -23,7 +23,7 @@ export async function POST(
             positionTitle 
         } = await req.json()
 
-        if (!scheduledAt) {
+        if (!scheduledAt || isNaN(Date.parse(scheduledAt))) {
             return NextResponse.json({ error: "Interview date is required" }, { status: 400 })
         }
 
@@ -45,7 +45,7 @@ export async function POST(
             include: { profile: true, portfolio: true }
         })
 
-        if (!candidate) {
+        if (!candidate || candidate.role !== "STUDENT") {
             return NextResponse.json({ error: "Candidate not found" }, { status: 404 })
         }
 

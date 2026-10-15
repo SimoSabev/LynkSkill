@@ -35,10 +35,16 @@ export async function GET() {
                         assignments: true
                     },
                 },
+                // Explicit select: never ship clerkId/policy flags, and only this
+                // company's assignments (previously every assignment the student
+                // had at any company, including submission URLs, was returned).
                 student: {
-                    include: {
+                    select: {
+                        id: true,
+                        email: true,
                         profile: true,
                         assignments: {
+                            where: { internship: { companyId: company.id } },
                             include: {
                                 submissions: true
                             }

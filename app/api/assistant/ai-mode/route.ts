@@ -1,13 +1,32 @@
 import { NextRequest, NextResponse } from "next/server"
-import OpenAI from "openai"
+import type OpenAI from "openai"
 import { prisma } from "@/lib/prisma"
 import { auth } from "@clerk/nextjs/server"
-
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-})
+import { openai } from "@/lib/openai"
 
 type ChatPhase = "intro" | "gathering" | "portfolio" | "matching" | "results"
+const VALID_PHASES: ChatPhase[] = ["intro", "gathering", "portfolio", "matching", "results"]
+
+const MAX_MESSAGE_CHARS = 4000
+const MAX_HISTORY_MESSAGES = 30
+
+// Best-effort per-instance limiter (serverless instances don't share memory).
+// For a hard global limit use the Upstash Ratelimit already in dependencies.
+const RATE_LIMIT_WINDOW_MS = 60 * 1000
+const RATE_LIMIT_MAX = 20
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>()
+
+function checkRateLimit(userId: string): boolean {
+    const now = Date.now()
+    const entry = rateLimitMap.get(userId)
+    if (!entry || now > entry.resetTime) {
+        rateLimitMap.set(userId, { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS })
+        return true
+    }
+    if (entry.count >= RATE_LIMIT_MAX) return false
+    entry.count++
+    return true
+}
 
 interface ConversationMessage {
     role: "user" | "assistant"
@@ -117,13 +136,38 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
         }
 
-        const body = await req.json()
-        const { message, conversationHistory, phase, userType } = body as {
-            message: string
-            conversationHistory: ConversationMessage[]
-            phase: ChatPhase
-            userType: "student" | "company"
+        // userType comes from the DB role, never from the client: a student
+        // claiming "company" would otherwise get the full student search.
+        const dbUser = await prisma.user.findUnique({
+            where: { clerkId: userId },
+            select: { role: true }
+        })
+        if (!dbUser) {
+            return NextResponse.json({ error: "User not found" }, { status: 404 })
         }
+        const userType: "student" | "company" = dbUser.role === "COMPANY" ? "company" : "student"
+
+        if (!checkRateLimit(userId)) {
+            return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 })
+        }
+
+        const body = await req.json()
+        const { message, phase: rawPhase } = body as { message: unknown; phase: unknown }
+
+        if (typeof message !== "string" || !message.trim() || message.length > MAX_MESSAGE_CHARS) {
+            return NextResponse.json({ error: `Message is required (max ${MAX_MESSAGE_CHARS} characters)` }, { status: 400 })
+        }
+
+        const phase: ChatPhase = VALID_PHASES.includes(rawPhase as ChatPhase) ? (rawPhase as ChatPhase) : "intro"
+
+        // Only user/assistant turns, bounded - blocks injected "system" turns and token-cost abuse
+        const conversationHistory: ConversationMessage[] = (Array.isArray(body.conversationHistory) ? body.conversationHistory : [])
+            .filter((m: unknown): m is ConversationMessage => {
+                const msg = m as ConversationMessage
+                return (msg?.role === "user" || msg?.role === "assistant") && typeof msg.content === "string"
+            })
+            .slice(-MAX_HISTORY_MESSAGES)
+            .map((m: ConversationMessage) => ({ role: m.role, content: m.content.slice(0, MAX_MESSAGE_CHARS) }))
 
         // Build conversation for OpenAI
         const systemPrompt = userType === "student" 
@@ -132,10 +176,7 @@ export async function POST(req: NextRequest) {
 
         const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
             { role: "system", content: systemPrompt },
-            ...conversationHistory.map(m => ({
-                role: m.role as "user" | "assistant",
-                content: m.content
-            })),
+            ...conversationHistory,
             { role: "user", content: message }
         ]
 
@@ -161,7 +202,7 @@ export async function POST(req: NextRequest) {
 
         // Check for [SEARCH] tag for companies (new format)
         if (userType === "company") {
-            const searchTagRegex = /\[SEARCH\](.*?)\[\/SEARCH\]/s
+            const searchTagRegex = /\[SEARCH\]([\s\S]*?)\[\/SEARCH\]/
             const searchTagMatch = reply.match(searchTagRegex)
             
             if (searchTagMatch) {
@@ -497,7 +538,7 @@ async function findMatchingStudents(requiredSkills: string[], field: string) {
                 id: student.id,
                 name: student.profile?.name || student.portfolio?.fullName || "Student",
                 email: student.email || "",
-                avatar: student.profile?.image || undefined,
+                avatar: undefined,
                 matchPercentage: score,
                 reasons: reasons.length > 0 ? reasons : ["Available candidate"],
                 skills: foundSkills.length > 0 ? foundSkills : studentSkillsArray.slice(0, 5),

@@ -411,6 +411,11 @@ export default function OnboardingPage() {
                 return
             }
 
+            if (res?.needsPolicies) {
+                setError("You must accept the Terms of Service and Privacy Policy before continuing")
+                return
+            }
+
             if (res?.dashboard) {
                 await user?.reload()
                 router.push(res.dashboard)

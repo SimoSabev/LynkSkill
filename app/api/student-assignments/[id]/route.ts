@@ -53,8 +53,11 @@ export async function GET(
         }
 
         if (dbUser.role === "COMPANY") {
-            const owns = assignment.internship.companyId === dbUser.id
-            if (!owns) {
+            const company = await prisma.company.findFirst({
+                where: { ownerId: dbUser.id, id: assignment.internship.companyId },
+                select: { id: true },
+            })
+            if (!company) {
                 return NextResponse.json(
                     { error: "Forbidden: this internship does not belong to you" },
                     { status: 403 }

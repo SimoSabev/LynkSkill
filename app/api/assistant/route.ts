@@ -1,8 +1,5 @@
 import { NextResponse } from "next/server";
-import OpenAI from "openai";
 import { auth } from "@clerk/nextjs/server";
-import { readFileSync } from "fs";
-import { join } from "path";
 import {
   generatePortfolioAudit,
   generateChatAdvisorResponse,
@@ -10,21 +7,7 @@ import {
   ConversationMessage,
   extractInsightsFromAudit
 } from "./prompts";
-
-// PRODUCTION FIX: Force read .env to bypass stale cache
-function getApiKey(): string | null {
-    try {
-        const envPath = join(process.cwd(), '.env');
-        const envContent = readFileSync(envPath, 'utf-8');
-        const match = envContent.match(/^OPENAI_API_KEY=(.+)$/m);
-        return match ? match[1].replace(/["']/g, '') : process.env.OPENAI_API_KEY || null;
-    } catch {
-        return process.env.OPENAI_API_KEY || null;
-    }
-}
-
-const apiKey = getApiKey();
-const openai = apiKey ? new OpenAI({ apiKey, timeout: 60000 }) : ({} as OpenAI);
+import { openai, isOpenAIConfigured } from "@/lib/openai";
 
 // Enhanced In-Memory Cache for Session Context with Conversation History
 const memoryCache = new Map<string, {
@@ -48,10 +31,19 @@ export async function POST(req: Request) {
     try {
         const { userId } = await auth();
         if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        if (!apiKey) return NextResponse.json({ error: "Server Configuration Error" }, { status: 500 });
+        if (!isOpenAIConfigured()) return NextResponse.json({ error: "Server Configuration Error" }, { status: 500 });
+
+        const contentLength = Number(req.headers.get("content-length") || 0);
+        if (contentLength > 100 * 1024) {
+            return NextResponse.json({ error: "Request payload too large" }, { status: 413 });
+        }
 
         const body = await req.json();
         const { message, portfolio, resetChat } = body;
+
+        if (message !== undefined && (typeof message !== "string" || message.length > 4000)) {
+            return NextResponse.json({ error: "Invalid message (max 4000 characters)" }, { status: 400 });
+        }
 
         // Get or initialize session data
         let sessionData = memoryCache.get(userId);

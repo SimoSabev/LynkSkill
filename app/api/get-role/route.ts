@@ -1,13 +1,16 @@
 // /app/api/get-role/route.ts
 import { NextResponse } from "next/server"
+import { auth } from "@clerk/nextjs/server"
 import { prisma } from "@/lib/prisma"
 
-export async function POST(req: Request) {
-    const { clerkId } = await req.json()
-    if (!clerkId) return NextResponse.json({ role: null, onboardingComplete: false })
+// Returns the role/onboarding state of the *signed-in* user.
+// Any clerkId in the request body is ignored - identity comes from the session only.
+export async function POST() {
+    const { userId } = await auth()
+    if (!userId) return NextResponse.json({ role: null, onboardingComplete: false }, { status: 401 })
 
     const user = await prisma.user.findUnique({
-        where: { clerkId },
+        where: { clerkId: userId },
         select: { role: true, onboardingComplete: true },
     })
 

@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireDbUser } from "@/lib/api-guards";
 
 export async function DELETE(req: Request) {
     try {
+        const guard = await requireDbUser("COMPANY");
+        if (!guard.ok) return guard.response;
+        const { user } = guard;
+
         // Get ID from URL query instead of req.json()
         const { searchParams } = new URL(req.url);
         const id = searchParams.get("id");
@@ -12,6 +17,19 @@ export async function DELETE(req: Request) {
                 { error: "Missing internship ID" },
                 { status: 400 }
             );
+        }
+
+        const internship = await prisma.internship.findUnique({
+            where: { id },
+            select: { companyId: true },
+        });
+
+        if (!internship) {
+            return NextResponse.json({ error: "Internship not found" }, { status: 404 });
+        }
+
+        if (!user.companies.some((c) => c.id === internship.companyId)) {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
 
         // Check if internship has applications

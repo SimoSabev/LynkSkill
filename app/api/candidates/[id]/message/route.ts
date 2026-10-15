@@ -16,7 +16,7 @@ export async function POST(
         const { id: candidateId } = await params
         const { message, subject } = await req.json()
 
-        if (!message || message.trim().length === 0) {
+        if (typeof message !== "string" || message.trim().length === 0) {
             return NextResponse.json({ error: "Message is required" }, { status: 400 })
         }
 
@@ -38,7 +38,7 @@ export async function POST(
             include: { profile: true, portfolio: true }
         })
 
-        if (!candidate) {
+        if (!candidate || candidate.role !== "STUDENT") {
             return NextResponse.json({ error: "Candidate not found" }, { status: 404 })
         }
 
@@ -47,7 +47,7 @@ export async function POST(
             data: {
                 userId: candidateId,
                 type: "NEW_MESSAGE",
-                title: subject || `Message from ${company.name}`,
+                title: (typeof subject === "string" && subject.trim() ? subject.trim() : `Message from ${company.name}`).slice(0, 150),
                 message: message.substring(0, 200) + (message.length > 200 ? "..." : ""),
                 link: "/dashboard/student?tab=messages"
             }

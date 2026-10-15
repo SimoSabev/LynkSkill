@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { auth } from "@clerk/nextjs/server"
 
+const MAX_CANDIDATES_PER_SESSION = 50
+
 interface EvaluationInput {
     id: string
     matchPercentage: number
@@ -55,33 +57,43 @@ export async function POST(req: NextRequest) {
             candidates // Array of candidate evaluation results
         } = body
 
-        if (!sessionId || !candidates || !Array.isArray(candidates)) {
+        if (typeof sessionId !== "string" || !sessionId || !Array.isArray(candidates)) {
             return NextResponse.json({ error: "Invalid request data" }, { status: 400 })
         }
+        if (candidates.length > MAX_CANDIDATES_PER_SESSION) {
+            return NextResponse.json({ error: `Max ${MAX_CANDIDATES_PER_SESSION} candidates per session` }, { status: 400 })
+        }
 
-        // Save evaluation for each candidate
-        const evaluations = await Promise.all(
-            candidates.map(async (candidate: EvaluationInput) => {
-                // @ts-expect-error - Model may not exist until migration is run
-                return prisma.candidateEvaluation.create({
-                    data: {
-                        candidateId: candidate.id,
-                        companyId: company.id,
-                        sessionId,
-                        sessionName: sessionName || `AI Search - ${new Date().toLocaleDateString()}`,
-                        searchQuery: searchQuery || "",
-                        requiredSkills: requiredSkills || [],
-                        matchPercentage: candidate.matchPercentage,
-                        matchReasons: candidate.reasons || [],
-                        matchedSkills: candidate.skills || []
-                    }
-                })
-            })
-        )
+        const strings = (v: unknown, max = 20) =>
+            Array.isArray(v) ? v.filter((x): x is string => typeof x === "string").slice(0, max).map(x => x.slice(0, 200)) : []
+
+        // Only real students can be evaluated
+        const inputs = (candidates as EvaluationInput[]).filter(c => typeof c?.id === "string")
+        const validStudents = await prisma.user.findMany({
+            where: { id: { in: inputs.map(c => c.id) }, role: "STUDENT" },
+            select: { id: true }
+        })
+        const validIds = new Set(validStudents.map(s => s.id))
+
+        const result = await prisma.candidateEvaluation.createMany({
+            data: inputs
+                .filter(c => validIds.has(c.id))
+                .map(candidate => ({
+                    candidateId: candidate.id,
+                    companyId: company.id,
+                    sessionId: sessionId.slice(0, 100),
+                    sessionName: (typeof sessionName === "string" && sessionName ? sessionName : `AI Search - ${new Date().toLocaleDateString()}`).slice(0, 200),
+                    searchQuery: typeof searchQuery === "string" ? searchQuery.slice(0, 1000) : "",
+                    requiredSkills: strings(requiredSkills),
+                    matchPercentage: Math.max(0, Math.min(100, Math.round(Number(candidate.matchPercentage) || 0))),
+                    matchReasons: strings(candidate.reasons),
+                    matchedSkills: strings(candidate.skills)
+                }))
+        })
 
         return NextResponse.json({ 
             success: true, 
-            evaluationsCount: evaluations.length,
+            evaluationsCount: result.count,
             sessionId 
         })
 
@@ -120,7 +132,6 @@ export async function GET(req: NextRequest) {
             whereClause.candidateId = candidateId
         }
 
-        // @ts-expect-error - Model may not exist until migration is run
         const evaluations = await prisma.candidateEvaluation.findMany({
             where: whereClause,
             include: {

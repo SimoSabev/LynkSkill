@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@clerk/nextjs/server"
 import { prisma } from "@/lib/prisma"
+import { z } from "zod"
+
+const updateReviewSchema = z.object({
+    rating: z.number().int().min(1, "Rating must be between 1 and 5").max(5, "Rating must be between 1 and 5").optional(),
+    title: z.string().min(3, "Title must be at least 3 characters").max(100, "Title cannot exceed 100 characters").optional(),
+    content: z.string().min(10, "Review must be at least 10 characters").max(2000, "Review cannot exceed 2000 characters").optional(),
+})
 
 interface RouteParams {
     params: Promise<{ id: string }>
@@ -73,11 +80,11 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
             return NextResponse.json({ error: "You can only edit your own reviews" }, { status: 403 })
         }
 
-        const { rating, title, content } = await req.json()
-
-        if (rating && (rating < 1 || rating > 5)) {
-            return NextResponse.json({ error: "Rating must be between 1 and 5" }, { status: 400 })
+        const validation = updateReviewSchema.safeParse(await req.json())
+        if (!validation.success) {
+            return NextResponse.json({ error: validation.error.issues[0].message }, { status: 400 })
         }
+        const { rating, title, content } = validation.data
 
         const updatedReview = await prisma.review.update({
             where: { id },

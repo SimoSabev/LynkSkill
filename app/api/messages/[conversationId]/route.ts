@@ -95,8 +95,11 @@ export async function POST(
         const { conversationId } = await params
         const { content } = await req.json()
 
-        if (!content || content.trim() === "") {
+        if (typeof content !== "string" || content.trim() === "") {
             return NextResponse.json({ error: "Message content required" }, { status: 400 })
+        }
+        if (content.length > 5000) {
+            return NextResponse.json({ error: "Message too long (max 5000 characters)" }, { status: 400 })
         }
 
         const user = await prisma.user.findUnique({

@@ -14,6 +14,7 @@ export interface Internship {
     skills?: string
     applicationStart?: string | null
     applicationEnd?: string | null
+    applications?: { id: string; status: string }[]
 }
 
 export interface Application {

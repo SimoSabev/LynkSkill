@@ -24,6 +24,6 @@ export async function GET(req: Request) {
         return NextResponse.redirect(new URL("/dashboard/company", req.url))
     }
 
-    // Fallback
-    return NextResponse.redirect(new URL("/dashboard", req.url))
+    // Fallback: unknown role -> let onboarding resolve it (there is no /dashboard page)
+    return NextResponse.redirect(new URL("/onboarding", req.url))
 }
