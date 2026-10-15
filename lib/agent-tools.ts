@@ -3,7 +3,11 @@ import { openai } from "@/lib/openai"
 import { searchAcrossSessions } from "@/lib/ai/ai-search"
 import { normalizeSkills } from "@/lib/ai/skill-taxonomy"
 import { calculateAndSaveConfidenceScore } from "@/lib/confidence-score"
-import { createTestAssignmentForApplication } from "@/lib/services/applications"
+import {
+    createTestAssignmentForApplication,
+    ensureProjectForApprovedApplication,
+    getApprovalBlocker,
+} from "@/lib/services/applications"
 
 export interface UserContext {
     userId: string
@@ -1638,10 +1642,17 @@ async function approveApplication(
         return { tool: "approve_application", cardType: "error", title: "Cannot approve", data: null, success: false, error: `Application is already ${app.status}.` }
     }
 
+    // Same rules as PATCH /api/applications/[id]
+    const blocker = await getApprovalBlocker(app.internshipId, app.studentId)
+    if (blocker) {
+        return { tool: "approve_application", cardType: "error", title: "Cannot approve yet", data: null, success: false, error: blocker }
+    }
+
     await prisma.application.update({
         where: { id: applicationId },
         data: { status: "APPROVED" },
     })
+    await ensureProjectForApprovedApplication(applicationId)
 
     const studentName = app.student.portfolio?.fullName ?? app.student.profile?.name ?? "Student"
 
