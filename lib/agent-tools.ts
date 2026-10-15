@@ -135,10 +135,10 @@ async function searchInternships(
                               { qualifications: { contains: query, mode: "insensitive" as const } },
                           ],
                       }
-                    : {},
+                    : { id: { in: [] } }, // no company -> match nothing
                 location
                     ? { location: { contains: location, mode: "insensitive" as const } }
-                    : {},
+                    : { id: { in: [] } }, // no company -> match nothing
             ],
         },
         include: { company: { select: { name: true } } },
@@ -242,7 +242,7 @@ async function getApplications(
             ? { studentId: ctx.userId }
             : ctx.companyId
               ? { internship: { companyId: ctx.companyId } }
-              : {},
+              : { id: { in: [] } }, // no company -> match nothing
         include: {
             internship: { select: { title: true, company: { select: { name: true } } } },
         },
@@ -433,7 +433,7 @@ async function getInterviews(ctx: UserContext): Promise<ToolResult> {
                 ? { studentId: ctx.userId }
                 : ctx.companyId
                   ? { internship: { companyId: ctx.companyId } }
-                  : {},
+                  : { id: { in: [] } }, // no company -> match nothing
         },
         include: {
             application: {
@@ -466,7 +466,7 @@ async function getConversations(ctx: UserContext): Promise<ToolResult> {
         ? { studentId: ctx.userId }
         : ctx.companyId
           ? { companyId: ctx.companyId }
-          : {}
+          : { id: { in: [] } } // no company -> match nothing
 
     const conversations = await prisma.conversation.findMany({
         where: whereClause,
@@ -500,7 +500,7 @@ async function getAssignments(ctx: UserContext): Promise<ToolResult> {
             ? { studentId: ctx.userId }
             : ctx.companyId
               ? { internship: { companyId: ctx.companyId } }
-              : {},
+              : { id: { in: [] } }, // no company -> match nothing
         include: {
             internship: { select: { title: true, company: { select: { name: true } } } },
         },
@@ -582,15 +582,15 @@ async function searchCandidates(
     // Filter and rank: name/email match scores higher, then skill match
     const scored = students
         .map((s) => {
-            const name = (s.portfolio?.fullName || s.profile?.name || s.email || "").toLowerCase()
+            const name = (s.portfolio?.fullName || s.profile?.name || "").toLowerCase()
             const skills = (s.portfolio?.skills || []) as string[]
             const skillsLower = skills.map(sk => sk.toLowerCase())
             const score = s.aiProfile?.confidenceScore?.overallScore ?? 0
 
             if (!query) return { student: s, rank: score }
 
-            // Name / email match
-            if (name.includes(queryLower) || s.email.toLowerCase().includes(queryLower)) {
+            // Name match (no email matching: it would be an email-existence oracle)
+            if (name && name.includes(queryLower)) {
                 return { student: s, rank: 100 + score }
             }
 
@@ -612,7 +612,7 @@ async function searchCandidates(
         title: `${scored.length} candidate${scored.length !== 1 ? "s" : ""} found`,
         data: scored.map(({ student: s }) => ({
             id: s.id,
-            name: s.portfolio?.fullName || s.profile?.name || s.email,
+            name: s.portfolio?.fullName || s.profile?.name || "Candidate",
             headline: s.portfolio?.headline,
             skills: (s.portfolio?.skills || []) as string[],
             confidenceScore: s.aiProfile?.confidenceScore?.overallScore ?? null,
@@ -1417,6 +1417,10 @@ async function bulkEvaluateApplications(
     const internshipId = args.internshipId as string
     if (!internshipId) {
         return { tool: "bulk_evaluate_applications", cardType: "error", title: "Missing ID", data: null, success: false, error: "internshipId is required" }
+    }
+
+    if (!ctx.companyId) {
+        return { tool: "bulk_evaluate_applications", cardType: "error", title: "No company", data: null, success: false, error: "You are not associated with a company." }
     }
 
     const internship = await prisma.internship.findUnique({

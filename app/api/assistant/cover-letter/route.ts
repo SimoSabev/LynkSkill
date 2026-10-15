@@ -3,6 +3,7 @@ import { NextResponse } from "next/server"
 import { auth } from "@clerk/nextjs/server"
 import { prisma } from "@/lib/prisma"
 import { openai } from "@/lib/openai"
+import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit"
 
 const COVER_LETTER_SYSTEM_PROMPT = `You are Linky, an expert career coach AI at LynkSkill, helping students write compelling cover letters for internship applications.
 
@@ -31,6 +32,10 @@ export async function POST(req: Request) {
         const { userId: clerkId } = await auth()
         if (!clerkId)
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+
+        const rateLimit = checkRateLimit(`cover-letter:${clerkId}`, { limit: 10, windowSeconds: 60 })
+        if (!rateLimit.success)
+            return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429, headers: rateLimitHeaders(rateLimit) })
 
         const user = await prisma.user.findUnique({
             where: { clerkId },

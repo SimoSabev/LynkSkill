@@ -8,6 +8,7 @@ import {
   extractInsightsFromAudit
 } from "./prompts";
 import { openai, isOpenAIConfigured } from "@/lib/openai";
+import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 
 // Enhanced In-Memory Cache for Session Context with Conversation History
 const memoryCache = new Map<string, {
@@ -32,6 +33,11 @@ export async function POST(req: Request) {
         const { userId } = await auth();
         if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         if (!isOpenAIConfigured()) return NextResponse.json({ error: "Server Configuration Error" }, { status: 500 });
+
+        const rateLimit = checkRateLimit(`assistant:${userId}`, { limit: 20, windowSeconds: 60 });
+        if (!rateLimit.success) {
+            return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429, headers: rateLimitHeaders(rateLimit) });
+        }
 
         const contentLength = Number(req.headers.get("content-length") || 0);
         if (contentLength > 100 * 1024) {

@@ -6,6 +6,14 @@ interface ToolDefinition {
     audience: "STUDENT" | "COMPANY" | "BOTH"
     permission: Permission | null
     scope: "NONE" | "SELF" | "COMPANY_OWNED"
+    /** For BOTH-audience tools: permission a company user needs (students are self-scoped). */
+    companyPermission?: Permission
+    /**
+     * State-changing tool with effects on other people or hard to undo. The agent
+     * never runs it in the LLM turn: it returns a signed confirmation card and the
+     * action only runs when the user clicks Confirm (see lib/ai/action-confirmation.ts).
+     */
+    requiresConfirmation?: boolean
     description: string
     input: z.ZodObject<z.core.$ZodLooseShape>
 }
@@ -60,6 +68,7 @@ export const TOOL_REGISTRY: Record<string, ToolDefinition> = {
         audience: "STUDENT",
         permission: null,
         scope: "SELF",
+        requiresConfirmation: true,
         description: "Withdraw (cancel) a pending application. Only works for PENDING applications.",
         input: z.object({
             applicationId: z.string().describe("The application ID to withdraw"),
@@ -69,6 +78,7 @@ export const TOOL_REGISTRY: Record<string, ToolDefinition> = {
         audience: "STUDENT",
         permission: null,
         scope: "SELF",
+        requiresConfirmation: true,
         description: "Apply to an internship on behalf of the student. Automatically generates an AI cover letter from their profile if needed. Use this when the student says 'apply for me' or confirms a match.",
         input: z.object({
             internshipId: z.string().describe("The internship ID to apply to"),
@@ -80,6 +90,7 @@ export const TOOL_REGISTRY: Record<string, ToolDefinition> = {
         audience: "STUDENT",
         permission: null,
         scope: "SELF",
+        requiresConfirmation: true,
         description: "Toggle Linky's autonomous auto-apply mode. When enabled, Linky automatically applies to internships that match above the threshold score. Returns the new settings.",
         input: z.object({
             enabled: z.boolean().describe("True to enable auto-apply, false to disable"),
@@ -113,6 +124,7 @@ export const TOOL_REGISTRY: Record<string, ToolDefinition> = {
         audience: "COMPANY",
         permission: Permission.CREATE_INTERNSHIPS,
         scope: "COMPANY_OWNED",
+        requiresConfirmation: true,
         description: "Create a new internship posting for the company. ALWAYS ask about: deadline, paid/unpaid, salary, cover letter requirement, location, qualifications, skills needed, and optional test assignment.",
         input: z.object({
             title: z.string().describe("Internship title"),
@@ -151,6 +163,7 @@ export const TOOL_REGISTRY: Record<string, ToolDefinition> = {
         audience: "COMPANY",
         permission: Permission.EDIT_INTERNSHIPS,
         scope: "COMPANY_OWNED",
+        requiresConfirmation: true,
         description: "Update an existing internship posting. Only include fields that need changing.",
         input: z.object({
             internshipId: z.string().describe("The internship ID to update"),
@@ -210,6 +223,7 @@ export const TOOL_REGISTRY: Record<string, ToolDefinition> = {
         audience: "COMPANY",
         permission: Permission.SCHEDULE_INTERVIEWS,
         scope: "COMPANY_OWNED",
+        requiresConfirmation: true,
         description: "After approving an application, propose interview time slots to the student. Linky creates the interview and notifies the student.",
         input: z.object({
             applicationId: z.string().describe("The approved application ID"),
@@ -226,6 +240,7 @@ export const TOOL_REGISTRY: Record<string, ToolDefinition> = {
         audience: "COMPANY",
         permission: Permission.MANAGE_APPLICATIONS,
         scope: "COMPANY_OWNED",
+        requiresConfirmation: true,
         description: "Approve a pending application and optionally schedule an interview in one step.",
         input: z.object({
             applicationId: z.string().describe("The application ID to approve"),
@@ -235,6 +250,7 @@ export const TOOL_REGISTRY: Record<string, ToolDefinition> = {
         audience: "COMPANY",
         permission: Permission.MANAGE_APPLICATIONS,
         scope: "COMPANY_OWNED",
+        requiresConfirmation: true,
         description: "Reject a pending application.",
         input: z.object({
             applicationId: z.string().describe("The application ID to reject"),
@@ -243,8 +259,9 @@ export const TOOL_REGISTRY: Record<string, ToolDefinition> = {
 
     update_match_preferences: {
         audience: "COMPANY",
-        permission: null,
+        permission: Permission.MANAGE_APPLICATIONS,
         scope: "COMPANY_OWNED",
+        requiresConfirmation: true,
         description: "Update the company's candidate matching preferences. Use when a company says 'send me more like this', 'stop sending frontend devs', or specifies what skills they want.",
         input: z.object({
             preferredSkills: z.array(z.string()).optional().describe("Skills the company wants to see in pushed candidates"),
@@ -259,6 +276,7 @@ export const TOOL_REGISTRY: Record<string, ToolDefinition> = {
         audience: "BOTH",
         permission: null,
         scope: "SELF",
+        companyPermission: Permission.VIEW_APPLICATIONS,
         description: "List applications. Students see their own; companies see applications to their internships.",
         input: z.object({}),
     },
@@ -266,6 +284,7 @@ export const TOOL_REGISTRY: Record<string, ToolDefinition> = {
         audience: "BOTH",
         permission: null,
         scope: "SELF",
+        companyPermission: Permission.VIEW_APPLICATIONS,
         description: "Get a statistical overview of the dashboard (counts of applications, internships, etc.).",
         input: z.object({}),
     },
@@ -273,6 +292,7 @@ export const TOOL_REGISTRY: Record<string, ToolDefinition> = {
         audience: "BOTH",
         permission: null,
         scope: "SELF",
+        companyPermission: Permission.VIEW_APPLICATIONS,
         description: "List upcoming or past interviews for the current user.",
         input: z.object({}),
     },
@@ -280,6 +300,7 @@ export const TOOL_REGISTRY: Record<string, ToolDefinition> = {
         audience: "BOTH",
         permission: null,
         scope: "SELF",
+        companyPermission: Permission.VIEW_MESSAGES,
         description: "List the user's message conversations with the latest message preview.",
         input: z.object({}),
     },
@@ -287,6 +308,7 @@ export const TOOL_REGISTRY: Record<string, ToolDefinition> = {
         audience: "BOTH",
         permission: null,
         scope: "SELF",
+        companyPermission: Permission.VIEW_APPLICATIONS,
         description: "List assignments for the current user.",
         input: z.object({}),
     },
@@ -322,9 +344,18 @@ export function getToolDefinition(toolName: string): ToolDefinition | undefined 
     return TOOL_REGISTRY[toolName]
 }
 
-export function getToolsForContext({ userType }: { userType: string; permissions: Set<string> | string[] }): ChatCompletionTool[] {
+/**
+ * Tools offered to the model. The audience comes from the DB role (TEAM_MEMBER is a
+ * company user), never from the client, and tools the user lacks permission for are
+ * not offered at all. authorize.ts re-checks every call.
+ */
+export function getToolsForContext({ role, permissions }: { role: string; permissions: string[] }): ChatCompletionTool[] {
+    const audience = role === "STUDENT" ? "STUDENT" : "COMPANY"
+    const isOwner = permissions.includes("__OWNER__")
+    const can = (perm?: Permission | null) => !perm || isOwner || permissions.includes(perm)
     return Object.entries(TOOL_REGISTRY)
-        .filter(([, def]) => (def.audience === "BOTH" || def.audience === userType.toUpperCase()))
+        .filter(([, def]) => def.audience === "BOTH" || def.audience === audience)
+        .filter(([, def]) => audience === "STUDENT" || (can(def.permission) && can(def.companyPermission)))
         .map(([name, def]) => ({
             type: "function" as const,
             function: {

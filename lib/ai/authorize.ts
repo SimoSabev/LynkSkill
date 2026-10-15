@@ -31,13 +31,26 @@ export async function validateAndAuthorizeToolCall(
         }
     }
 
-    // Check required permission
-    const requiredPermission = toolDef.permission as string | null
-    if (requiredPermission) {
-        const isOwner = ctx.permissions.includes("__OWNER__")
-        const hasPermission = ctx.permissions.includes(requiredPermission)
+    const isCompanyUser = ctx.role !== "STUDENT"
+    const isOwner = ctx.permissions.includes("__OWNER__")
 
-        if (!isOwner && !hasPermission) {
+    // A company user without an (active) company must never fall through to
+    // unscoped queries (removed/suspended members keep their COMPANY/TEAM_MEMBER role).
+    if (isCompanyUser && !ctx.companyId && (audience === "COMPANY" || toolDef.companyPermission)) {
+        return {
+            allowed: false,
+            args,
+            reason: "You are not an active member of a company.",
+        }
+    }
+
+    // Check required permission (and the company-side permission of BOTH tools)
+    const requiredPermissions = [
+        toolDef.permission,
+        isCompanyUser ? toolDef.companyPermission : undefined,
+    ].filter((p): p is NonNullable<typeof p> => !!p)
+    for (const requiredPermission of requiredPermissions) {
+        if (!isOwner && !ctx.permissions.includes(requiredPermission)) {
             return {
                 allowed: false,
                 args,
