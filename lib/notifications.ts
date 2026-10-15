@@ -55,7 +55,7 @@ export async function notifyApplicationStatusChange(
         message: isApproved 
             ? `Congratulations! Your application for "${internshipTitle}" at ${companyName} has been approved.`
             : `Your application for "${internshipTitle}" at ${companyName} was not selected. Keep applying!`,
-        link: "/dashboard/student?tab=applications"
+        link: "/dashboard/student/internships/applied"
     })
 }
 
@@ -72,7 +72,7 @@ export async function notifyNewApplication(
         type: "APPLICATION_SUBMITTED",
         title: "New Application Received",
         message: `${studentName} has applied for "${internshipTitle}"`,
-        link: "/dashboard/company?tab=applications"
+        link: "/dashboard/company/applications"
     })
 }
 
@@ -96,7 +96,7 @@ export async function notifyNewAssignment(
         type: "NEW_ASSIGNMENT",
         title: "New Assignment",
         message: `${companyName} has assigned you "${assignmentTitle}". Due: ${formattedDate}`,
-        link: "/dashboard/student?tab=experience"
+        link: "/dashboard/student/experience"
     })
 }
 
@@ -113,7 +113,7 @@ export async function notifyAssignmentSubmitted(
         type: "ASSIGNMENT_SUBMITTED",
         title: "Assignment Submitted",
         message: `${studentName} has submitted "${assignmentTitle}"`,
-        link: "/dashboard/company?tab=experience"
+        link: "/dashboard/company/experience"
     })
 }
 
@@ -130,7 +130,7 @@ export async function notifyExperienceGraded(
         type: "EXPERIENCE_GRADED",
         title: "Experience Graded",
         message: `${companyName} has graded your experience: ${grade}/10`,
-        link: "/dashboard/student?tab=experience"
+        link: "/dashboard/student/experience"
     })
 }
 
@@ -148,6 +148,6 @@ export async function notifyInternshipDeadline(
         type: "INTERNSHIP_DEADLINE",
         title: "Application Deadline Approaching",
         message: `Only ${daysRemaining} day${daysRemaining > 1 ? "s" : ""} left to apply for "${internshipTitle}" at ${companyName}`,
-        link: "/dashboard/student?tab=home"
+        link: "/dashboard/student/internships"
     })
 }

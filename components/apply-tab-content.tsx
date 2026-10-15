@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -43,6 +44,8 @@ interface ApplicationsTabContentProps {
 
 export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps) {
     const { t } = useTranslation()
+    const router = useRouter()
+    const [reviewedIds, setReviewedIds] = useState<Set<string>>(new Set())
     
     // Use context for initial data
     const { applications: contextApplications, isLoadingApplications, mutateApplications } = useDashboard()
@@ -63,6 +66,8 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
         internship: {
             id: string
             title: string
+            description?: string
+            location?: string
         } | null
         application: Application | null
         assignmentRequired: boolean
@@ -91,6 +96,19 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
         companyName: string
         internshipTitle: string
     }>({ open: false, applicationId: "", companyName: "", internshipTitle: "" })
+
+    // Which applications the student already reviewed (hide the Review button)
+    useEffect(() => {
+        if (userType !== "Student") return
+        fetch("/api/reviews")
+            .then(res => (res.ok ? res.json() : []))
+            .then((reviews: { applicationId?: string }[]) => {
+                if (Array.isArray(reviews)) {
+                    setReviewedIds(new Set(reviews.map(r => r.applicationId).filter((id): id is string => Boolean(id))))
+                }
+            })
+            .catch(() => {})
+    }, [userType])
 
     // Initialize from context
     useEffect(() => {
@@ -149,7 +167,7 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                 mutateApplications()
                 toast.success("Application withdrawn successfully")
             } else {
-                const data = await res.json()
+                const data = await res.json().catch(() => ({}))
                 toast.error(data.error || "Failed to withdraw application")
             }
         } catch (error) {
@@ -168,13 +186,11 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                 body: JSON.stringify({ applicationId }),
             })
             
-            if (res.ok) {
-                // Navigate to messages tab - dispatch custom event
-                const event = new CustomEvent("navigateToTab", { detail: "messages" })
-                window.dispatchEvent(event)
-                toast.success("Opening conversation...")
+            const data = await res.json().catch(() => ({}))
+            if (res.ok && data.id) {
+                const role = userType === "Company" ? "company" : "student"
+                router.push(`/dashboard/${role}/messages?conversation=${data.id}`)
             } else {
-                const data = await res.json()
                 toast.error(data.error || "Cannot start conversation")
             }
         } catch (error) {
@@ -345,16 +361,18 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                                     {userType === "Student" ? t('applications.myApplications') : t('applications.applicationsReceived')}
                                 </h1>
                             </div>
-                            <p className="text-white/80 font-medium">
-                                {userType === "Student"
-                                    ? t('applications.noApplicationsDescription')
-                                    : t('applications.noApplicationsCompanyDescription')}
-                            </p>
+                            {applications.length === 0 && (
+                                <p className="text-white/80 font-medium">
+                                    {userType === "Student"
+                                        ? t('applications.noApplicationsDescription')
+                                        : t('applications.noApplicationsCompanyDescription')}
+                                </p>
+                            )}
                         </div>
                         <div className="text-right">
                             <div className="text-3xl font-bold text-white mb-1">{applications.length}</div>
                             <div className="text-white/70 text-sm font-medium">
-                                {applications.length === 1 ? t('applications.title').slice(0, -1) : t('applications.title')}
+                                {t('applications.title')}
                             </div>
                         </div>
                     </div>
@@ -694,6 +712,7 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                                                                     <MessageSquare className="w-4 h-4 mr-2" />
                                                                     Message
                                                                 </Button>
+                                                                {!reviewedIds.has(app.id) && (
                                                                 <Button
                                                                     size="sm"
                                                                     variant="outline"
@@ -708,6 +727,7 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                                                                     <Star className="w-4 h-4 mr-2" />
                                                                     Review
                                                                 </Button>
+                                                                )}
                                                             </div>
                                                         )}
                                                     </div>
@@ -1077,8 +1097,11 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                                             <div
                                                 className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-xl p-4">
                                                 <p className="text-sm text-foreground font-medium">
-                                                    Your application has been submitted to this company. You&apos;ll be
-                                                    notified of any status updates via email.
+                                                    {showCompany?.application?.status === "APPROVED"
+                                                        ? "🎉 Your application was approved! You can now message the company."
+                                                        : showCompany?.application?.status === "REJECTED"
+                                                            ? "This application was not selected. Keep applying — the right fit is out there."
+                                                            : "Your application is under review. You'll get a notification when the status changes."}
                                                 </p>
                                             </div>
                                         </motion.div>
@@ -1101,7 +1124,7 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                                                 <>
                                                     {/* Replace with dynamic internship data */}
                                                     <p className="text-muted-foreground mb-3">
-                                                        {showCompany.company?.description ||
+                                                        {showCompany.internship?.description ||
                                                             "No internship description available."}
                                                     </p>
 
@@ -1109,16 +1132,16 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                                                         <div>
                                                             <span
                                                                 className="font-medium text-foreground">Location:</span>{" "}
-                                                            {showCompany.company?.location || "Not specified"}
+                                                            {showCompany.internship?.location || showCompany.company?.location || "Not specified"}
                                                         </div>
                                                     </div>
 
-                                                    {(showCompany?.assignmentRequired || showCompany?.project) && (
+                                                    {showCompany?.project?.id && (
                                                         <div className="mt-4">
                                                             <Button
                                                                 onClick={() =>
                                                                     window.location.assign(
-                                                                        `/assignments/${showCompany.project?.id ?? showCompany.internship?.id}`
+                                                                        `/assignments/${showCompany.project?.id}`
                                                                     )
                                                                 }
                                                                 className="rounded-xl text-foreground px-4 py-2 text-sm font-semibold flex items-center justify-center"
@@ -1160,7 +1183,10 @@ export function ApplicationsTabContent({ userType }: ApplicationsTabContentProps
                 applicationId={reviewModal.applicationId}
                 companyName={reviewModal.companyName}
                 internshipTitle={reviewModal.internshipTitle}
-                onSuccess={handleRefresh}
+                onSuccess={() => {
+                    setReviewedIds(prev => new Set(prev).add(reviewModal.applicationId))
+                    handleRefresh()
+                }}
             />
         </div>
     )

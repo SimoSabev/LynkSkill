@@ -14,6 +14,25 @@ import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+
+// Older notifications were stored with "/dashboard/<role>?tab=<x>" links that no page reads.
+const LEGACY_TAB_PATHS: Record<string, Record<string, string>> = {
+    student: { applications: "internships/applied", experience: "experience", home: "internships", interviews: "interviews", messages: "messages", files: "interviews" },
+    company: { applications: "applications", experience: "experience", interviews: "interviews", messages: "messages" },
+}
+
+function resolveNotificationLink(link: string): string {
+    const match = link.match(/^\/dashboard\/(student|company)\?(.*)$/)
+    if (!match) return link
+    const [, role, query] = match
+    const params = new URLSearchParams(query)
+    const sub = LEGACY_TAB_PATHS[role]?.[params.get("tab") ?? ""]
+    if (!sub) return `/dashboard/${role}`
+    params.delete("tab")
+    const rest = params.toString()
+    return `/dashboard/${role}/${sub}${rest ? `?${rest}` : ""}`
+}
 
 interface Notification {
     id: string
@@ -30,6 +49,7 @@ export function NotificationBell() {
     const [unreadCount, setUnreadCount] = useState(0)
     const [loading, setLoading] = useState(true)
     const [open, setOpen] = useState(false)
+    const router = useRouter()
 
     const fetchNotifications = useCallback(async () => {
         try {
@@ -83,6 +103,25 @@ export function NotificationBell() {
         }
     }
 
+    const openNotification = (notification: Notification) => {
+        if (!notification.read) markAsRead(notification.id)
+        setOpen(false)
+        if (notification.link) router.push(resolveNotificationLink(notification.link))
+    }
+
+    const clearRead = async () => {
+        try {
+            await fetch("/api/notifications", {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ deleteAllRead: true })
+            })
+            setNotifications(prev => prev.filter(n => !n.read))
+        } catch (error) {
+            console.error("Failed to clear notifications:", error)
+        }
+    }
+
     const deleteNotification = async (notificationId: string) => {
         try {
             await fetch("/api/notifications", {
@@ -116,6 +155,11 @@ export function NotificationBell() {
                 return "⭐"
             case "INTERNSHIP_DEADLINE":
                 return "⏰"
+            case "INTERVIEW_SCHEDULED":
+            case "INTERVIEW_REMINDER":
+                return "📅"
+            case "NEW_MESSAGE":
+                return "💬"
             default:
                 return "🔔"
         }
@@ -133,13 +177,13 @@ export function NotificationBell() {
         if (diffMins < 60) return `${diffMins}m ago`
         if (diffHours < 24) return `${diffHours}h ago`
         if (diffDays < 7) return `${diffDays}d ago`
-        return date.toLocaleDateString()
+        return date.toLocaleDateString("en-GB", { day: "numeric", month: "short" })
     }
 
     return (
         <DropdownMenu open={open} onOpenChange={setOpen}>
             <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="relative">
+                <Button variant="ghost" size="icon" className="relative" aria-label={unreadCount > 0 ? `Notifications (${unreadCount} unread)` : "Notifications"}>
                     <Bell className="h-5 w-5" />
                     <AnimatePresence>
                         {unreadCount > 0 && (
@@ -199,9 +243,19 @@ export function NotificationBell() {
                                         </span>
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-start justify-between gap-2">
-                                                <p className="font-medium text-sm">
-                                                    {notification.title}
-                                                </p>
+                                                {notification.link ? (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => openNotification(notification)}
+                                                        className="font-medium text-sm text-left hover:underline underline-offset-2"
+                                                    >
+                                                        {notification.title}
+                                                    </button>
+                                                ) : (
+                                                    <p className="font-medium text-sm">
+                                                        {notification.title}
+                                                    </p>
+                                                )}
                                                 {!notification.read && (
                                                     <div className="h-2 w-2 rounded-full bg-primary shrink-0 mt-1.5" />
                                                 )}
@@ -213,29 +267,32 @@ export function NotificationBell() {
                                                 <span className="text-xs text-muted-foreground">
                                                     {formatTime(notification.createdAt)}
                                                 </span>
-                                                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <div className="flex gap-1 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 transition-opacity">
                                                     {notification.link && (
-                                                        <Link href={notification.link}>
-                                                            <Button 
-                                                                variant="ghost" 
-                                                                size="icon" 
-                                                                className="h-6 w-6"
+                                                        <Button
+                                                            asChild
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-6 w-6"
+                                                        >
+                                                            <Link
+                                                                href={resolveNotificationLink(notification.link)}
+                                                                aria-label="Open"
                                                                 onClick={() => {
-                                                                    if (!notification.read) {
-                                                                        markAsRead(notification.id)
-                                                                    }
+                                                                    if (!notification.read) markAsRead(notification.id)
                                                                     setOpen(false)
                                                                 }}
                                                             >
                                                                 <ExternalLink className="h-3 w-3" />
-                                                            </Button>
-                                                        </Link>
+                                                            </Link>
+                                                        </Button>
                                                     )}
                                                     {!notification.read && (
                                                         <Button 
                                                             variant="ghost" 
                                                             size="icon" 
                                                             className="h-6 w-6"
+                                                            aria-label="Mark as read"
                                                             onClick={() => markAsRead(notification.id)}
                                                         >
                                                             <Check className="h-3 w-3" />
@@ -245,6 +302,7 @@ export function NotificationBell() {
                                                         variant="ghost" 
                                                         size="icon" 
                                                         className="h-6 w-6 text-destructive hover:text-destructive"
+                                                        aria-label="Delete notification"
                                                         onClick={() => deleteNotification(notification.id)}
                                                     >
                                                         <Trash2 className="h-3 w-3" />
@@ -258,19 +316,18 @@ export function NotificationBell() {
                         </div>
                     )}
                 </ScrollArea>
-                {notifications.length > 0 && (
+                {notifications.some(n => n.read) && (
                     <>
                         <DropdownMenuSeparator />
                         <div className="p-2">
-                            <Link href="/dashboard/notifications">
-                                <Button 
-                                    variant="ghost" 
-                                    className="w-full text-sm"
-                                    onClick={() => setOpen(false)}
-                                >
-                                    View all notifications
-                                </Button>
-                            </Link>
+                            <Button
+                                variant="ghost"
+                                className="w-full text-sm"
+                                onClick={clearRead}
+                            >
+                                <Trash2 className="h-3 w-3 mr-1" />
+                                Clear read notifications
+                            </Button>
                         </div>
                     </>
                 )}

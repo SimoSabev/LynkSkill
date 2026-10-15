@@ -193,7 +193,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
                         type: "INTERVIEW_SCHEDULED",
                         title: "Interview Confirmed",
                         message: `Interview has been confirmed by the student`,
-                        link: `/dashboard/company?tab=interviews`
+                        link: `/dashboard/company/interviews`
                     }
                 })
             } else if (status === "CANCELLED") {
@@ -205,7 +205,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
                         type: "INTERVIEW_SCHEDULED",
                         title: "Interview Cancelled",
                         message: `Interview has been cancelled`,
-                        link: isStudent ? `/dashboard/company?tab=interviews` : `/dashboard/student?tab=interviews`
+                        link: isStudent ? `/dashboard/company/interviews` : `/dashboard/student/interviews`
                     }
                 })
             } else if (status === "RESCHEDULED") {
@@ -216,7 +216,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
                         type: "INTERVIEW_SCHEDULED",
                         title: "Interview Reschedule Requested",
                         message: `A reschedule has been requested for the interview`,
-                        link: isStudent ? `/dashboard/company?tab=interviews` : `/dashboard/student?tab=interviews`
+                        link: isStudent ? `/dashboard/company/interviews` : `/dashboard/student/interviews`
                     }
                 })
             }
@@ -277,7 +277,7 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
                 type: "INTERVIEW_SCHEDULED",
                 title: "Interview Cancelled",
                 message: `The interview for "${interview.application.internship.title}" has been cancelled`,
-                link: `/dashboard/student?tab=files`
+                link: `/dashboard/student/interviews`
             }
         })
 

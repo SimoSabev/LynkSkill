@@ -3,6 +3,7 @@ import { ClerkProvider } from '@clerk/nextjs'
 import { Geist, Geist_Mono } from 'next/font/google'
 import './globals.css'
 import { ThemeProvider } from "@/components/theme-provider"
+import { Toaster } from "sonner"
 import OnboardingWrapper from "@/components/OnboardingWrapper"
 import { I18nProvider } from "@/lib/i18n"
 import { AIModeProvider } from "@/lib/ai-mode-context"
@@ -123,7 +124,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
     return (
         <ClerkProvider
-            signInFallbackRedirectUrl="/dashboard"
+            signInFallbackRedirectUrl="/redirect-after-signin"
             signUpFallbackRedirectUrl="/onboarding"
         >
             <html lang="en" suppressHydrationWarning>
@@ -138,6 +139,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     <AIModeProvider>
                         <OnboardingWrapper />
                         <main>{children}</main>
+                        <Toaster richColors closeButton position="top-right" />
                     </AIModeProvider>
                 </I18nProvider>
             </ThemeProvider>

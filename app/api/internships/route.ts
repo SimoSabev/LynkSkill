@@ -179,11 +179,15 @@ export async function GET(req: NextRequest) {
             select: {
                 id: true,
                 title: true,
+                description: true,
                 location: true,
                 paid: true,
                 salary: true,
+                skills: true,
                 applicationStart: true,
                 applicationEnd: true,
+                createdAt: true,
+                companyId: true,
                 company: { select: { name: true, logo: true } },
                 applications: {
                     select: {

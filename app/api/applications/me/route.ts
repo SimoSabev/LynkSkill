@@ -37,12 +37,17 @@ export async function GET() {
                     select: {
                         id: true,
                         title: true,
+                        description: true,
+                        location: true,
                         testAssignmentTitle: true,
                         company: {
                             select: {
                                 id: true,
                                 name: true,
-                                logo: true
+                                logo: true,
+                                description: true,
+                                location: true,
+                                website: true
                             }
                         }
                     }
