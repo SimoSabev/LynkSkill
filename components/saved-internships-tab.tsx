@@ -192,6 +192,8 @@ export function SavedInternshipsTab() {
                                                     internshipTitle={item.title}
                                                     companyName={item.company?.name || ""}
                                                     requiresCoverLetter={(item as { requiresCoverLetter?: boolean }).requiresCoverLetter}
+                                                    applicationStart={item.applicationStart}
+                                                    applicationEnd={item.applicationEnd}
                                                     onApplied={() => mutateApplications()}
                                                 />
                                             )}

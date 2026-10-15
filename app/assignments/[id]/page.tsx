@@ -4,6 +4,7 @@ import type React from "react"
 import { useRouter } from "next/navigation"
 import { useEffect, useState, useCallback } from "react"
 import { useParams } from "next/navigation"
+import { useUser } from "@clerk/nextjs"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -33,6 +34,16 @@ interface SubmittedFile {
 }
 
 // ---------- Helpers ----------
+async function readErrorMessage(res: Response, fallback: string): Promise<string> {
+    try {
+        const data = await res.json()
+        if (data && typeof data.error === "string" && data.error) return data.error
+    } catch {
+        // non-JSON body
+    }
+    return `${fallback} (${res.status})`
+}
+
 const ALLOWED_TYPES = [
     'application/pdf',
     'application/msword',
@@ -100,6 +111,11 @@ const getFileColorClass = (name: string) => {
 export default function AssignmentPage() {
     const params = useParams() as { id: string }
     const router = useRouter()
+    const { user, isLoaded: isUserLoaded } = useUser()
+    // Only the assigned student can upload (the upload route enforces this too);
+    // company members viewing the page only see the submitted files.
+    const viewerRole = (user?.publicMetadata?.role as string | undefined)?.toUpperCase()
+    const canUpload = !isUserLoaded || !viewerRole || viewerRole === "STUDENT"
 
     const [assignment, setAssignment] = useState<Assignment | null>(null)
     const [loading, setLoading] = useState(true)
@@ -127,7 +143,7 @@ export default function AssignmentPage() {
                     fetch(`/api/assignments/${params.id}/submissions`)
                 ])
 
-                if (!assignRes.ok) throw new Error("Failed to fetch assignment")
+                if (!assignRes.ok) throw new Error(await readErrorMessage(assignRes, "Failed to fetch assignment"))
                 const assignData = await assignRes.json()
                 setAssignment(assignData)
 
@@ -220,8 +236,7 @@ export default function AssignmentPage() {
             setUploadProgress(100)
 
             if (!res.ok) {
-                const text = await res.text()
-                throw new Error(`Upload failed: ${text}`)
+                throw new Error(await readErrorMessage(res, "Upload failed"))
             }
 
             const data = await res.json()
@@ -403,6 +418,7 @@ export default function AssignmentPage() {
                 </motion.div>
 
                 {/* Important Notice */}
+                {canUpload && (
                 <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -418,6 +434,7 @@ export default function AssignmentPage() {
                         </div>
                     </div>
                 </motion.div>
+                )}
 
                 {/* Assignment Details */}
                 <motion.div
@@ -511,6 +528,7 @@ export default function AssignmentPage() {
                 )}
 
                 {/* Upload Section */}
+                {canUpload && (
                 <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -686,6 +704,7 @@ export default function AssignmentPage() {
                         </div>
                     </div>
                 </motion.div>
+                )}
             </div>
         </div>
     )

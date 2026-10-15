@@ -1,7 +1,7 @@
 "use client"
 
 import { AnimatePresence } from "framer-motion"
-import { useState, useMemo, useCallback } from "react"
+import { useState, useMemo, useCallback, useEffect } from "react"
 import type { Internship } from "@/app/types"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
@@ -72,6 +72,9 @@ export function RecentInternshipsSection({ userType, setActiveTab: _setActiveTab
     const [renewTarget, setRenewTarget] = useState<Internship | null>(null)
     const [renewDate, setRenewDate] = useState<Date | undefined>(undefined)
     const [renewing, setRenewing] = useState(false)
+    // Time-based progress is computed after mount to avoid hydration mismatches
+    const [mounted, setMounted] = useState(false)
+    useEffect(() => setMounted(true), [])
 
     // Use context data instead of local state
     const internships = contextInternships as Internship[]
@@ -378,7 +381,7 @@ export function RecentInternshipsSection({ userType, setActiveTab: _setActiveTab
                                     
                                     // Calculate progress percentage for the date range
                                     let progressPercent = 0
-                                    if (startTime && endTime) {
+                                    if (mounted && startTime && endTime) {
                                         const totalDuration = endTime - startTime
                                         const elapsed = currentTime - startTime
                                         progressPercent = Math.min(100, Math.max(0, (elapsed / totalDuration) * 100))
@@ -583,6 +586,8 @@ export function RecentInternshipsSection({ userType, setActiveTab: _setActiveTab
                                                                     internshipTitle={item.title}
                                                                     companyName={item.company?.name || ""}
                                                                     requiresCoverLetter={(item as { requiresCoverLetter?: boolean }).requiresCoverLetter}
+                                                                    applicationStart={item.applicationStart}
+                                                                    applicationEnd={item.applicationEnd}
                                                                     onApplied={() => mutateApplications()}
                                                                 />
                                                             )}

@@ -56,6 +56,17 @@ export function InternshipFiltersComponent({
     const [isOpen, setIsOpen] = useState(false)
     const [searchDebounce, setSearchDebounce] = useState(filters.search)
 
+    // Keep local (sheet) state in sync when the parent changes filters,
+    // e.g. when an active-filter chip is removed outside the sheet
+    useEffect(() => {
+        setLocalFilters(filters)
+    }, [filters])
+
+    // Sync the search box only when the parent's search value actually changes
+    useEffect(() => {
+        setSearchDebounce(filters.search)
+    }, [filters.search])
+
     // Debounced search
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -127,6 +138,7 @@ export function InternshipFiltersComponent({
                             size="icon"
                             className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 rounded-lg hover:bg-destructive/10 hover:text-destructive transition-colors"
                             onClick={() => handleSearchChange("")}
+                            aria-label={t("filters.clearSearch")}
                         >
                             <X className="h-4 w-4" />
                         </Button>

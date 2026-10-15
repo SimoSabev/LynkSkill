@@ -202,6 +202,8 @@
   },
   "portfolio": {
     "title": "Моето портфолио",
+    "loadErrorTitle": "Портфолиото не можа да се зареди",
+    "loadErrorDescription": "Нещо се обърка при зареждането на профила ви. Моля, опитайте отново.",
     "about": "За мен",
     "education": "Образование",
     "experience": "Опит",
@@ -311,6 +313,7 @@
     "title": "Интервюта",
     "myInterviews": "Моите интервюта",
     "scheduleInterview": "Насрочи интервю",
+    "editMeetingLocation": "Редактирай мястото на срещата",
     "upcomingInterviews": "Предстоящи интервюта",
     "pastInterviews": "Минали интервюта",
     "noInterviews": "Няма насрочени интервюта",
@@ -486,6 +489,12 @@
     "downloadAllFiles": "Изтегли всички файлове",
     "scanningFiles": "Сканиране на {count} файла преди изтегляне.",
     "filesToDownload": "Файлове за изтегляне",
+    "bulkDownloadDescription": "Всеки файл ще се отвори в нов раздел.",
+    "selectRequired": "Моля, изберете компания, проект и файлове",
+    "experienceUploaded": "Опитът е качен успешно",
+    "uploadFailed": "Качването не бе успешно",
+    "actionFailed": "Действието не бе успешно",
+    "actionFailedConnection": "Действието не бе успешно - проверете връзката си",
     "allFilesScanned": "Всички файлове ще бъдат сканирани за заплахи преди изтегляне.",
     "startBulkScan": "Стартирай масово сканиране за сигурност",
     "scanningNFiles": "Сканиране на {count} файла...",
@@ -789,13 +798,18 @@
     "goToPortfolio": "Към портфолиото",
     "errorCheckingPortfolio": "Възникна грешка при проверка на портфолиото ви",
     "failedToApply": "Неуспешно кандидатстване",
-    "errorApplying": "Възникна грешка при кандидатстване"
+    "errorApplying": "Възникна грешка при кандидатстване",
+    "applicationSubmitted": "Кандидатурата е изпратена",
+    "applicationsClosed": "Кандидатстването е приключило",
+    "opensOn": "Отваря на {date}"
   },
   "bookmarks": {
     "removedFromSaved": "Премахнато от запазени",
     "savedToBookmarks": "Запазено в отметки",
     "failedToSave": "Неуспешно запазване",
-    "saved": "Запазено"
+    "saved": "Запазено",
+    "removeFromSavedLabel": "Премахни от запазените стажове",
+    "saveInternshipLabel": "Запази стажа"
   },
   "communityHighlights": {
     "title": "Акценти от общността",
@@ -1124,6 +1138,7 @@
   },
   "filters": {
     "searchInternships": "Търси стажове...",
+    "clearSearch": "Изчисти търсенето",
     "filters": "Филтри",
     "location": "Местоположение",
     "locationPlaceholder": "Град или държава...",

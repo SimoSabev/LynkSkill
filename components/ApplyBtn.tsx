@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
     Dialog,
@@ -10,26 +10,53 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog"
-import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react'
+import { AlertCircle, CheckCircle2, Clock, Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { toast } from "sonner"
 import { useTranslation } from '@/lib/i18n'
 import { CoverLetterModal } from "@/components/cover-letter-modal"
+
+type WindowState = { kind: "open" } | { kind: "closed" } | { kind: "notYetOpen"; opensAt: Date }
+
+function getWindowState(applicationStart: number | null, applicationEnd: number | null): WindowState {
+    const now = Date.now()
+    if (applicationStart !== null && !Number.isNaN(applicationStart) && now < applicationStart) {
+        return { kind: "notYetOpen", opensAt: new Date(applicationStart) }
+    }
+    if (applicationEnd !== null && !Number.isNaN(applicationEnd)) {
+        // The end day is inclusive: applications close the day after the end date
+        const endOfDay = new Date(applicationEnd)
+        endOfDay.setHours(23, 59, 59, 999)
+        if (now > endOfDay.getTime()) return { kind: "closed" }
+    }
+    return { kind: "open" }
+}
 
 interface ApplyButtonProps {
     internshipId: string
     internshipTitle?: string
     companyName?: string
     requiresCoverLetter?: boolean
+    applicationStart?: string | Date | null
+    applicationEnd?: string | Date | null
     onApplied?: () => void
 }
 
-export default function ApplyButton({ internshipId, internshipTitle, companyName, requiresCoverLetter, onApplied }: ApplyButtonProps) {
+export default function ApplyButton({ internshipId, internshipTitle, companyName, requiresCoverLetter, applicationStart, applicationEnd, onApplied }: ApplyButtonProps) {
     const [isApplying, setIsApplying] = useState(false)
     const [showIncompleteModal, setShowIncompleteModal] = useState(false)
     const [showCoverLetterModal, setShowCoverLetterModal] = useState(false)
     const [_portfolioChecked, setPortfolioChecked] = useState(false)
     const router = useRouter()
     const { t } = useTranslation()
+    // Computed after mount (depends on the current time) to avoid hydration mismatches
+    const [windowState, setWindowState] = useState<WindowState>({ kind: "open" })
+    const startKey = applicationStart ? new Date(applicationStart).getTime() : null
+    const endKey = applicationEnd ? new Date(applicationEnd).getTime() : null
+
+    useEffect(() => {
+        setWindowState(getWindowState(startKey, endKey))
+    }, [startKey, endKey])
 
     const handleApply = async () => {
         setIsApplying(true)
@@ -66,7 +93,7 @@ export default function ApplyButton({ internshipId, internshipTitle, companyName
             setIsApplying(false)
         } catch (err) {
             console.error(err)
-            alert(t('apply.errorCheckingPortfolio'))
+            toast.error(t('apply.errorCheckingPortfolio'))
             setIsApplying(false)
         }
     }
@@ -87,17 +114,36 @@ export default function ApplyButton({ internshipId, internshipTitle, companyName
             })
 
             if (res.ok) {
+                toast.success(t('apply.applicationSubmitted'))
                 onApplied?.()
             } else {
-                const data = await res.json()
-                alert(data.error || t('apply.failedToApply'))
+                const data = await res.json().catch(() => ({}))
+                toast.error(data.error || t('apply.failedToApply'))
             }
         } catch (err) {
             console.error(err)
-            alert(t('apply.errorApplying'))
+            toast.error(t('apply.errorApplying'))
         } finally {
             setIsApplying(false)
         }
+    }
+
+    if (windowState.kind !== "open") {
+        return (
+            <Button
+                disabled
+                size="lg"
+                variant="outline"
+                className="flex-1 w-full rounded-xl sm:rounded-2xl font-semibold text-sm sm:text-base py-2.5 sm:py-3"
+            >
+                <Clock className="mr-1.5 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
+                <span className="truncate">
+                    {windowState.kind === "closed"
+                        ? t('apply.applicationsClosed')
+                        : t('apply.opensOn', { date: windowState.opensAt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) })}
+                </span>
+            </Button>
+        )
     }
 
     return (

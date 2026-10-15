@@ -60,6 +60,9 @@ export function Portfolio({ userType }: { userType: "Student" | "Company" }) {
 
     const [aiProfile, setAiProfile] = useState<AIProfile | null>(null)
     const [loading, setLoading] = useState(true)
+    // Fetch failures must not look like an empty (score 0) profile
+    const [loadError, setLoadError] = useState(false)
+    const [reloadKey, setReloadKey] = useState(0)
 
     const displayName = user?.fullName || t("portfolio.professionalPortfolio")
 
@@ -70,15 +73,19 @@ export function Portfolio({ userType }: { userType: "Student" | "Company" }) {
                 if (res.ok) {
                     const data = await res.json()
                     setAiProfile(data.aiProfile || null)
+                    setLoadError(false)
+                } else {
+                    setLoadError(true)
                 }
             } catch (err) {
                 console.error("Error fetching portfolio:", err)
+                setLoadError(true)
             } finally {
                 setLoading(false)
             }
         }
         fetchPortfolio()
-    }, [isAIMode]) // Re-fetch when AI mode is toggled, to get fresh data
+    }, [isAIMode, reloadKey]) // Re-fetch when AI mode is toggled, to get fresh data
 
     if (loading) {
         return (
@@ -86,6 +93,26 @@ export function Portfolio({ userType }: { userType: "Student" | "Company" }) {
                 <div className="flex flex-col items-center gap-4">
                     <div className="h-12 w-12 border-4 border-violet-500 border-t-transparent rounded-full animate-spin" />
                     <p className="text-muted-foreground font-medium animate-pulse">Loading AI Profile...</p>
+                </div>
+            </div>
+        )
+    }
+
+    if (loadError && !aiProfile) {
+        return (
+            <div className="min-h-[60vh] bg-background flex items-center justify-center p-6">
+                <div className="flex flex-col items-center gap-4 text-center max-w-md">
+                    <h2 className="text-xl font-semibold">{t("portfolio.loadErrorTitle")}</h2>
+                    <p className="text-muted-foreground">{t("portfolio.loadErrorDescription")}</p>
+                    <Button
+                        variant="outline"
+                        onClick={() => {
+                            setLoading(true)
+                            setReloadKey(k => k + 1)
+                        }}
+                    >
+                        {t("common.tryAgain")}
+                    </Button>
                 </div>
             </div>
         )
@@ -112,7 +139,7 @@ export function Portfolio({ userType }: { userType: "Student" | "Company" }) {
                             <Sparkles className="h-4 w-4" />
                             AI Middleman Profiler
                         </div>
-                        <h1 className="text-4xl md:text-5xl font-black mb-4">
+                        <h1 className="text-3xl sm:text-4xl md:text-5xl font-black mb-4 break-words">
                             {displayName}&apos;s Profile
                         </h1>
                         <p className="text-xl text-muted-foreground max-w-2xl mx-auto">

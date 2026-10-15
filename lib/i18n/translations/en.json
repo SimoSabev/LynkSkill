@@ -207,6 +207,8 @@
   },
   "portfolio": {
     "title": "My Portfolio",
+    "loadErrorTitle": "Couldn't load your portfolio",
+    "loadErrorDescription": "Something went wrong while loading your profile. Please try again.",
     "about": "About Me",
     "education": "Education",
     "experience": "Experience",
@@ -316,6 +318,7 @@
     "title": "Interviews",
     "myInterviews": "My Interviews",
     "scheduleInterview": "Schedule Interview",
+    "editMeetingLocation": "Edit meeting location",
     "upcomingInterviews": "Upcoming Interviews",
     "pastInterviews": "Past Interviews",
     "noInterviews": "No interviews scheduled",
@@ -491,6 +494,12 @@
     "downloadAllFiles": "Download All Files",
     "scanningFiles": "Scanning {count} files before download.",
     "filesToDownload": "Files to download",
+    "bulkDownloadDescription": "Each file will open in a new tab.",
+    "selectRequired": "Please select company, project and files",
+    "experienceUploaded": "Experience uploaded",
+    "uploadFailed": "Upload failed",
+    "actionFailed": "Action failed",
+    "actionFailedConnection": "Action failed - please check your connection",
     "allFilesScanned": "All files will be scanned for security threats before downloading.",
     "startBulkScan": "Start Bulk Security Scan",
     "scanningNFiles": "Scanning {count} files...",
@@ -962,13 +971,18 @@
     "goToPortfolio": "Go to Portfolio",
     "errorCheckingPortfolio": "An error occurred while checking your portfolio",
     "failedToApply": "Failed to apply",
-    "errorApplying": "An error occurred while applying"
+    "errorApplying": "An error occurred while applying",
+    "applicationSubmitted": "Application submitted",
+    "applicationsClosed": "Applications closed",
+    "opensOn": "Opens {date}"
   },
   "bookmarks": {
     "removedFromSaved": "Removed from saved",
     "savedToBookmarks": "Saved to bookmarks",
     "failedToSave": "Failed to save",
-    "saved": "Saved"
+    "saved": "Saved",
+    "removeFromSavedLabel": "Remove from saved internships",
+    "saveInternshipLabel": "Save internship"
   },
   "communityHighlights": {
     "title": "Community Highlights",
@@ -1297,6 +1311,7 @@
   },
   "filters": {
     "searchInternships": "Search internships...",
+    "clearSearch": "Clear search",
     "filters": "Filters",
     "location": "Location",
     "locationPlaceholder": "City or country...",

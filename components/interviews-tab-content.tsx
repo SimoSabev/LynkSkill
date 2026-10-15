@@ -381,13 +381,25 @@ export function InterviewsTabContent({ userType }: InterviewsTabContentProps) {
                                                             ) : (
                                                                 <MapPin className="h-4 w-4 text-red-500" />
                                                             )}
-                                                            <span className="text-muted-foreground flex-1">{interview.location}</span>
+                                                            {/^https?:\/\//i.test(interview.location.trim()) ? (
+                                                                <a
+                                                                    href={interview.location.trim()}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="flex-1 min-w-0 truncate text-blue-600 dark:text-blue-400 hover:underline"
+                                                                >
+                                                                    {interview.location}
+                                                                </a>
+                                                            ) : (
+                                                                <span className="text-muted-foreground flex-1 min-w-0 break-words">{interview.location}</span>
+                                                            )}
                                                             {userType === "Company" && ["SCHEDULED", "CONFIRMED"].includes(interview.status) && (
                                                                 <Button
                                                                     size="sm"
                                                                     variant="ghost"
                                                                     onClick={() => startEditingLink(interview)}
-                                                                    className="h-7 px-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                    aria-label={t("interviews.editMeetingLocation")}
+                                                                    className="h-7 px-2 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
                                                                 >
                                                                     <Pencil className="h-3 w-3" />
                                                                 </Button>
