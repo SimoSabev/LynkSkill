@@ -1552,13 +1552,16 @@ async function proposeInterviewSlots(
         return { tool: "propose_interview_slots", cardType: "error", title: "Not found", data: null, success: false, error: "Application not found or not authorized." }
     }
 
-    const slots = args.slots as Array<{ date: string; time: string; durationMinutes?: number }>
+    const slots = (Array.isArray(args.slots) ? args.slots : []) as Array<{ date: string; time: string; durationMinutes?: number }>
     const location = (args.location as string) || "To be confirmed"
     const notes = (args.notes as string) || ""
 
     // Create interview for the first proposed slot
     const firstSlot = slots[0]
-    const scheduledAt = new Date(`${firstSlot.date}T${firstSlot.time}:00`)
+    const scheduledAt = firstSlot ? new Date(`${firstSlot.date}T${firstSlot.time}:00`) : null
+    if (!firstSlot || !scheduledAt || isNaN(scheduledAt.getTime())) {
+        return { tool: "propose_interview_slots", cardType: "error", title: "Invalid slots", data: null, success: false, error: "At least one valid slot (date YYYY-MM-DD, time HH:MM) is required." }
+    }
     const duration = firstSlot.durationMinutes || 30
 
     const interview = await prisma.interview.create({

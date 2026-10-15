@@ -101,6 +101,7 @@ Return an empty matches array if no match exceeds the threshold.`,
 
             const result = JSON.parse(content) as { matches: { internshipId: string; matchScore: number; reason: string }[] }
 
+            let appliedForStudent = 0
             for (const match of (result.matches || []).slice(0, 3)) {
                 if (match.matchScore < profile.autoApplyThreshold) continue
 
@@ -139,15 +140,16 @@ Return an empty matches array if no match exceeds the threshold.`,
                     },
                 })
 
+                appliedForStudent++
                 totalAutoApplied++
             }
 
-            // Update auto-apply count
-            if (totalAutoApplied > 0) {
+            // Update auto-apply count (this student's applications only)
+            if (appliedForStudent > 0) {
                 await prisma.aIProfile.update({
                     where: { studentId: student.id },
                     data: {
-                        autoApplyCount: { increment: totalAutoApplied },
+                        autoApplyCount: { increment: appliedForStudent },
                         lastAutoApplyAt: new Date(),
                     },
                 })
@@ -159,3 +161,6 @@ Return an empty matches array if no match exceeds the threshold.`,
 
     return NextResponse.json({ autoApplied: totalAutoApplied, studentsProcessed: autoApplyStudents.length })
 }
+
+// Vercel Cron issues GET requests
+export const GET = POST
