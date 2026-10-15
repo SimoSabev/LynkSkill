@@ -2,11 +2,15 @@ import {auth} from "@clerk/nextjs/server";
 import {prisma} from "@/lib/prisma";
 import {NextResponse} from "next/server";
 import {createClient} from "@supabase/supabase-js";
+import {UPLOAD_RULES, safeSegment, safeStorageName, validateUpload} from "@/lib/upload-utils";
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY! // Service Role key (server-side only)
 );
+
+// Every object a student owns lives under "<userId>/portfolio/"
+const ownPrefix = (userId: string) => `${userId}/portfolio/`
 
 export async function POST(req: Request) {
     try {
@@ -16,7 +20,7 @@ export async function POST(req: Request) {
         }
 
         const student = await prisma.user.findUnique({where: {clerkId: userId}})
-        if (!student) {
+        if (!student || student.role !== "STUDENT") {
             return NextResponse.json({error: "Student not found"}, {status: 404})
         }
 
@@ -28,26 +32,26 @@ export async function POST(req: Request) {
             return NextResponse.json({error: "Missing file or section"}, {status: 400})
         }
 
-        if (file.size > 5 * 1024 * 1024) {
-            return NextResponse.json({error: "File too large (max 5MB)"}, {status: 400})
+        const invalid = validateUpload(file, UPLOAD_RULES.portfolio)
+        if (invalid) {
+            return NextResponse.json({error: invalid}, {status: 400})
         }
 
         const arrayBuffer = await file.arrayBuffer()
         const buffer = Buffer.from(arrayBuffer)
 
-        const ext = file.name.split(".").pop()
-        const path = `${student.id}/portfolio/${section}-${Date.now()}.${ext}`
+        const path = `${ownPrefix(student.id)}${safeSegment(section)}-${Date.now()}-${safeStorageName(file.name)}`
 
         const {error} = await supabase.storage
             .from("portfolio-files")
             .upload(path, buffer, {
                 contentType: file.type,
-                upsert: true,
+                upsert: false,
             });
 
         if (error) {
             console.error("Supabase upload error:", error.message, error);
-            return NextResponse.json({error: error.message}, {status: 500});
+            return NextResponse.json({error: "Upload failed"}, {status: 500});
         }
 
         const fileUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/portfolio-files/${path}`
@@ -76,11 +80,21 @@ export async function DELETE(req: Request) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
+        const student = await prisma.user.findUnique({ where: { clerkId: userId }, select: { id: true } });
+        if (!student) {
+            return NextResponse.json({ error: "Student not found" }, { status: 404 });
+        }
+
         const url = new URL(req.url);
         const filePath = url.searchParams.get("path");
 
         if (!filePath) {
             return NextResponse.json({ error: "Missing file path" }, { status: 400 });
+        }
+
+        // Students may only delete their own files
+        if (!filePath.startsWith(ownPrefix(student.id)) || filePath.includes("..")) {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
 
         const { error } = await supabase.storage
@@ -98,5 +112,3 @@ export async function DELETE(req: Request) {
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }
-
-

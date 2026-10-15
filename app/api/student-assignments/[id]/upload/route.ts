@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { currentUser } from "@clerk/nextjs/server"
 import { createClient } from "@supabase/supabase-js"
+import { MAX_FILES_PER_REQUEST, UPLOAD_RULES, safeStorageName, validateUpload } from "@/lib/upload-utils"
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -29,21 +30,27 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         if (!assignment)
             return NextResponse.json({ error: "Assignment not found" }, { status: 404 })
 
-        // Access control
-        if (dbUser.role === "STUDENT" && assignment.studentId !== dbUser.id)
-            return NextResponse.json({ error: "Forbidden" }, { status: 403 })
-
-        if (dbUser.role === "COMPANY" && assignment.internship.companyId !== dbUser.id)
+        // Access control: only the assigned student submits work
+        if (dbUser.role !== "STUDENT" || assignment.studentId !== dbUser.id)
             return NextResponse.json({ error: "Forbidden" }, { status: 403 })
 
         const formData = await req.formData()
-        const files = formData.getAll("files") as File[]
+        const files = formData.getAll("files").filter((f): f is File => f instanceof File)
+
+        if (!files.length)
+            return NextResponse.json({ error: "No files provided" }, { status: 400 })
+        if (files.length > MAX_FILES_PER_REQUEST)
+            return NextResponse.json({ error: `Max ${MAX_FILES_PER_REQUEST} files per upload` }, { status: 400 })
+        for (const file of files) {
+            const invalid = validateUpload(file, UPLOAD_RULES.assignment)
+            if (invalid) return NextResponse.json({ error: invalid }, { status: 400 })
+        }
 
         const uploaded = []
 
-        for (const file of files) {
+        for (const [index, file] of files.entries()) {
             const buffer = Buffer.from(await file.arrayBuffer())
-            const path = `${assignmentId}/${Date.now()}-${file.name}`
+            const path = `${assignmentId}/${Date.now()}-${index}-${safeStorageName(file.name)}`
 
             const { error } = await supabase.storage
                 .from("assignments-files")
