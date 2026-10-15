@@ -1,22 +1,12 @@
 "use client"
 
-import { useState } from "react"
 import { motion } from "framer-motion"
 import { useRouter } from "next/navigation"
-import { Download, Sparkles, Users, TrendingUp, ShieldAlert, ShieldCheck, Layers } from "lucide-react"
+import { Download, Sparkles, Users, TrendingUp, Layers } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogDescription,
-    DialogFooter,
-} from "@/components/ui/dialog"
-import { Progress } from "@/components/ui/progress"
 import { useDashboard } from "@/lib/dashboard-context"
 import { useTranslation } from "@/lib/i18n"
 
@@ -55,37 +45,11 @@ export function CommunityHighlights({ setActiveTab, userType = "Student" }: Comm
     const experiences = recentExperiences as GroupedExperience[]
     const loading = isLoadingExperiences
     
-    const [selectedFile, setSelectedFile] = useState<{ url: string } | null>(null)
-    const [scanProgress, setScanProgress] = useState(0)
-    const [scanStatus, setScanStatus] = useState<"idle" | "scanning" | "safe" | "danger">("idle")
-
     const getFileType = (url: string) => (url.match(/\.(mp4|mov|avi)$/) ? "Video" : "Image")
 
+    // Files are opened directly: there is no malware scanning, so don't pretend there is
     const handleDownloadClick = (file: { url: string }) => {
-        setSelectedFile(file)
-        setScanProgress(0)
-        setScanStatus("idle")
-    }
-
-    const startScan = () => {
-        setScanStatus("scanning")
-        let progress = 0
-        const interval = setInterval(() => {
-            progress += 20
-            setScanProgress(progress)
-            if (progress >= 100) {
-                clearInterval(interval)
-                const safe = Math.random() > 0.1
-                setScanStatus(safe ? "safe" : "danger")
-            }
-        }, 500)
-    }
-
-    const confirmDownload = () => {
-        if (selectedFile && scanStatus === "safe") {
-            window.open(selectedFile.url, "_blank")
-            setSelectedFile(null)
-        }
+        window.open(file.url, "_blank", "noopener,noreferrer")
     }
 
     return (
@@ -256,60 +220,6 @@ export function CommunityHighlights({ setActiveTab, userType = "Student" }: Comm
                 )}
             </div>
 
-            {/* Download modal */}
-            <Dialog open={!!selectedFile} onOpenChange={() => setSelectedFile(null)}>
-                <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>Download File</DialogTitle>
-                        <DialogDescription>
-                            Before downloading, we&apos;ll quickly scan this file for potential risks.
-                        </DialogDescription>
-                    </DialogHeader>
-
-                    {scanStatus === "idle" && (
-                        <div className="space-y-3">
-                            <p className="text-sm text-muted-foreground">
-                                File: <strong>{selectedFile?.url.split("/").pop()}</strong>
-                            </p>
-                            <Button onClick={startScan} className="w-full">
-                                {t('communityHighlights.startScan')}
-                            </Button>
-                        </div>
-                    )}
-
-                    {scanStatus === "scanning" && (
-                        <div className="space-y-3">
-                            <Progress value={scanProgress} />
-                            <p className="text-sm text-muted-foreground">{t('communityHighlights.scanningForViruses')}</p>
-                        </div>
-                    )}
-
-                    {scanStatus === "safe" && (
-                        <div className="flex flex-col items-center gap-3 text-green-600">
-                            <ShieldCheck className="h-8 w-8" />
-                            <p className="text-sm">{t('communityHighlights.noThreatsDetected')}</p>
-                        </div>
-                    )}
-
-                    {scanStatus === "danger" && (
-                        <div className="flex flex-col items-center gap-3 text-red-600">
-                            <ShieldAlert className="h-8 w-8" />
-                            <p className="text-sm">{t('communityHighlights.suspiciousContent')}</p>
-                        </div>
-                    )}
-
-                    <DialogFooter className="flex justify-between">
-                        <Button variant="outline" onClick={() => setSelectedFile(null)}>
-                            {t('common.cancel')}
-                        </Button>
-                        {scanStatus === "safe" && (
-                            <Button onClick={confirmDownload} className="bg-green-600 hover:bg-green-700 text-white">
-                                {t('communityHighlights.download')}
-                            </Button>
-                        )}
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
         </section>
     )
 }
