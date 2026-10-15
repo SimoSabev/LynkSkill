@@ -1,10 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useSyncExternalStore } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { 
     Settings, Bell, Palette, Globe, 
-    Check, Loader2, RotateCcw, ChevronRight, 
+    Check, RotateCcw, ChevronRight, 
     Eye, EyeOff, MessageSquare, Clock, Mail,
     Sparkles, Moon, Sun, Monitor, Users
 } from "lucide-react"
@@ -43,10 +43,34 @@ import { cn } from "@/lib/utils"
 
 type SettingsTab = "notifications" | "privacy" | "appearance" | "language"
 
+// Human-readable names for settings, used in toasts instead of raw keys
+const SETTING_LABELS: Record<string, string> = {
+    emailNotifications: "Email notifications",
+    weeklyDigest: "Weekly digest",
+    pushNotifications: "Push notifications",
+    applicationUpdates: "Application notifications",
+    interviewReminders: "Interview reminders",
+    showOnlineStatus: "Online status",
+    allowMessages: "Direct messages",
+    compactView: "Compact view",
+    animationsEnabled: "Animations",
+}
+
+// Detect the device time zone on the client only (server snapshot is empty to avoid hydration mismatch)
+const subscribeNoop = () => () => {}
+function getDeviceTimeZone() {
+    try {
+        return Intl.DateTimeFormat().resolvedOptions().timeZone || ""
+    } catch {
+        return ""
+    }
+}
+
 export default function SettingsPage() {
     const { t, locale, setLocale } = useTranslation()
     const { theme, setTheme } = useTheme()
-    const { settings, updateSetting, resetSettings, isSaving } = useSettings()
+    const { settings, updateSetting, resetSettings } = useSettings()
+    const deviceTimeZone = useSyncExternalStore(subscribeNoop, getDeviceTimeZone, () => "")
     const [activeTab, setActiveTab] = useState<SettingsTab>("notifications")
     const [showResetDialog, setShowResetDialog] = useState(false)
 
@@ -60,7 +84,7 @@ export default function SettingsPage() {
     const handleToggle = (key: keyof typeof settings, value: boolean) => {
         updateSetting(key, value)
         toast.success("Setting updated", {
-            description: `${key} has been ${value ? "enabled" : "disabled"}`,
+            description: `${SETTING_LABELS[key] ?? key} ${value ? "enabled" : "disabled"}`,
             duration: 2000,
         })
     }
@@ -96,12 +120,6 @@ export default function SettingsPage() {
                     </div>
                     
                     <div className="flex items-center gap-2">
-                        {isSaving && (
-                            <Badge variant="secondary" className="gap-1">
-                                <Loader2 className="h-3 w-3 animate-spin" />
-                                Saving...
-                            </Badge>
-                        )}
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <Button 
@@ -115,7 +133,7 @@ export default function SettingsPage() {
                                 </Button>
                             </TooltipTrigger>
                             <TooltipContent>
-                                <p>Reset all settings to defaults</p>
+                                <p>Reset theme-independent preferences (e.g. animations) to defaults</p>
                             </TooltipContent>
                         </Tooltip>
                     </div>
@@ -170,7 +188,7 @@ export default function SettingsPage() {
                 >
                     <AnimatePresence mode="wait">
                         {activeTab === "notifications" && (
-                            <SettingsSection key="notifications" title="Notification Preferences" description="Choose what notifications you receive">
+                            <SettingsSection key="notifications" title="Notification Preferences" description="In-app notifications are always on. Notification preferences are coming soon.">
                                 <div className="space-y-6">
                                     <div className="space-y-4">
                                         <h3 className="text-sm font-medium flex items-center gap-2 text-foreground/60">
@@ -182,16 +200,20 @@ export default function SettingsPage() {
                                             label="Email Notifications"
                                             description="Receive important updates via email"
                                             tooltip="Get notified about new opportunities and updates"
-                                            checked={settings.emailNotifications}
-                                            onChange={(v) => handleToggle("emailNotifications", v)}
+                                            checked={false}
+                                            onChange={() => {}}
+                                            comingSoon
+                                            comingSoonLabel={t('companyFixes.comingSoon')}
                                         />
                                         
                                         <SettingToggle
                                             label="Weekly Digest"
                                             description="Get a weekly summary of your activity"
                                             tooltip="Receive a summary email every week"
-                                            checked={settings.weeklyDigest}
-                                            onChange={(v) => handleToggle("weeklyDigest", v)}
+                                            checked={false}
+                                            onChange={() => {}}
+                                            comingSoon
+                                            comingSoonLabel={t('companyFixes.comingSoon')}
                                         />
                                     </div>
 
@@ -207,24 +229,30 @@ export default function SettingsPage() {
                                             label="Push Notifications"
                                             description="Receive real-time push notifications"
                                             tooltip="Get instant notifications in your browser"
-                                            checked={settings.pushNotifications}
-                                            onChange={(v) => handleToggle("pushNotifications", v)}
+                                            checked={false}
+                                            onChange={() => {}}
+                                            comingSoon
+                                            comingSoonLabel={t('companyFixes.comingSoon')}
                                         />
                                         
                                         <SettingToggle
                                             label="Application Updates"
                                             description="Get notified about application status changes"
                                             tooltip="Know when your applications are reviewed"
-                                            checked={settings.applicationUpdates}
-                                            onChange={(v) => handleToggle("applicationUpdates", v)}
+                                            checked={false}
+                                            onChange={() => {}}
+                                            comingSoon
+                                            comingSoonLabel={t('companyFixes.comingSoon')}
                                         />
                                         
                                         <SettingToggle
                                             label="Interview Reminders"
                                             description="Receive reminders for upcoming interviews"
                                             tooltip="Never miss an interview with timely reminders"
-                                            checked={settings.interviewReminders}
-                                            onChange={(v) => handleToggle("interviewReminders", v)}
+                                            checked={false}
+                                            onChange={() => {}}
+                                            comingSoon
+                                            comingSoonLabel={t('companyFixes.comingSoon')}
                                         />
                                     </div>
                                 </div>
@@ -238,9 +266,15 @@ export default function SettingsPage() {
                                         <h3 className="text-sm font-medium flex items-center gap-2 text-foreground/60">
                                             <Eye className="h-4 w-4 text-purple-400" />
                                             Profile Visibility
+                                            <ComingSoonBadge label={t('companyFixes.comingSoon')} />
                                         </h3>
                                         
+                                        <p className="text-xs text-muted-foreground/70">
+                                            Visibility controls are not available yet.
+                                        </p>
                                         <RadioGroup 
+                                            disabled
+                                            aria-disabled
                                             value={settings.profileVisibility}
                                             onValueChange={(v) => {
                                                 updateSetting("profileVisibility", v as "public" | "private" | "connections")
@@ -253,13 +287,13 @@ export default function SettingsPage() {
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
                                                     <div className={cn(
-                                                        "flex items-center space-x-3 p-4 rounded-xl border-2 transition-all cursor-pointer",
+                                                        "flex items-center space-x-3 p-4 rounded-xl border-2 transition-all cursor-not-allowed opacity-60",
                                                         settings.profileVisibility === "public" 
                                                             ? "border-purple-500 bg-purple-500/5" 
                                                             : "border-border hover:border-purple-500/30"
                                                     )}>
                                                         <RadioGroupItem value="public" id="public" />
-                                                        <Label htmlFor="public" className="flex-1 cursor-pointer">
+                                                        <Label htmlFor="public" className="flex-1 cursor-not-allowed">
                                                             <div className="flex items-center gap-2">
                                                                 <Eye className="h-4 w-4 text-purple-400" />
                                                                 <span className="font-medium text-foreground/80">Public</span>
@@ -278,13 +312,13 @@ export default function SettingsPage() {
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
                                                     <div className={cn(
-                                                        "flex items-center space-x-3 p-4 rounded-xl border-2 transition-all cursor-pointer",
+                                                        "flex items-center space-x-3 p-4 rounded-xl border-2 transition-all cursor-not-allowed opacity-60",
                                                         settings.profileVisibility === "connections" 
                                                             ? "border-purple-500 bg-purple-500/5" 
                                                             : "border-border hover:border-purple-500/30"
                                                     )}>
                                                         <RadioGroupItem value="connections" id="connections" />
-                                                        <Label htmlFor="connections" className="flex-1 cursor-pointer">
+                                                        <Label htmlFor="connections" className="flex-1 cursor-not-allowed">
                                                             <div className="flex items-center gap-2">
                                                                 <Users className="h-4 w-4 text-blue-400" />
                                                                 <span className="font-medium text-foreground/80">Connections Only</span>
@@ -303,13 +337,13 @@ export default function SettingsPage() {
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
                                                     <div className={cn(
-                                                        "flex items-center space-x-3 p-4 rounded-xl border-2 transition-all cursor-pointer",
+                                                        "flex items-center space-x-3 p-4 rounded-xl border-2 transition-all cursor-not-allowed opacity-60",
                                                         settings.profileVisibility === "private" 
                                                             ? "border-purple-500 bg-purple-500/5" 
                                                             : "border-border hover:border-purple-500/30"
                                                     )}>
                                                         <RadioGroupItem value="private" id="private" />
-                                                        <Label htmlFor="private" className="flex-1 cursor-pointer">
+                                                        <Label htmlFor="private" className="flex-1 cursor-not-allowed">
                                                             <div className="flex items-center gap-2">
                                                                 <EyeOff className="h-4 w-4 text-gray-400" />
                                                                 <span className="font-medium text-foreground/80">Private</span>
@@ -340,16 +374,20 @@ export default function SettingsPage() {
                                             label="Show Online Status"
                                             description="Let others see when you're online"
                                             tooltip="Display a green dot when you're active"
-                                            checked={settings.showOnlineStatus}
-                                            onChange={(v) => handleToggle("showOnlineStatus", v)}
+                                            checked={false}
+                                            onChange={() => {}}
+                                            comingSoon
+                                            comingSoonLabel={t('companyFixes.comingSoon')}
                                         />
                                         
                                         <SettingToggle
                                             label="Allow Messages"
                                             description="Allow companies to send you direct messages"
                                             tooltip="Receive messages from potential employers"
-                                            checked={settings.allowMessages}
-                                            onChange={(v) => handleToggle("allowMessages", v)}
+                                            checked={false}
+                                            onChange={() => {}}
+                                            comingSoon
+                                            comingSoonLabel={t('companyFixes.comingSoon')}
                                         />
                                     </div>
                                 </div>
@@ -412,8 +450,10 @@ export default function SettingsPage() {
                                             label="Compact View"
                                             description="Use a more compact layout"
                                             tooltip="Reduce spacing for more content"
-                                            checked={settings.compactView}
-                                            onChange={(v) => handleToggle("compactView", v)}
+                                            checked={false}
+                                            onChange={() => {}}
+                                            comingSoon
+                                            comingSoonLabel={t('companyFixes.comingSoon')}
                                         />
                                         
                                         <SettingToggle
@@ -480,27 +520,17 @@ export default function SettingsPage() {
                                             Time Zone
                                         </h3>
                                         
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <div>
-                                                    <Select defaultValue="Europe/Sofia">
-                                                        <SelectTrigger className="w-full h-12 rounded-xl">
-                                                            <SelectValue placeholder="Select timezone" />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectItem value="Europe/Sofia">(UTC+02:00) Sofia</SelectItem>
-                                                            <SelectItem value="Europe/London">(UTC+00:00) London</SelectItem>
-                                                            <SelectItem value="America/New_York">(UTC-05:00) New York</SelectItem>
-                                                            <SelectItem value="America/Los_Angeles">(UTC-08:00) Los Angeles</SelectItem>
-                                                            <SelectItem value="Asia/Tokyo">(UTC+09:00) Tokyo</SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
-                                            </TooltipTrigger>
-                                            <TooltipContent>
-                                                <p>Set your local timezone</p>
-                                            </TooltipContent>
-                                        </Tooltip>
+                                        <div className="flex items-center justify-between gap-4 p-4 rounded-xl border opacity-80">
+                                            <div className="space-y-1">
+                                                <p className="text-sm font-medium text-foreground/70">
+                                                    {deviceTimeZone || "Device time zone"}
+                                                </p>
+                                                <p className="text-xs text-muted-foreground/60">
+                                                    Dates and times are shown in your device&apos;s time zone. Choosing a different time zone is coming soon.
+                                                </p>
+                                            </div>
+                                            <ComingSoonBadge label={t('companyFixes.comingSoon')} />
+                                        </div>
                                     </div>
                                 </div>
                             </SettingsSection>
@@ -515,7 +545,7 @@ export default function SettingsPage() {
                     <DialogHeader>
                         <DialogTitle>Reset All Settings</DialogTitle>
                         <DialogDescription>
-                            Are you sure you want to reset all settings to their default values? This action cannot be undone.
+                            Are you sure you want to reset your preferences (such as animations) to their default values? Theme and language are not affected.
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
@@ -559,32 +589,65 @@ function SettingsSection({
     )
 }
 
+function ComingSoonBadge({ label }: { label: string }) {
+    return (
+        <Badge variant="secondary" className="ml-2 text-[10px] font-medium uppercase tracking-wide">
+            {label}
+        </Badge>
+    )
+}
+
 function SettingToggle({
     label,
     description,
     tooltip,
     checked,
     onChange,
+    comingSoon = false,
+    comingSoonLabel = "Coming soon",
 }: {
     label: string
     description: string
     tooltip: string
     checked: boolean
     onChange: (value: boolean) => void
+    /** Setting is not enforced anywhere yet: render it disabled with a badge */
+    comingSoon?: boolean
+    comingSoonLabel?: string
 }) {
+    const switchId = `setting-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`
     return (
         <Tooltip>
             <TooltipTrigger asChild>
-                <div className="flex items-center justify-between p-4 rounded-xl border hover:border-purple-500/30 transition-colors cursor-pointer">
+                <div
+                    className={cn(
+                        "flex items-center justify-between p-4 rounded-xl border transition-colors",
+                        comingSoon ? "opacity-60 cursor-not-allowed" : "hover:border-purple-500/30 cursor-pointer"
+                    )}
+                >
                     <div className="space-y-1">
-                        <Label className="text-sm font-medium text-foreground/70 cursor-pointer">{label}</Label>
+                        <Label
+                            htmlFor={switchId}
+                            className={cn(
+                                "text-sm font-medium text-foreground/70 flex items-center",
+                                comingSoon ? "cursor-not-allowed" : "cursor-pointer"
+                            )}
+                        >
+                            {label}
+                            {comingSoon && <ComingSoonBadge label={comingSoonLabel} />}
+                        </Label>
                         <p className="text-xs text-muted-foreground/60">{description}</p>
                     </div>
-                    <Switch checked={checked} onCheckedChange={onChange} />
+                    <Switch
+                        id={switchId}
+                        checked={checked}
+                        onCheckedChange={onChange}
+                        disabled={comingSoon}
+                    />
                 </div>
             </TooltipTrigger>
             <TooltipContent>
-                <p>{tooltip}</p>
+                <p>{comingSoon ? `${tooltip} (${comingSoonLabel})` : tooltip}</p>
             </TooltipContent>
         </Tooltip>
     )

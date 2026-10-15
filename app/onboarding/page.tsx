@@ -354,14 +354,16 @@ export default function OnboardingPage() {
         }
     }
 
+    // Single source of the company policy-acceptance request. CompanyPolicyModal awaits this
+    // and shows any thrown error message inline, so we rethrow the server's error text.
     const handleAcceptPolicies = async () => {
         if (!createdCompanyId) {
-            setError("Company not created yet")
-            return
+            throw new Error("Company not created yet")
         }
 
+        let res: Response
         try {
-            const res = await fetch("/api/company/accept-policies", {
+            res = await fetch("/api/company/accept-policies", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -370,18 +372,18 @@ export default function OnboardingPage() {
                     privacyAccepted: privacyChecked,
                 }),
             })
-
-            if (!res.ok) {
-                const data = await res.json()
-                throw new Error(data.error || "Failed to accept policies")
-            }
-
-            setPolicyAccepted(true)
-            setShowPolicyModal(false)
         } catch (err) {
             console.error(err)
-            setError("Failed to accept policies")
+            throw new Error("Network error. Please try again.")
         }
+
+        if (!res.ok) {
+            const data: { error?: string } | null = await res.json().catch(() => null)
+            throw new Error(data?.error || `Failed to accept policies (status ${res.status})`)
+        }
+
+        setPolicyAccepted(true)
+        setShowPolicyModal(false)
     }
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -518,8 +520,17 @@ export default function OnboardingPage() {
                                 return (
                                     <Card
                                         key={r.value}
+                                        role="button"
+                                        tabIndex={0}
+                                        aria-pressed={isSelected}
                                         onClick={() => setSelectedRole(r.value as "student" | "company")}
-                                        className={`cursor-pointer transition-all duration-500 group relative overflow-hidden ${
+                                        onKeyDown={(e) => {
+                                            if (e.key === "Enter" || e.key === " ") {
+                                                e.preventDefault()
+                                                setSelectedRole(r.value as "student" | "company")
+                                            }
+                                        }}
+                                        className={`cursor-pointer transition-all duration-500 group relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--experience-accent)] ${
                                             isSelected
                                                 ? "ring-2 ring-[var(--experience-accent)] shadow-2xl shadow-[var(--experience-accent)]/20 scale-[1.02]"
                                                 : "hover:ring-2 hover:ring-[var(--experience-accent)]/50 hover:shadow-xl hover:-translate-y-1"

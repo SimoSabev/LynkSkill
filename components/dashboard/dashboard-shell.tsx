@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { usePathname } from "next/navigation"
 import { Menu, PanelLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { TooltipProvider } from "@/components/ui/tooltip"
 import { ModeToggle } from "@/components/theme-toggle"
 import { SignedIn, UserButton } from "@clerk/nextjs"
 import { NotificationBell } from "@/components/notification-bell"
@@ -67,6 +67,7 @@ export function DashboardShell({ children, userType }: DashboardShellProps) {
     const {
         user,
         company,
+        isLoadingCompany,
         isInitialLoading,
     } = useDashboard()
 
@@ -176,6 +177,7 @@ export function DashboardShell({ children, userType }: DashboardShellProps) {
                 onClose={() => setMobileMenuOpen(false)}
                 companyName={companyName}
                 companyLogo={companyLogo}
+                companyLoading={isLoadingCompany}
             />
 
             {/* Sidebar - Desktop */}
@@ -185,6 +187,7 @@ export function DashboardShell({ children, userType }: DashboardShellProps) {
                 isMobile={false}
                 companyName={companyName}
                 companyLogo={companyLogo}
+                companyLoading={isLoadingCompany}
             />
 
             {/* Main Content */}
@@ -199,6 +202,7 @@ export function DashboardShell({ children, userType }: DashboardShellProps) {
                         size="icon"
                         className="md:hidden rounded-xl hover:bg-purple-500/10"
                         onClick={() => setMobileMenuOpen(true)}
+                        aria-label={t('companyFixes.openMenu')}
                     >
                         <Menu className="h-5 w-5" />
                     </Button>
@@ -208,6 +212,8 @@ export function DashboardShell({ children, userType }: DashboardShellProps) {
                         size="icon"
                         className="hidden md:flex rounded-xl hover:bg-purple-500/10"
                         onClick={() => setSidebarOpen(!sidebarOpen)}
+                        aria-label={t('companyFixes.toggleSidebar')}
+                        aria-expanded={sidebarOpen}
                     >
                         <PanelLeft className="h-5 w-5" />
                     </Button>
@@ -222,20 +228,13 @@ export function DashboardShell({ children, userType }: DashboardShellProps) {
                             <LanguageSwitcher />
 
                             <TooltipProvider>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="rounded-xl hover:bg-purple-500/10"
-                                        >
-                                            <ModeToggle />
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent className="bg-purple-950/90 border-purple-500/30">
-                                        {t('dashboard.toggleTheme')}
-                                    </TooltipContent>
-                                </Tooltip>
+                                <ModeToggle
+                                    variant="ghost"
+                                    className="rounded-xl hover:bg-purple-500/10"
+                                    label={t('dashboard.toggleTheme')}
+                                    tooltip={t('dashboard.toggleTheme')}
+                                    tooltipClassName="bg-purple-950/90 border-purple-500/30"
+                                />
                             </TooltipProvider>
 
                             <SignedIn>

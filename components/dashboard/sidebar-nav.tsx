@@ -47,6 +47,8 @@ interface SidebarNavProps {
     onClose?: () => void
     companyName?: string | null
     companyLogo?: string | null
+    /** Whether company data is still loading (controls the company-name placeholder). */
+    companyLoading?: boolean
 }
 
 interface NavItem {
@@ -64,23 +66,18 @@ export function SidebarNav({
     onClose,
     companyName,
     companyLogo,
+    companyLoading = false,
 }: SidebarNavProps) {
     const { t } = useTranslation()
     const pathname = usePathname()
     const { signOut } = useClerk()
     const { isAIMode, toggleAIMode } = useAIMode()
     const { navigateTo } = useNavigation()
-    const [openMenus, setOpenMenus] = useState<string[]>([])
+    // Explicit open/closed state chosen by the user, keyed by the parent's href.
+    // Parents without an explicit choice default to open when one of their children is active.
+    const [menuState, setMenuState] = useState<Record<string, boolean>>({})
 
     const basePath = userType === "Student" ? "/dashboard/student" : "/dashboard/company"
-
-    const toggleMenu = (label: string) => {
-        setOpenMenus(prev =>
-            prev.includes(label)
-                ? prev.filter(item => item !== label)
-                : [...prev, label]
-        )
-    }
 
     const studentNavItems: NavItem[] = [
         {
@@ -189,28 +186,42 @@ export function SidebarNav({
 
     const navItems = userType === "Student" ? studentNavItems : companyNavItems
 
-    const isActive = (href: string) => {
+    // Leaf items: the single most specific href that matches the current path is active
+    // (exact match, or a nested detail route under it). This prevents e.g. both
+    // ".../internships" and ".../internships/create" from being highlighted at once.
+    const leafHrefs = navItems.flatMap((item) =>
+        item.children && item.children.length > 0 ? item.children.map((c) => c.href) : [item.href]
+    )
+    const matchesPath = (href: string) => {
         if (!pathname) return false
-        if (href === basePath) {
-            return pathname === basePath
-        }
-        return pathname.startsWith(href)
+        if (href === basePath) return pathname === basePath
+        return pathname === href || pathname.startsWith(`${href}/`)
     }
+    const activeLeafHref = leafHrefs
+        .filter(matchesPath)
+        .sort((a, b) => b.length - a.length)[0]
+
+    const isActive = (href: string) => href === activeLeafHref
+
+    // Collapsible parents: active when any child is active (prefix semantics)
+    const isParentActive = (item: NavItem) =>
+        (item.children ?? []).some((child) => isActive(child.href)) || matchesPath(item.href)
 
     const renderNavItem = (item: NavItem, _depth: number = 0) => {
         const hasChildren = item.children && item.children.length > 0
-        const active = isActive(item.href)
-        const isMenuOpen = openMenus.includes(item.label)
+        const active = hasChildren ? isParentActive(item) : isActive(item.href)
+        const isMenuOpen = menuState[item.href] ?? active
 
         if (hasChildren) {
             return (
                 <Collapsible
-                    key={item.label}
+                    key={item.href}
                     open={isMenuOpen}
-                    onOpenChange={() => toggleMenu(item.label)}
+                    onOpenChange={(open) => setMenuState((prev) => ({ ...prev, [item.href]: open }))}
                 >
                     <CollapsibleTrigger asChild>
                         <button
+                            type="button"
                             className={cn(
                                 "flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
                                 "hover:bg-gradient-to-r hover:from-purple-500/10 hover:to-blue-500/10",
@@ -244,6 +255,8 @@ export function SidebarNav({
                                     exit={{ opacity: 0, height: 0 }}
                                 >
                                     <button
+                                        type="button"
+                                        aria-current={isActive(child.href) ? "page" : undefined}
                                         onClick={() => {
                                             navigateTo(child.href)
                                             if (isMobile) onClose?.()
@@ -275,6 +288,8 @@ export function SidebarNav({
             <Tooltip key={item.href}>
                 <TooltipTrigger asChild>
                     <button
+                        type="button"
+                        aria-current={active ? "page" : undefined}
                         onClick={() => {
                             navigateTo(item.href)
                             if (isMobile) onClose?.()
@@ -325,7 +340,9 @@ export function SidebarNav({
                     </div>
                     <div>
                         <h2 className="font-semibold text-sm">
-                            {userType === "Company" ? companyName ?? t('common.loading') : t('dashboard.student')}
+                            {userType === "Company"
+                                ? companyName || (companyLoading ? t('common.loading') : t('companyFixes.yourCompany'))
+                                : t('dashboard.student')}
                         </h2>
                         <p className="text-xs text-muted-foreground">
                             {userType === "Company" ? t('dashboard.company') : t('dashboard.student')}
@@ -333,7 +350,13 @@ export function SidebarNav({
                     </div>
                 </div>
                 {isMobile && (
-                    <Button variant="ghost" size="icon" onClick={onClose} className="rounded-xl">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={onClose}
+                        className="rounded-xl"
+                        aria-label={t('companyFixes.closeMenu')}
+                    >
                         <X className="h-5 w-5" />
                     </Button>
                 )}
@@ -344,6 +367,8 @@ export function SidebarNav({
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <button
+                            type="button"
+                            aria-pressed={isAIMode}
                             onClick={toggleAIMode}
                             className={cn(
                                 "flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-all duration-300",
@@ -437,6 +462,7 @@ export function SidebarNav({
                                 size="icon"
                                 onClick={() => signOut()}
                                 className="h-8 w-8 rounded-lg text-muted-foreground hover:text-red-500"
+                                aria-label={t('companyFixes.signOut')}
                             >
                                 <LogOut className="h-4 w-4" />
                             </Button>

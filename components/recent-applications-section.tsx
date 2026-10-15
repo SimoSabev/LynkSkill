@@ -16,6 +16,15 @@ import {
 } from "lucide-react"
 import type { Application } from "@/app/types"
 import { useDashboard } from "@/lib/dashboard-context"
+import { format } from "date-fns"
+
+function formatAppliedDate(value: string | number | Date | undefined | null): string {
+  if (!value) return ""
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return ""
+  // Fixed format (no locale/timezone-dependent toLocaleDateString) to avoid hydration mismatches
+  return format(d, "dd MMM yyyy")
+}
 
 interface RecentApplicationsSectionProps {
   userType: "Student" | "Company"
@@ -39,6 +48,18 @@ export function RecentApplicationsSection({
   }, [contextApplications])
 
   const isLoading = isLoadingApplications
+
+  const openApplications = () => {
+    if (setActiveTab) {
+      setActiveTab("files")
+    } else {
+      router.push(
+          userType === "Student"
+              ? "/dashboard/student/internships/applied"
+              : "/dashboard/company/applications"
+      )
+    }
+  }
 
   const getStatusConfig = (status: string) => {
     switch (status) {
@@ -203,16 +224,17 @@ export function RecentApplicationsSection({
                               stiffness: 400,
                             },
                           }}
-                          onClick={() => {
-                            if (setActiveTab) {
-                              setActiveTab("files")
-                            } else {
-                              // Navigate to applications page
-                              const basePath = userType === "Student" ? "/dashboard/student" : "/dashboard/company"
-                              router.push(`${basePath}/internships/applied`)
+                          role="button"
+                          tabIndex={0}
+                          aria-label={`${app.internship?.title ?? "Unknown Internship"} - ${statusConfig.label}`}
+                          onClick={openApplications}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault()
+                              openApplications()
                             }
                           }}
-                          className="cursor-pointer group relative overflow-hidden bg-gradient-to-r from-card/80 to-card/60 backdrop-blur-sm rounded-xl p-4 shadow-[0_4px_20px_var(--application-shadow-light)] hover:shadow-[0_8px_30px_var(--application-shadow-medium)] border border-border/30 hover:border-primary/20 transition-all duration-300"
+                          className="cursor-pointer group relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary bg-gradient-to-r from-card/80 to-card/60 backdrop-blur-sm rounded-xl p-4 shadow-[0_4px_20px_var(--application-shadow-light)] hover:shadow-[0_8px_30px_var(--application-shadow-medium)] border border-border/30 hover:border-primary/20 transition-all duration-300"
                       >
                         <div className="absolute inset-0 bg-gradient-to-r from-white/5 via-transparent to-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
@@ -245,8 +267,9 @@ export function RecentApplicationsSection({
                                         <User className="w-3 h-3 text-muted-foreground" />
                                       </div>
                                       <span className="font-medium text-muted-foreground">
-                                {app.student?.name ??
-                                    app.student?.email ??
+                                {app.student?.profile?.name ||
+                                    app.student?.name ||
+                                    app.student?.email ||
                                     "Unknown Student"}
                               </span>
                                     </>
@@ -269,7 +292,7 @@ export function RecentApplicationsSection({
                               </div>
                               <span className="font-medium">
                           Applied{" "}
-                                {new Date(app.createdAt).toLocaleDateString()}
+                                {formatAppliedDate(app.createdAt)}
                         </span>
                             </div>
 

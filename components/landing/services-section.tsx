@@ -133,8 +133,9 @@ export function ServicesSection() {
                         key={i}
                         className="absolute w-2 h-2 bg-gradient-to-r from-purple-400 to-blue-400 rounded-full opacity-60"
                         style={{
-                            left: `${Math.random() * 100}%`,
-                            top: `${Math.random() * 100}%`,
+                            // Deterministic positions (no Math.random in render -> no hydration mismatch)
+                            left: `${(i * 37 + 11) % 100}%`,
+                            top: `${(i * 53 + 23) % 100}%`,
                         }}
                         animate={{
                             y: [0, -20, 0],
@@ -142,9 +143,9 @@ export function ServicesSection() {
                             scale: [1, 1.2, 1],
                         }}
                         transition={{
-                            duration: 3 + Math.random() * 2,
+                            duration: 3 + ((i * 7) % 5) * 0.4,
                             repeat: Number.POSITIVE_INFINITY,
-                            delay: Math.random() * 2,
+                            delay: ((i * 3) % 8) * 0.25,
                             ease: "easeInOut",
                         }}
                     />

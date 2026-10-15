@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { auth } from "@clerk/nextjs/server"
 
+const MAX_MESSAGE_LENGTH = 2000
+
 // Send a direct message/contact request to a candidate
 export async function POST(
     req: NextRequest,
@@ -18,6 +20,13 @@ export async function POST(
 
         if (typeof message !== "string" || message.trim().length === 0) {
             return NextResponse.json({ error: "Message is required" }, { status: 400 })
+        }
+
+        if (message.trim().length > MAX_MESSAGE_LENGTH) {
+            return NextResponse.json(
+                { error: `Message is too long (maximum ${MAX_MESSAGE_LENGTH} characters)` },
+                { status: 400 }
+            )
         }
 
         // Get the company user
@@ -48,8 +57,8 @@ export async function POST(
                 userId: candidateId,
                 type: "NEW_MESSAGE",
                 title: (typeof subject === "string" && subject.trim() ? subject.trim() : `Message from ${company.name}`).slice(0, 150),
-                message: message.substring(0, 200) + (message.length > 200 ? "..." : ""),
-                link: "/dashboard/student?tab=messages"
+                message: message.trim(),
+                link: "/dashboard/student/messages"
             }
         })
 

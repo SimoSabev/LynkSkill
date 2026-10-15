@@ -20,11 +20,16 @@ export async function POST(
             type = "video", 
             location, 
             notes,
-            positionTitle 
+            positionTitle,
+            timeZone
         } = await req.json()
 
         if (!scheduledAt || isNaN(Date.parse(scheduledAt))) {
             return NextResponse.json({ error: "Interview date is required" }, { status: 400 })
+        }
+
+        if (notes !== undefined && notes !== null && (typeof notes !== "string" || notes.length > 2000)) {
+            return NextResponse.json({ error: "Notes are too long (maximum 2000 characters)" }, { status: 400 })
         }
 
         // Get the company user
@@ -51,14 +56,25 @@ export async function POST(
 
         const candidateName = candidate.profile?.name || candidate.portfolio?.fullName || "Candidate"
         const interviewDate = new Date(scheduledAt)
-        const formattedDate = interviewDate.toLocaleDateString('en-US', { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
+        const dateFormatOptions: Intl.DateTimeFormatOptions = {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
             day: 'numeric',
             hour: '2-digit',
-            minute: '2-digit'
-        })
+            minute: '2-digit',
+            timeZoneName: 'short'
+        }
+        // Format in the inviting company's time zone (server runs in UTC); fall back if invalid
+        let formattedDate: string
+        try {
+            formattedDate = interviewDate.toLocaleString('en-US', {
+                ...dateFormatOptions,
+                timeZone: typeof timeZone === "string" && timeZone ? timeZone : "UTC"
+            })
+        } catch {
+            formattedDate = interviewDate.toLocaleString('en-US', { ...dateFormatOptions, timeZone: "UTC" })
+        }
 
         // Create notification for the candidate (interview invitation)
         const notification = await prisma.notification.create({
@@ -66,15 +82,15 @@ export async function POST(
                 userId: candidateId,
                 type: "INTERVIEW_SCHEDULED",
                 title: `Interview invitation from ${company.name}`,
-                message: `You've been invited for a ${duration}-minute ${type} interview for "${positionTitle || "a position"}" on ${formattedDate}. ${notes ? `Notes: ${notes}` : ''}`,
-                link: "/dashboard/student?tab=interviews"
+                message: `You've been invited for a ${duration}-minute ${type} interview for "${positionTitle || "a position"}" on ${formattedDate}.${typeof location === "string" && location.trim() ? ` Location: ${location.trim()}.` : ''} ${notes ? `Notes: ${notes}` : ''}`.trim(),
+                link: "/dashboard/student/interviews"
             }
         })
 
         return NextResponse.json({ 
             success: true, 
             notificationId: notification.id,
-            message: `Interview invitation sent to ${candidateName}!`,
+            message: `Interview invitation notification sent to ${candidateName}.`,
             details: {
                 candidate: candidateName,
                 date: formattedDate,

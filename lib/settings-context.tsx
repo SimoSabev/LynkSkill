@@ -2,6 +2,14 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react"
 
+/**
+ * Client-side (localStorage) user preferences.
+ *
+ * Only `animationsEnabled` is currently enforced (see components/dashboard/dashboard-shell.tsx).
+ * Theme and language live in next-themes and the i18n provider respectively.
+ * The remaining fields are placeholders for upcoming features; the settings pages render
+ * them as disabled "Coming soon" controls so users aren't misled.
+ */
 interface UserSettings {
     // Notifications
     emailNotifications: boolean
@@ -26,7 +34,6 @@ interface SettingsContextType {
     updateSettings: (updates: Partial<UserSettings>) => void
     resetSettings: () => void
     isLoading: boolean
-    isSaving: boolean
 }
 
 const defaultSettings: UserSettings = {
@@ -49,7 +56,6 @@ const STORAGE_KEY = "lynkskill-user-settings"
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
     const [settings, setSettings] = useState<UserSettings>(defaultSettings)
     const [isLoading, setIsLoading] = useState(true)
-    const [isSaving, setIsSaving] = useState(false)
 
     // Load settings from localStorage on mount
     useEffect(() => {
@@ -66,40 +72,27 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         }
     }, [])
 
-    // Save settings to localStorage whenever they change
-    const saveSettings = useCallback(async (newSettings: UserSettings) => {
-        setIsSaving(true)
+    // Persist to localStorage (synchronous; there is no server-side persistence yet)
+    useEffect(() => {
+        if (isLoading) return
         try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(newSettings))
-            // Simulate API call for server-side persistence
-            await new Promise(resolve => setTimeout(resolve, 300))
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(settings))
         } catch (error) {
             console.error("Failed to save settings:", error)
-        } finally {
-            setIsSaving(false)
         }
-    }, [])
+    }, [settings, isLoading])
 
     const updateSetting = useCallback(<K extends keyof UserSettings>(key: K, value: UserSettings[K]) => {
-        setSettings(prev => {
-            const newSettings = { ...prev, [key]: value }
-            saveSettings(newSettings)
-            return newSettings
-        })
-    }, [saveSettings])
+        setSettings(prev => ({ ...prev, [key]: value }))
+    }, [])
 
     const updateSettings = useCallback((updates: Partial<UserSettings>) => {
-        setSettings(prev => {
-            const newSettings = { ...prev, ...updates }
-            saveSettings(newSettings)
-            return newSettings
-        })
-    }, [saveSettings])
+        setSettings(prev => ({ ...prev, ...updates }))
+    }, [])
 
     const resetSettings = useCallback(() => {
         setSettings(defaultSettings)
-        saveSettings(defaultSettings)
-    }, [saveSettings])
+    }, [])
 
     return (
         <SettingsContext.Provider value={{
@@ -108,7 +101,6 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
             updateSettings,
             resetSettings,
             isLoading,
-            isSaving,
         }}>
             {children}
         </SettingsContext.Provider>

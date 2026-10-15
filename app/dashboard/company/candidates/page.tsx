@@ -1,7 +1,7 @@
 "use client"
 
 import { motion, AnimatePresence } from "framer-motion"
-import { Users, Search, Filter, Loader2, User, Mail, Briefcase, FolderOpen, Calendar, X, Send, Video, MapPin, Clock, CheckCircle, Sparkles, ChevronDown, ChevronUp, History, MessageSquare } from "lucide-react"
+import { Users, Search, Filter, Loader2, User, Mail, Briefcase, FolderOpen, Calendar, X, Send, Video, MapPin, Clock, Sparkles, ChevronDown, ChevronUp, History, MessageSquare } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -12,9 +12,12 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useTranslation } from "@/lib/i18n"
-import { useState, useEffect, useCallback } from "react"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { useState, useEffect, useCallback, useRef, Suspense } from "react"
 import { cn } from "@/lib/utils"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
+import { useAIMode } from "@/lib/ai-mode-context"
+import { toast } from "sonner"
 
 interface Candidate {
     id: string
@@ -49,9 +52,53 @@ interface AISession {
     candidates: SessionCandidate[]
 }
 
+interface CandidateDetailResponse {
+    candidate?: {
+        id: string
+        name: string
+        email: string
+        avatar?: string
+        headline?: string
+        bio?: string
+        skills?: string[]
+        matchPercentage?: number
+        matchedSkills?: string[]
+        projects?: unknown[]
+        experiences?: unknown[]
+    }
+    error?: string
+}
+
+function parseSkills(value: string): string[] {
+    return Array.from(
+        new Set(
+            value
+                .split(",")
+                .map((s) => s.trim())
+                .filter(Boolean)
+        )
+    )
+}
+
 export default function CandidatesPage() {
+    return (
+        <Suspense
+            fallback={
+                <div className="flex items-center justify-center py-20">
+                    <Loader2 className="h-8 w-8 animate-spin text-violet-500" />
+                </div>
+            }
+        >
+            <CandidatesPageContent />
+        </Suspense>
+    )
+}
+
+function CandidatesPageContent() {
     const { t } = useTranslation()
     const router = useRouter()
+    const searchParams = useSearchParams()
+    const { isAIMode, toggleAIMode } = useAIMode()
     const [candidates, setCandidates] = useState<Candidate[]>([])
     const [sessions, setSessions] = useState<AISession[]>([])
     const [isLoading, setIsLoading] = useState(true)
@@ -60,13 +107,15 @@ export default function CandidatesPage() {
     const [debouncedSearch, setDebouncedSearch] = useState("")
     const [expandedSessions, setExpandedSessions] = useState<Set<string>>(new Set())
     const [activeTab, setActiveTab] = useState("sessions")
+    const [skillFilter, setSkillFilter] = useState<string[]>([])
+    const [skillFilterInput, setSkillFilterInput] = useState("")
+    const [filtersOpen, setFiltersOpen] = useState(false)
     
     // Modal states
     const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null)
     const [messageModalOpen, setMessageModalOpen] = useState(false)
     const [interviewModalOpen, setInterviewModalOpen] = useState(false)
     const [isSending, setIsSending] = useState(false)
-    const [successMessage, setSuccessMessage] = useState("")
     
     // Message form
     const [messageSubject, setMessageSubject] = useState("")
@@ -93,19 +142,26 @@ export default function CandidatesPage() {
         try {
             const params = new URLSearchParams()
             if (debouncedSearch) params.set("search", debouncedSearch)
+            if (skillFilter.length > 0) params.set("skills", skillFilter.join(","))
             
             const response = await fetch(`/api/candidates?${params.toString()}`)
             const data = await response.json()
             
-            if (data.candidates) {
-                setCandidates(data.candidates)
+            if (Array.isArray(data.candidates)) {
+                const list: Candidate[] = data.candidates
+                // The API scores candidates against the requested skills; only keep those matching at least one
+                setCandidates(
+                    skillFilter.length > 0
+                        ? list.filter((c) => (c.matchedSkills?.length ?? 0) > 0)
+                        : list
+                )
             }
         } catch (error) {
             console.error("Error fetching candidates:", error)
         } finally {
             setIsLoading(false)
         }
-    }, [debouncedSearch])
+    }, [debouncedSearch, skillFilter])
 
     const fetchSessions = useCallback(async () => {
         setIsLoadingSessions(true)
@@ -183,6 +239,88 @@ export default function CandidatesPage() {
         setInterviewModalOpen(true)
     }
 
+    // Deep links from the candidate profile page: ?message=<id> / ?interview=<id>
+    const messageParam = searchParams?.get("message") ?? null
+    const interviewParam = searchParams?.get("interview") ?? null
+    const handledDeepLinkRef = useRef<string | null>(null)
+
+    useEffect(() => {
+        const candidateId = messageParam || interviewParam
+        const action: "message" | "interview" | null = messageParam ? "message" : interviewParam ? "interview" : null
+        if (!candidateId || !action) {
+            handledDeepLinkRef.current = null
+            return
+        }
+        if (isLoading) return
+
+        const key = `${action}:${candidateId}`
+        if (handledDeepLinkRef.current === key) return
+        handledDeepLinkRef.current = key
+
+        const openFor = (candidate: Candidate) => {
+            setActiveTab("all")
+            if (action === "message") {
+                openMessageModal(candidate)
+            } else {
+                openInterviewModal(candidate)
+            }
+            // Clear the query param so closing the modal doesn't reopen it
+            router.replace("/dashboard/company/candidates", { scroll: false })
+        }
+
+        const existing = candidates.find((c) => c.id === candidateId)
+        if (existing) {
+            openFor(existing)
+            return
+        }
+
+        ;(async () => {
+            try {
+                const res = await fetch(`/api/candidates/${encodeURIComponent(candidateId)}`)
+                const data: CandidateDetailResponse = await res.json().catch(() => ({}))
+                if (!res.ok || !data.candidate) {
+                    toast.error(data.error || "Candidate not found")
+                    return
+                }
+                const c = data.candidate
+                openFor({
+                    id: c.id,
+                    name: c.name,
+                    email: c.email,
+                    avatar: c.avatar,
+                    headline: c.headline,
+                    bio: c.bio,
+                    skills: c.skills ?? [],
+                    matchPercentage: c.matchPercentage ?? 0,
+                    matchedSkills: c.matchedSkills ?? [],
+                    projectCount: c.projects?.length ?? 0,
+                    experienceCount: c.experiences?.length ?? 0,
+                })
+            } catch (error) {
+                console.error("Error loading candidate:", error)
+                toast.error("Failed to load candidate")
+            }
+        })()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [messageParam, interviewParam, isLoading, candidates])
+
+    const openAIAssistant = () => {
+        if (!isAIMode) toggleAIMode()
+        router.push("/dashboard/company")
+    }
+
+    const applySkillFilter = () => {
+        setSkillFilter(parseSkills(skillFilterInput))
+        setActiveTab("all")
+        setFiltersOpen(false)
+    }
+
+    const clearSkillFilter = () => {
+        setSkillFilter([])
+        setSkillFilterInput("")
+        setFiltersOpen(false)
+    }
+
     const handleSendMessage = async () => {
         if (!selectedCandidate || !messageContent.trim()) return
         
@@ -200,15 +338,14 @@ export default function CandidatesPage() {
             const data = await response.json()
             
             if (data.success) {
-                setSuccessMessage(`Message sent to ${selectedCandidate.name}!`)
+                toast.success(`Message sent to ${selectedCandidate.name}. They will see it in their notifications.`)
                 setMessageModalOpen(false)
-                setTimeout(() => setSuccessMessage(""), 3000)
             } else {
-                alert(data.error || "Failed to send message")
+                toast.error(data.error || "Failed to send message")
             }
         } catch (error) {
             console.error("Error sending message:", error)
-            alert("Failed to send message")
+            toast.error("Failed to send message")
         } finally {
             setIsSending(false)
         }
@@ -229,22 +366,22 @@ export default function CandidatesPage() {
                     duration: parseInt(interviewDuration),
                     type: interviewType,
                     positionTitle: interviewPosition,
-                    notes: interviewNotes
+                    notes: interviewNotes,
+                    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
                 })
             })
             
             const data = await response.json()
             
             if (data.success) {
-                setSuccessMessage(`Interview invitation sent to ${selectedCandidate.name}!`)
+                toast.success(`Interview invitation notification sent to ${selectedCandidate.name}.`)
                 setInterviewModalOpen(false)
-                setTimeout(() => setSuccessMessage(""), 3000)
             } else {
-                alert(data.error || "Failed to send invitation")
+                toast.error(data.error || "Failed to send invitation")
             }
         } catch (error) {
             console.error("Error sending invitation:", error)
-            alert("Failed to send invitation")
+            toast.error("Failed to send invitation")
         } finally {
             setIsSending(false)
         }
@@ -255,25 +392,11 @@ export default function CandidatesPage() {
     }
 
     // Get minimum date (today)
-    const today = new Date().toISOString().split('T')[0]
+    const now = new Date()
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`
 
     return (
         <div className="space-y-6">
-            {/* Success Toast */}
-            <AnimatePresence>
-                {successMessage && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -50 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -50 }}
-                        className="fixed top-4 right-4 z-50 flex items-center gap-2 bg-green-500 text-white px-4 py-3 rounded-xl shadow-lg"
-                    >
-                        <CheckCircle className="h-5 w-5" />
-                        {successMessage}
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
             {/* Header */}
             <motion.div
                 initial={{ opacity: 0, y: -20 }}
@@ -305,11 +428,78 @@ export default function CandidatesPage() {
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-                <Button variant="outline" className="rounded-xl border-violet-500/30 hover:bg-violet-500/10">
-                    <Filter className="h-4 w-4 mr-2" />
-                    Filters
-                </Button>
+                <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
+                    <PopoverTrigger asChild>
+                        <Button variant="outline" className="rounded-xl border-violet-500/30 hover:bg-violet-500/10">
+                            <Filter className="h-4 w-4 mr-2" />
+                            Filters
+                            {skillFilter.length > 0 && (
+                                <Badge className="ml-2 h-5 px-1.5 bg-violet-600 text-white border-0">
+                                    {skillFilter.length}
+                                </Badge>
+                            )}
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent align="end" className="w-80 rounded-xl">
+                        <div className="space-y-3">
+                            <div className="space-y-2">
+                                <Label htmlFor="candidate-skill-filter">Required skills</Label>
+                                <Input
+                                    id="candidate-skill-filter"
+                                    value={skillFilterInput}
+                                    onChange={(e) => setSkillFilterInput(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter") {
+                                            e.preventDefault()
+                                            applySkillFilter()
+                                        }
+                                    }}
+                                    placeholder="e.g. React, TypeScript"
+                                    className="rounded-xl"
+                                />
+                                <p className="text-xs text-muted-foreground">
+                                    Comma-separated. Shows candidates with at least one matching skill, ranked by match.
+                                </p>
+                            </div>
+                            <div className="flex gap-2">
+                                <Button variant="outline" size="sm" className="flex-1 rounded-xl" onClick={clearSkillFilter}>
+                                    Clear
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    className="flex-1 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600"
+                                    onClick={applySkillFilter}
+                                >
+                                    Apply
+                                </Button>
+                            </div>
+                        </div>
+                    </PopoverContent>
+                </Popover>
             </div>
+
+            {skillFilter.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2 -mt-2">
+                    <span className="text-sm text-muted-foreground">Filtering by:</span>
+                    {skillFilter.map((skill) => (
+                        <Badge key={skill} variant="outline" className="border-violet-500/30 bg-violet-500/10 gap-1">
+                            {skill}
+                            <button
+                                type="button"
+                                aria-label={`Remove ${skill} filter`}
+                                className="ml-0.5 rounded-full hover:text-violet-600"
+                                onClick={() => {
+                                    const next = skillFilter.filter((s) => s !== skill)
+                                    setSkillFilter(next)
+                                    setSkillFilterInput(next.join(", "))
+                                }}
+                            >
+                                <X className="h-3 w-3" />
+                            </button>
+                        </Badge>
+                    ))}
+                </div>
+            )}
 
             {/* Tabs for Sessions vs All Candidates */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -348,7 +538,7 @@ export default function CandidatesPage() {
                                 </p>
                                 <Button 
                                     className="mt-4 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600"
-                                    onClick={() => router.push("/dashboard/company?ai=true")}
+                                    onClick={openAIAssistant}
                                 >
                                     <MessageSquare className="h-4 w-4 mr-2" />
                                     Open AI Assistant
@@ -515,8 +705,8 @@ export default function CandidatesPage() {
                         </div>
                         <h3 className="text-lg font-semibold mb-2">No candidates found</h3>
                         <p className="text-muted-foreground max-w-md">
-                            {searchTerm 
-                                ? `No candidates match "${searchTerm}". Try a different search term.`
+                            {searchTerm || skillFilter.length > 0
+                                ? `No candidates match your ${searchTerm ? `search "${searchTerm}"` : "search"}${skillFilter.length > 0 ? ` and skill filter (${skillFilter.join(", ")})` : ""}. Try different criteria.`
                                 : "No students have registered yet. Check back later!"}
                         </p>
                     </CardContent>
@@ -660,7 +850,7 @@ export default function CandidatesPage() {
                                         <p className="text-sm text-muted-foreground">to {selectedCandidate.name}</p>
                                     </div>
                                 </div>
-                                <Button variant="ghost" size="icon" onClick={() => setMessageModalOpen(false)}>
+                                <Button variant="ghost" size="icon" aria-label="Close" onClick={() => setMessageModalOpen(false)}>
                                     <X className="h-4 w-4" />
                                 </Button>
                             </div>
@@ -682,7 +872,9 @@ export default function CandidatesPage() {
                                         onChange={(e) => setMessageContent(e.target.value)}
                                         placeholder="Write your message here..."
                                         className="rounded-xl min-h-[150px] resize-none"
+                                        maxLength={2000}
                                     />
+                                    <p className="text-xs text-muted-foreground text-right">{messageContent.length}/2000</p>
                                 </div>
                             </div>
                             
@@ -727,16 +919,20 @@ export default function CandidatesPage() {
                                         <Calendar className="h-5 w-5 text-green-500" />
                                     </div>
                                     <div>
-                                        <h2 className="font-semibold">Schedule Interview</h2>
-                                        <p className="text-sm text-muted-foreground">with {selectedCandidate.name}</p>
+                                        <h2 className="font-semibold">Invite to Interview</h2>
+                                        <p className="text-sm text-muted-foreground">{selectedCandidate.name}</p>
                                     </div>
                                 </div>
-                                <Button variant="ghost" size="icon" onClick={() => setInterviewModalOpen(false)}>
+                                <Button variant="ghost" size="icon" aria-label="Close" onClick={() => setInterviewModalOpen(false)}>
                                     <X className="h-4 w-4" />
                                 </Button>
                             </div>
                             
                             <div className="p-4 space-y-4">
+                                <p className="text-sm text-muted-foreground rounded-xl bg-muted/50 p-3">
+                                    The candidate will receive a notification with your proposed interview details.
+                                    This does not create a scheduled interview in their calendar.
+                                </p>
                                 <div className="space-y-2">
                                     <Label>Position Title</Label>
                                     <Input 
@@ -819,6 +1015,7 @@ export default function CandidatesPage() {
                                         onChange={(e) => setInterviewNotes(e.target.value)}
                                         placeholder="Any additional information for the candidate..."
                                         className="rounded-xl min-h-[80px] resize-none"
+                                        maxLength={2000}
                                     />
                                 </div>
                             </div>
@@ -833,7 +1030,7 @@ export default function CandidatesPage() {
                                     disabled={!interviewDate || !interviewTime || isSending}
                                 >
                                     {isSending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />}
-                                    Send Invitation
+                                    Send Invitation Notification
                                 </Button>
                             </div>
                         </motion.div>

@@ -28,6 +28,7 @@ import {
 } from "lucide-react"
 import { format, startOfDay } from "date-fns"
 import { cn } from "@/lib/utils"
+import { toast } from "sonner"
 
 interface InternshipModalProps {
     open: boolean
@@ -138,7 +139,7 @@ export function InternshipModal({ open, onClose, onCreate }: InternshipModalProp
             if (end && end < today) {
                 newErrors.applicationEnd = ["End date cannot be in the past"]
             }
-            if (start && end && start > end) {
+            if (start && end && start >= end) {
                 newErrors.applicationEnd = ["End date must be after start date"]
             }
         }
@@ -185,11 +186,13 @@ export function InternshipModal({ open, onClose, onCreate }: InternshipModalProp
                 qualifications: formValues.qualifications || null,
                 paid: formValues.paid,
                 salary: formValues.paid && formValues.salary ? Number.parseFloat(formValues.salary) : null,
-                applicationStart: formValues.applicationStart?.toISOString().split("T")[0] ?? "",
-                applicationEnd: formValues.applicationEnd?.toISOString().split("T")[0] ?? "",
+                applicationStart: formValues.applicationStart ? format(formValues.applicationStart, "yyyy-MM-dd") : "",
+                applicationEnd: formValues.applicationEnd ? format(formValues.applicationEnd, "yyyy-MM-dd") : "",
                 testAssignmentTitle: formValues.testAssignmentTitle || null,
                 testAssignmentDescription: formValues.testAssignmentDescription || null,
-                testAssignmentDueDate: formValues.testAssignmentDueDate?.toISOString().split("T")[0] ?? null,
+                testAssignmentDueDate: formValues.testAssignmentDueDate
+                    ? format(formValues.testAssignmentDueDate, "yyyy-MM-dd")
+                    : null,
             }
 
             const res = await fetch("/api/internships", {
@@ -206,11 +209,16 @@ export function InternshipModal({ open, onClose, onCreate }: InternshipModalProp
             } else {
                 const errData = await res.json().catch(() => ({}))
                 console.error("API Error:", errData)
-                alert(errData.message || errData.errors ? JSON.stringify(errData.errors) : "Failed to create internship")
+                const fieldErrors =
+                    errData && typeof errData.errors === "object" && errData.errors !== null
+                        ? (Object.values(errData.errors).flat() as unknown[])
+                        : []
+                const firstFieldError = fieldErrors.find((e): e is string => typeof e === "string" && e.length > 0)
+                toast.error(firstFieldError ?? errData.error ?? errData.message ?? "Failed to create internship")
             }
         } catch (error) {
             console.error(error)
-            alert("Failed to create internship")
+            toast.error("Failed to create internship")
         } finally {
             setIsLoading(false)
         }
@@ -225,7 +233,7 @@ export function InternshipModal({ open, onClose, onCreate }: InternshipModalProp
         (date: Date) => {
             const d = startOfDay(date)
             if (d < today) return true
-            if (formValues.applicationStart && d < startOfDay(formValues.applicationStart)) return true
+            if (formValues.applicationStart && d <= startOfDay(formValues.applicationStart)) return true
             return false
         },
         [formValues.applicationStart, today]

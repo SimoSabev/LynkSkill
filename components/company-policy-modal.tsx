@@ -9,7 +9,11 @@ interface CompanyPolicyModalProps {
     open: boolean
     onOpenChange: (open: boolean) => void
     companyId?: string | null
-    onAccept: () => void
+    /**
+     * Called when the user agrees. The caller performs the (single) request to
+     * /api/company/accept-policies; throw an Error to show its message in the modal.
+     */
+    onAccept: () => Promise<void> | void
     tosChecked: boolean
     privacyChecked: boolean
     onTosChange: (v: boolean) => void
@@ -39,27 +43,11 @@ export function CompanyPolicyModal({
 
         try {
             setLoading(true)
-            const res = await fetch("/api/company/accept-policies", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    companyId,
-                    tosAccepted: tosChecked,
-                    privacyAccepted: privacyChecked,
-                }),
-            })
-
-            const data = await res.json()
-            if (!res.ok) {
-                setError(data?.error || "Failed to save")
-                return
-            }
-
+            await onAccept()
             onOpenChange(false)
-            onAccept()
         } catch (err) {
             console.error(err)
-            setError("Network error")
+            setError(err instanceof Error && err.message ? err.message : "Failed to save")
         } finally {
             setLoading(false)
         }
