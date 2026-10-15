@@ -1,0 +1,78 @@
+# Scheduled maintenance jobs.
+# Vercel Hobby limits cron jobs, so they run from GitHub Actions instead.
+# Each endpoint is protected by CRON_SECRET (lib/api-guards.ts → isAuthorizedCron):
+# set the same value in Vercel (Project → Settings → Environment Variables) and in
+# GitHub (Settings → Secrets and variables → Actions → CRON_SECRET).
+name: Scheduled jobs
+
+on:
+  schedule:
+    # Times are UTC (Bulgaria is UTC+2 in winter, UTC+3 in summer)
+    - cron: "0 1 * * *"   # expire-internships
+    - cron: "30 1 * * *"  # cleanup
+    - cron: "0 2 * * *"   # matchmaker
+    - cron: "0 3 * * *"   # auto-apply
+  workflow_dispatch:
+    inputs:
+      job:
+        description: "Job to run now"
+        required: true
+        type: choice
+        options:
+          - expire-internships
+          - cleanup
+          - matchmaker
+          - auto-apply
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scheduled-${{ github.event.schedule || inputs.job }}
+  cancel-in-progress: false
+
+env:
+  BASE_URL: https://lynkskill.net
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Pick job
+        id: pick
+        env:
+          SCHEDULE: ${{ github.event.schedule }}
+          INPUT_JOB: ${{ inputs.job }}
+        run: |
+          case "${INPUT_JOB:-$SCHEDULE}" in
+            "expire-internships"|"0 1 * * *")  echo "method=GET"  >> "$GITHUB_OUTPUT"; echo "path=/api/cron/expire-internships" >> "$GITHUB_OUTPUT" ;;
+            "cleanup"|"30 1 * * *")            echo "method=GET"  >> "$GITHUB_OUTPUT"; echo "path=/api/cleanup" >> "$GITHUB_OUTPUT" ;;
+            "matchmaker"|"0 2 * * *")          echo "method=GET"  >> "$GITHUB_OUTPUT"; echo "path=/api/cron/matchmaker" >> "$GITHUB_OUTPUT" ;;
+            "auto-apply"|"0 3 * * *")          echo "method=POST" >> "$GITHUB_OUTPUT"; echo "path=/api/cron/auto-apply" >> "$GITHUB_OUTPUT" ;;
+            *) echo "Unknown job: '${INPUT_JOB:-$SCHEDULE}'"; exit 1 ;;
+          esac
+
+      - name: Call ${{ steps.pick.outputs.path }}
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          METHOD: ${{ steps.pick.outputs.method }}
+          URL_PATH: ${{ steps.pick.outputs.path }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::CRON_SECRET is not set in GitHub Actions secrets"
+            exit 1
+          fi
+          # No -L: a redirect would drop the Authorization header, so treat it as a failure.
+          # matchmaker can run up to 300s (maxDuration).
+          status=$(curl -sS -o response.txt -w "%{http_code}" \
+            --max-time 320 \
+            -X "$METHOD" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$BASE_URL$URL_PATH")
+          echo "HTTP $status"
+          head -c 2000 response.txt; echo
+          if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
+            echo "::error::$METHOD $URL_PATH returned HTTP $status"
+            exit 1
+          fi

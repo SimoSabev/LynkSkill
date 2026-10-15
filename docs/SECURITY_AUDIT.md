@@ -42,9 +42,11 @@ Shared helpers: `lib/api-guards.ts` (`requireDbUser`, `requireCompanyAccess`, `i
 
 ## Requires action (cannot be done from code)
 
-1. **Set `CRON_SECRET`** in the Vercel project env. Without it all cron routes and `/api/cleanup` return 401
-   (fail closed). Vercel Cron sends `Authorization: Bearer $CRON_SECRET` automatically; there is no
-   `vercel.json` in the repo, so schedule `/api/cleanup`, `/api/cron/*` in the dashboard or add one.
+1. **Set `CRON_SECRET`** (any long random string, e.g. `openssl rand -hex 32`) in **both** places:
+   Vercel → Project → Settings → Environment Variables (then redeploy), and GitHub → Settings →
+   Secrets and variables → Actions. Without it all cron routes and `/api/cleanup` return 401 (fail closed).
+   The jobs are scheduled by `.github/workflows/cron.yml` (daily, UTC) instead of Vercel Cron because of the
+   Hobby plan limits; they can also be run by hand from the Actions tab ("Run workflow").
    Before this change the cron routes were redirected by middleware (no Clerk session), i.e. they did not run.
 2. **Agent confirmations** are signed with `AI_ACTION_SECRET` (falls back to `CLERK_SECRET_KEY`). Set a
    dedicated `AI_ACTION_SECRET` if you rotate Clerk keys independently.
