@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { openai } from "@/lib/openai";
+import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit";
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -175,6 +176,14 @@ export async function POST(req: Request): Promise<NextResponse> {
       return NextResponse.json(
         { error: "Unauthorized: Please sign in to access the AI assistant." },
         { status: 401 }
+      );
+    }
+
+    const rateLimit = checkRateLimit(`assistant-chat:${userId}`, { limit: 20, windowSeconds: 60 });
+    if (!rateLimit.success) {
+      return NextResponse.json(
+        { error: "Too many requests. Please slow down." },
+        { status: 429, headers: rateLimitHeaders(rateLimit) }
       );
     }
 

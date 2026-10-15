@@ -32,6 +32,9 @@ type ApiProject = {
     } | null
 }
 
+// /api/projects also returns `assignment` (with its id); the context type does not declare it
+type ContextAssignment = { id?: string; title: string; description: string; dueDate: string }
+
 
 interface ActiveProjectsSectionProps {
     setActiveTab?: (tab: string) => void
@@ -53,27 +56,57 @@ export function ActiveAssignmentsSection({ setActiveTab, userType = "Student" }:
             router.push(`${basePath}/experience`)
         }
     }
+
+    const handleOpenProject = (proj: ApiProject) => {
+        if (proj.assignment?.id) {
+            router.push(`/assignments/${proj.assignment.id}`)
+        } else {
+            handleNavigateToProjects()
+        }
+    }
     
     // Use centralized context - no more individual fetches
     const { projects: contextProjects, isLoadingProjects } = useDashboard()
 
     // Transform context projects to match expected ApiProject type
     const projects = useMemo(() => {
-        return contextProjects.map(p => ({
-            id: p.id,
-            internship: {
-                title: p.internship.title,
-                company: p.internship.company,
-                startDate: p.internship.startDate ?? null,
-                endDate: p.internship.endDate ?? null,
-            },
-            student: { 
-                name: p.student.profile?.name || p.student.email, 
-                email: p.student.email 
-            },
-            status: (p.application?.status === "APPROVED" ? "ONGOING" : "PENDING") as "ONGOING" | "COMPLETED" | "PENDING",
-            createdAt: p.createdAt,
-        })) as ApiProject[]
+        return contextProjects.map(p => {
+            const apiAssignment = (p as typeof p & { assignment?: ContextAssignment | null }).assignment
+            // Fallback for data that only carries the internship's assignments list
+            const related = apiAssignment ?? p.internship.assignments?.find(a => a.studentId === p.studentId) ?? null
+            const appStatus = p.application?.status
+            const status: ApiProject["status"] = appStatus
+                ? appStatus === "APPROVED"
+                    ? "ONGOING"
+                    : appStatus === "REJECTED"
+                        ? "COMPLETED"
+                        : "PENDING"
+                : p.status ?? "PENDING"
+
+            return {
+                id: p.id,
+                internship: {
+                    title: p.internship.title,
+                    company: p.internship.company,
+                    startDate: p.internship.startDate ?? null,
+                    endDate: p.internship.endDate ?? null,
+                },
+                student: {
+                    name: p.student.name || p.student.profile?.name || p.student.email,
+                    email: p.student.email
+                },
+                status,
+                createdAt: p.createdAt,
+                assignment: related
+                    ? {
+                        id: "id" in related ? related.id : undefined,
+                        title: related.title,
+                        description: related.description,
+                        dueDate: related.dueDate,
+                    }
+                    : null,
+            }
+        }) as ApiProject[]
     }, [contextProjects])
 
     const isLoading = isLoadingProjects
@@ -210,7 +243,7 @@ export function ActiveAssignmentsSection({ setActiveTab, userType = "Student" }:
                 </Card>
             ) : (
                 <div className="space-y-4">
-                    {projects
+                    {[...projects]
                         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) // newest first
                         .slice(0, 3)
                         .map((proj) => {
@@ -219,6 +252,16 @@ export function ActiveAssignmentsSection({ setActiveTab, userType = "Student" }:
                             return (
                                 <div
                                     key={proj.id}
+                                    onClick={() => handleOpenProject(proj)}
+                                    role="link"
+                                    tabIndex={0}
+                                    onKeyDown={(e) => {
+                                        if (e.target !== e.currentTarget) return
+                                        if (e.key === "Enter" || e.key === " ") {
+                                            e.preventDefault()
+                                            handleOpenProject(proj)
+                                        }
+                                    }}
                                     className="cursor-pointer"
                                 >
                                     <Card className="hover:shadow-md transition-shadow duration-150 group border border-border hover:border-purple-500/30 rounded-xl overflow-hidden">

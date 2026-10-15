@@ -304,7 +304,7 @@ export default function InternshipDetailsModal({internshipId, open, onClose}: In
                                             </Badge>
                                             {internship.company.website && (
                                                 <a
-                                                    href={internship.company.website}
+                                                    href={/^https?:\/\//i.test(internship.company.website) ? internship.company.website : `https://${internship.company.website}`}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     className="inline-flex items-center gap-1 text-xs text-blue-500 hover:text-blue-400 transition-colors"

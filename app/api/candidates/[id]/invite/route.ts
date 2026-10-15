@@ -20,7 +20,8 @@ export async function POST(
             type = "video", 
             location: _location, 
             notes,
-            positionTitle 
+            positionTitle,
+            timeZone
         } = await req.json()
 
         if (!scheduledAt) {
@@ -51,14 +52,25 @@ export async function POST(
 
         const candidateName = candidate.profile?.name || candidate.portfolio?.fullName || "Candidate"
         const interviewDate = new Date(scheduledAt)
-        const formattedDate = interviewDate.toLocaleDateString('en-US', { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
+        const dateFormatOptions: Intl.DateTimeFormatOptions = {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
             day: 'numeric',
             hour: '2-digit',
-            minute: '2-digit'
-        })
+            minute: '2-digit',
+            timeZoneName: 'short'
+        }
+        // Format in the inviting company's time zone (the server runs in UTC); fall back if invalid
+        let formattedDate: string
+        try {
+            formattedDate = interviewDate.toLocaleString('en-US', {
+                ...dateFormatOptions,
+                timeZone: typeof timeZone === "string" && timeZone ? timeZone : "UTC"
+            })
+        } catch {
+            formattedDate = interviewDate.toLocaleString('en-US', { ...dateFormatOptions, timeZone: "UTC" })
+        }
 
         // Create notification for the candidate (interview invitation)
         const notification = await prisma.notification.create({

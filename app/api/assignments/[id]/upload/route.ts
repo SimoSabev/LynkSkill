@@ -2,18 +2,12 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { createClient } from "@supabase/supabase-js"
 import { currentUser } from "@clerk/nextjs/server"
-import slugify from "slugify"
+import { MAX_FILES_PER_REQUEST, UPLOAD_RULES, safeStorageName, validateUpload } from "@/lib/upload-utils"
 
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
-
-const sanitizeFileName = (name: string) => {
-    const [base, ext] = name.split(/\.(?=[^\.]+$)/)
-    const safeBase = slugify(base, { lower: true, strict: true })
-    return `${safeBase}.${ext || ""}`
-}
 
 export async function POST(
     req: Request,
@@ -46,43 +40,34 @@ export async function POST(
             return NextResponse.json({ error: "Assignment not found" }, { status: 404 })
         }
 
-        // STUDENT ACCESS
-        if (dbUser.role === "STUDENT") {
-            if (assignment.studentId !== dbUser.id) {
-                return NextResponse.json(
-                    { error: "Forbidden: not your assignment" },
-                    { status: 403 }
-                )
-            }
-        }
-
-        // COMPANY ACCESS
-        if (dbUser.role === "COMPANY") {
-            const company = await prisma.company.findFirst({
-                where: { ownerId: dbUser.id },
-            })
-
-            if (!company || assignment.internship.companyId !== company.id) {
-                return NextResponse.json(
-                    { error: "Forbidden: not your internship" },
-                    { status: 403 }
-                )
-            }
+        // Only the assigned student submits work. A company uploading here would
+        // count as a "submission" and unlock approval/messaging gates.
+        if (dbUser.role !== "STUDENT" || assignment.studentId !== dbUser.id) {
+            return NextResponse.json(
+                { error: "Forbidden: not your assignment" },
+                { status: 403 }
+            )
         }
 
         const formData = await req.formData()
-        const files = formData.getAll("files") as File[]
+        const files = formData.getAll("files").filter((f): f is File => f instanceof File)
 
         if (!files.length) {
             return NextResponse.json({ error: "No files provided" }, { status: 400 })
         }
+        if (files.length > MAX_FILES_PER_REQUEST) {
+            return NextResponse.json({ error: `Max ${MAX_FILES_PER_REQUEST} files per upload` }, { status: 400 })
+        }
+        for (const file of files) {
+            const invalid = validateUpload(file, UPLOAD_RULES.assignment)
+            if (invalid) return NextResponse.json({ error: invalid }, { status: 400 })
+        }
 
         const uploadedFilesData = []
 
-        for (const file of files) {
+        for (const [index, file] of files.entries()) {
             const buffer = Buffer.from(await file.arrayBuffer())
-            const safeName = sanitizeFileName(file.name)
-            const filePath = `${assignmentId}/${Date.now()}-${safeName}`
+            const filePath = `${assignmentId}/${Date.now()}-${index}-${safeStorageName(file.name)}`
 
             const { error: uploadError } = await supabase.storage
                 .from("assignments-files")
@@ -111,7 +96,7 @@ export async function POST(
     } catch (err) {
         console.error("Upload error:", err)
         return NextResponse.json(
-            { error: err instanceof Error ? err.message : "Upload failed" },
+            { error: "Upload failed" },
             { status: 500 }
         )
     }

@@ -170,7 +170,7 @@ export async function POST(
             type: "NEW_MESSAGE",
             title: "New Message",
             message: `${senderName} sent you a message about "${conversation.application.internship.title}"`,
-            link: `/dashboard/${isStudent ? "company" : "student"}/messages`
+            link: `/dashboard/${isStudent ? "company" : "student"}/messages?conversation=${conversationId}`
         })
 
         return NextResponse.json(message, { status: 201 })

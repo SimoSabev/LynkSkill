@@ -3,6 +3,11 @@ import { openai } from "@/lib/openai"
 import { searchAcrossSessions } from "@/lib/ai/ai-search"
 import { normalizeSkills } from "@/lib/ai/skill-taxonomy"
 import { calculateAndSaveConfidenceScore } from "@/lib/confidence-score"
+import {
+    createTestAssignmentForApplication,
+    ensureProjectForApprovedApplication,
+    getApprovalBlocker,
+} from "@/lib/services/applications"
 
 export interface UserContext {
     userId: string
@@ -135,10 +140,10 @@ async function searchInternships(
                               { qualifications: { contains: query, mode: "insensitive" as const } },
                           ],
                       }
-                    : {},
+                    : { id: { in: [] } }, // no company -> match nothing
                 location
                     ? { location: { contains: location, mode: "insensitive" as const } }
-                    : {},
+                    : { id: { in: [] } }, // no company -> match nothing
             ],
         },
         include: { company: { select: { name: true } } },
@@ -242,7 +247,7 @@ async function getApplications(
             ? { studentId: ctx.userId }
             : ctx.companyId
               ? { internship: { companyId: ctx.companyId } }
-              : {},
+              : { id: { in: [] } }, // no company -> match nothing
         include: {
             internship: { select: { title: true, company: { select: { name: true } } } },
         },
@@ -433,7 +438,7 @@ async function getInterviews(ctx: UserContext): Promise<ToolResult> {
                 ? { studentId: ctx.userId }
                 : ctx.companyId
                   ? { internship: { companyId: ctx.companyId } }
-                  : {},
+                  : { id: { in: [] } }, // no company -> match nothing
         },
         include: {
             application: {
@@ -466,7 +471,7 @@ async function getConversations(ctx: UserContext): Promise<ToolResult> {
         ? { studentId: ctx.userId }
         : ctx.companyId
           ? { companyId: ctx.companyId }
-          : {}
+          : { id: { in: [] } } // no company -> match nothing
 
     const conversations = await prisma.conversation.findMany({
         where: whereClause,
@@ -500,7 +505,7 @@ async function getAssignments(ctx: UserContext): Promise<ToolResult> {
             ? { studentId: ctx.userId }
             : ctx.companyId
               ? { internship: { companyId: ctx.companyId } }
-              : {},
+              : { id: { in: [] } }, // no company -> match nothing
         include: {
             internship: { select: { title: true, company: { select: { name: true } } } },
         },
@@ -582,15 +587,15 @@ async function searchCandidates(
     // Filter and rank: name/email match scores higher, then skill match
     const scored = students
         .map((s) => {
-            const name = (s.portfolio?.fullName || s.profile?.name || s.email || "").toLowerCase()
+            const name = (s.portfolio?.fullName || s.profile?.name || "").toLowerCase()
             const skills = (s.portfolio?.skills || []) as string[]
             const skillsLower = skills.map(sk => sk.toLowerCase())
             const score = s.aiProfile?.confidenceScore?.overallScore ?? 0
 
             if (!query) return { student: s, rank: score }
 
-            // Name / email match
-            if (name.includes(queryLower) || s.email.toLowerCase().includes(queryLower)) {
+            // Name match (no email matching: it would be an email-existence oracle)
+            if (name && name.includes(queryLower)) {
                 return { student: s, rank: 100 + score }
             }
 
@@ -612,7 +617,7 @@ async function searchCandidates(
         title: `${scored.length} candidate${scored.length !== 1 ? "s" : ""} found`,
         data: scored.map(({ student: s }) => ({
             id: s.id,
-            name: s.portfolio?.fullName || s.profile?.name || s.email,
+            name: s.portfolio?.fullName || s.profile?.name || "Candidate",
             headline: s.portfolio?.headline,
             skills: (s.portfolio?.skills || []) as string[],
             confidenceScore: s.aiProfile?.confidenceScore?.overallScore ?? null,
@@ -1214,6 +1219,13 @@ Description: ${internship.description?.slice(0, 300) ?? "N/A"}`,
         },
     })
 
+    // Same side effects as POST /api/applications: the student gets the test task
+    try {
+        await createTestAssignmentForApplication(internshipId, ctx.userId)
+    } catch (err) {
+        console.error("[apply_to_internship] Failed to create test assignment:", err)
+    }
+
     // Notify the company with Linky's AI evaluation
     const companyOwner = internship.company?.id
         ? await prisma.company.findUnique({
@@ -1419,6 +1431,10 @@ async function bulkEvaluateApplications(
         return { tool: "bulk_evaluate_applications", cardType: "error", title: "Missing ID", data: null, success: false, error: "internshipId is required" }
     }
 
+    if (!ctx.companyId) {
+        return { tool: "bulk_evaluate_applications", cardType: "error", title: "No company", data: null, success: false, error: "You are not associated with a company." }
+    }
+
     const internship = await prisma.internship.findUnique({
         where: { id: internshipId, companyId: ctx.companyId },
         select: { title: true, description: true, qualifications: true, skills: true },
@@ -1548,13 +1564,16 @@ async function proposeInterviewSlots(
         return { tool: "propose_interview_slots", cardType: "error", title: "Not found", data: null, success: false, error: "Application not found or not authorized." }
     }
 
-    const slots = args.slots as Array<{ date: string; time: string; durationMinutes?: number }>
+    const slots = (Array.isArray(args.slots) ? args.slots : []) as Array<{ date: string; time: string; durationMinutes?: number }>
     const location = (args.location as string) || "To be confirmed"
     const notes = (args.notes as string) || ""
 
     // Create interview for the first proposed slot
     const firstSlot = slots[0]
-    const scheduledAt = new Date(`${firstSlot.date}T${firstSlot.time}:00`)
+    const scheduledAt = firstSlot ? new Date(`${firstSlot.date}T${firstSlot.time}:00`) : null
+    if (!firstSlot || !scheduledAt || isNaN(scheduledAt.getTime())) {
+        return { tool: "propose_interview_slots", cardType: "error", title: "Invalid slots", data: null, success: false, error: "At least one valid slot (date YYYY-MM-DD, time HH:MM) is required." }
+    }
     const duration = firstSlot.durationMinutes || 30
 
     const interview = await prisma.interview.create({
@@ -1623,10 +1642,17 @@ async function approveApplication(
         return { tool: "approve_application", cardType: "error", title: "Cannot approve", data: null, success: false, error: `Application is already ${app.status}.` }
     }
 
+    // Same rules as PATCH /api/applications/[id]
+    const blocker = await getApprovalBlocker(app.internshipId, app.studentId)
+    if (blocker) {
+        return { tool: "approve_application", cardType: "error", title: "Cannot approve yet", data: null, success: false, error: blocker }
+    }
+
     await prisma.application.update({
         where: { id: applicationId },
         data: { status: "APPROVED" },
     })
+    await ensureProjectForApprovedApplication(applicationId)
 
     const studentName = app.student.portfolio?.fullName ?? app.student.profile?.name ?? "Student"
 

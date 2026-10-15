@@ -5,7 +5,23 @@ import { clerkClient } from "@/lib/clerk"
 import { prisma } from "@/lib/prisma"
 import { sanitizeForDb, schemas } from "@/lib/security"
 import { generateUniqueCompanyCode, isValidCodeFormat, normalizeCode } from "@/lib/company-code"
+import { validateEIK } from "@/lib/validateEIK"
 import { z } from "zod"
+
+const httpUrl = (value: string) => {
+    try {
+        const { protocol } = new URL(value)
+        return protocol === "https:" || protocol === "http:"
+    } catch {
+        return false
+    }
+}
+
+// Logos must be this user's own upload in our storage bucket (see /api/upload-logo)
+const isOwnLogoUrl = (value: string, clerkId: string) => {
+    const base = process.env.NEXT_PUBLIC_SUPABASE_URL
+    return !!base && value.startsWith(`${base.replace(/\/$/, "")}/storage/v1/object/public/logos/company/${clerkId}/`)
+}
 
 // Validation schemas for onboarding
 const studentSchema = z.object({
@@ -18,8 +34,9 @@ const companyFormSchema = z.object({
     companyLocation: schemas.location,
     companyLatitude: z.coerce.number().min(-90).max(90).optional().nullable(),
     companyLongitude: z.coerce.number().min(-180).max(180).optional().nullable(),
-    companyEik: schemas.eik,
-    companyWebsite: schemas.url.optional(),
+    companyEik: schemas.eik.refine(validateEIK, "Invalid EIK"),
+    // Rendered as a link to students: only http(s), never javascript:/data:
+    companyWebsite: schemas.url.optional().refine((v) => !v || httpUrl(v), "Website must start with http:// or https://"),
     companyLogo: z.string().url().optional().nullable(),
 })
 
@@ -46,6 +63,16 @@ export async function completeOnboarding(formData: FormData) {
         roleInput === "team_member" ? "TEAM_MEMBER" : "STUDENT"
 
     try {
+        // Role is chosen exactly once. Without this, any signed-in user could call this
+        // server action again and switch role (e.g. student -> company).
+        const existingUser = await prisma.user.findUnique({
+            where: { clerkId: userId },
+            select: { onboardingComplete: true },
+        })
+        if (existingUser?.onboardingComplete) {
+            return { error: "Onboarding is already complete." }
+        }
+
         // Update Clerk metadata - DON'T mark onboarding complete yet
         // onboardingComplete will be set to true only after policies are accepted
         await clerkClient.users.updateUser(userId, {
@@ -139,6 +166,10 @@ export async function completeOnboarding(formData: FormData) {
             }
 
             const { companyName, companyDescription, companyLocation, companyLatitude, companyLongitude, companyEik, companyWebsite, companyLogo } = validation.data
+
+            if (companyLogo && !isOwnLogoUrl(companyLogo, userId)) {
+                return { error: "Invalid logo URL" }
+            }
 
             const existing = await prisma.company.findFirst({
                 where: { ownerId: user.id },

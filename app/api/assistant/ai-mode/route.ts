@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { auth } from "@clerk/nextjs/server"
 import { saveConversationTurn } from "@/lib/ai/ai-memory"
 import { resolveEnhancedUserContext } from "@/lib/ai/user-context"
+import { checkRateLimit, rateLimitHeaders } from "@/lib/rate-limit"
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
@@ -140,19 +141,37 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
         }
 
+        const rateLimit = checkRateLimit(`ai-mode:${userId}`, { limit: 20, windowSeconds: 60 })
+        if (!rateLimit.success) {
+            return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429, headers: rateLimitHeaders(rateLimit) })
+        }
+
         const body = await req.json()
-        const { message, conversationHistory, phase, userType, locale, sessionId } = body as {
-            message: string
-            conversationHistory: ConversationMessage[]
-            phase: ChatPhase
-            userType: "student" | "company"
+        const { locale, sessionId } = body as {
             locale?: "en" | "bg"
             sessionId?: string
         }
+        const message = typeof body.message === "string" ? body.message.slice(0, 4000) : ""
+        if (!message.trim()) {
+            return NextResponse.json({ error: "Message is required" }, { status: 400 })
+        }
+        const phase: ChatPhase = (["intro", "profiling", "deepDive", "complete"] as const).includes(body.phase)
+            ? body.phase
+            : "intro"
+        // Client history: only user/assistant turns (no injected "system" messages), bounded
+        const conversationHistory: ConversationMessage[] = (Array.isArray(body.conversationHistory) ? body.conversationHistory : [])
+            .filter((m: { role?: unknown; content?: unknown }) =>
+                !!m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
+            .slice(-20)
+            .map((m: ConversationMessage) => ({ role: m.role, content: m.content.slice(0, 4000) }))
 
-        // Resolve internal userId for persistence
+        // Resolve internal userId for persistence; persona comes from the DB role, not the client
         const ctxResult = await resolveEnhancedUserContext(userId)
-        const internalUserId = ctxResult.success ? ctxResult.context.userId : null
+        if (!ctxResult.success) {
+            return NextResponse.json({ error: "User not found" }, { status: 403 })
+        }
+        const internalUserId = ctxResult.context.userId
+        const userType: "student" | "company" = ctxResult.context.role === "STUDENT" ? "student" : "company"
 
         // Validate and normalize locale
         const validLocale = locale === "bg" || locale === "en" ? locale : "en"
@@ -335,154 +354,6 @@ async function findMatchingInternships(skills: string[], interests: string[]) {
     }
 }
 
-// Helper function to find matching students for companies
-async function _findMatchingStudents(requiredSkills: string[], field: string) {
-    try {
-        const students = await prisma.user.findMany({
-            where: {
-                role: "STUDENT"
-            },
-            include: {
-                profile: true,
-                portfolio: true,
-                experiences: true,
-                projects: true
-            },
-            take: 50
-        })
-
-        console.log("Searching for skills:", requiredSkills, "Field:", field)
-        console.log("Total students in DB:", students.length)
-
-        // Calculate match scores with proper skill evaluation
-        const matches = students.map(student => {
-            let score = 0
-            const reasons: string[] = []
-            const foundSkills: string[] = []
-
-            // Get student's skills array directly from portfolio
-            const studentSkillsArray = (student.portfolio?.skills || []).map((s: string) => s.toLowerCase())
-            const studentInterests = (student.portfolio?.interests || []).map((s: string) => s.toLowerCase())
-            
-            // Get text content for broader matching
-            const bio = (student.portfolio?.bio || "").toLowerCase()
-            const headline = (student.portfolio?.headline || "").toLowerCase()
-            const experience = (student.portfolio?.experience || "").toLowerCase()
-            const projectsText = student.projects?.map((p: { title: string; description: string; technologies?: string[] }) => 
-                `${p.title} ${p.description} ${(p.technologies || []).join(" ")}`
-            ).join(" ").toLowerCase() || ""
-            
-            const fullText = `${bio} ${headline} ${experience} ${projectsText} ${studentSkillsArray.join(" ")} ${studentInterests.join(" ")}`
-
-            // Match by required skills - weighted scoring
-            for (const skill of requiredSkills) {
-                const skillLower = skill.toLowerCase()
-                
-                // Direct skill match (highest weight)
-                if (studentSkillsArray.some(s => s.includes(skillLower) || skillLower.includes(s))) {
-                    score += 30
-                    foundSkills.push(skill)
-                    reasons.push(`Skilled in ${skill}`)
-                }
-                // Skill in projects (high weight)
-                else if (projectsText.includes(skillLower)) {
-                    score += 20
-                    foundSkills.push(skill)
-                    reasons.push(`${skill} in projects`)
-                }
-                // Skill mentioned elsewhere (medium weight)
-                else if (fullText.includes(skillLower)) {
-                    score += 15
-                    foundSkills.push(skill)
-                    reasons.push(`Experience with ${skill}`)
-                }
-            }
-
-            // Match by field/interest
-            if (field) {
-                const fieldLower = field.toLowerCase()
-                if (studentInterests.some(i => i.includes(fieldLower) || fieldLower.includes(i))) {
-                    score += 15
-                    reasons.push(`Interested in ${field}`)
-                } else if (fullText.includes(fieldLower)) {
-                    score += 10
-                    reasons.push(`Background in ${field}`)
-                }
-            }
-
-            // Bonus for complete portfolio
-            if (student.portfolio?.bio && student.portfolio.bio.length > 50) {
-                score += 5
-                reasons.push("Detailed portfolio")
-            }
-
-            // Bonus for projects (shows practical experience)
-            if (student.projects && student.projects.length > 0) {
-                const projectBonus = Math.min(student.projects.length * 5, 15)
-                score += projectBonus
-                reasons.push(`${student.projects.length} project${student.projects.length > 1 ? 's' : ''}`)
-            }
-
-            // Bonus for work experience
-            if (student.experiences && student.experiences.length > 0) {
-                score += 10
-                reasons.push(`${student.experiences.length} experience${student.experiences.length > 1 ? 's' : ''}`)
-            }
-
-            // Calculate match percentage based on how many required skills matched
-            const skillMatchRatio = requiredSkills.length > 0 
-                ? foundSkills.length / requiredSkills.length 
-                : 0
-            
-            // Adjust score based on skill match ratio
-            if (skillMatchRatio >= 0.8) {
-                score += 10 // Bonus for matching most skills
-            }
-            
-            // Cap at 98
-            score = Math.min(score, 98)
-
-            return {
-                id: student.id,
-                name: student.profile?.name || student.portfolio?.fullName || "Student",
-                email: student.email || "",
-                avatar: undefined,
-                matchPercentage: score,
-                reasons: reasons.length > 0 ? reasons : ["Available candidate"],
-                skills: foundSkills.length > 0 ? foundSkills : studentSkillsArray.slice(0, 5),
-                allSkills: studentSkillsArray,
-                portfolio: {
-                    headline: student.portfolio?.headline || undefined,
-                    about: student.portfolio?.bio || undefined
-                }
-            }
-        })
-
-        // Sort by match percentage and filter
-        const sorted = matches
-            .filter(m => m.matchPercentage > 0) // Must have some match
-            .sort((a, b) => b.matchPercentage - a.matchPercentage)
-            .slice(0, 10)
-        
-        console.log("Matches found:", sorted.length, sorted.map(m => ({ name: m.name, score: m.matchPercentage, skills: m.skills })))
-        
-        // If no matches found, return students with portfolios
-        if (sorted.length === 0) {
-            console.log("No skill matches, returning students with portfolios")
-            return matches
-                .filter(m => m.portfolio?.headline || m.portfolio?.about)
-                .sort((a, b) => b.matchPercentage - a.matchPercentage)
-                .slice(0, 5)
-                .map(m => ({ ...m, matchPercentage: Math.max(m.matchPercentage, 20) }))
-        }
-        
-        return sorted
-
-    } catch (error) {
-        console.error("Error finding students:", error)
-        return []
-    }
-}
 
 // Extract skills from conversation history
 function extractSkillsFromConversation(history: ConversationMessage[], latestMessage: string): string[] {

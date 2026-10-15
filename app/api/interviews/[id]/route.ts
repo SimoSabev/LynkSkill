@@ -71,6 +71,19 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
             return NextResponse.json({ error: "Interview not found" }, { status: 404 })
         }
 
+        // Only the student or an active member of the hiring company may read it
+        const user = await prisma.user.findUnique({ where: { clerkId }, select: { id: true } })
+        const isStudent = !!user && interview.application.student.id === user.id
+        if (!isStudent) {
+            const membership = await getUserCompanyByClerkId(clerkId)
+            const isCompanyMember =
+                membership?.status === "ACTIVE" &&
+                membership.companyId === interview.application.internship.company.id
+            if (!isCompanyMember) {
+                return NextResponse.json({ error: "Interview not found" }, { status: 404 })
+            }
+        }
+
         return NextResponse.json(interview)
     } catch (error) {
         console.error("Error fetching interview:", error)

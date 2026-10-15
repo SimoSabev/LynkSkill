@@ -37,20 +37,27 @@ export async function GET() {
 
 export async function POST(req: Request) {
     try {
-        console.log(" POST /api/portfolio called")
-
         const { userId } = await auth()
-        console.log(" Clerk userId:", userId)
-
         if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
         const student = await prisma.user.findUnique({ where: { clerkId: userId } })
-        console.log(" Found student:", student?.id)
-
-        if (!student) return NextResponse.json({ error: "Student not found" }, { status: 404 })
+        if (!student || student.role !== "STUDENT") return NextResponse.json({ error: "Student not found" }, { status: 404 })
 
         const body = await req.json()
-        console.log(" Request body received:", JSON.stringify(body, null, 2))
+
+        // Profile links are rendered as <a href> for companies: only http(s)
+        for (const field of ["linkedin", "github", "portfolioUrl"] as const) {
+            const value = body[field]
+            if (value === undefined || value === null || value === "") continue
+            let ok = false
+            try {
+                const { protocol } = new URL(String(value))
+                ok = protocol === "https:" || protocol === "http:"
+            } catch {}
+            if (!ok) {
+                return NextResponse.json({ error: `Invalid URL for ${field}` }, { status: 400 })
+            }
+        }
 
         // Validate years in education
         if (body.education && Array.isArray(body.education)) {
@@ -123,11 +130,9 @@ export async function POST(req: Request) {
             }
         }
 
-        const needsApproval = Boolean(body.age && body.age < 18)
-
-        console.log(" Needs approval:", needsApproval)
-
-        console.log(" Attempting upsert to database...")
+        // age / approvalStatus / needsApproval are NOT taken from the client: they are
+        // derived from the DOB at onboarding. Accepting age=18 here would let a minor
+        // self-approve their portfolio.
         const portfolio = await prisma.portfolio.upsert({
             where: {
                 studentId: student.id,
@@ -135,7 +140,6 @@ export async function POST(req: Request) {
             update: {
                 fullName: body.fullName,
                 headline: body.headline,
-                age: body.age,
                 bio: body.bio,
                 skills: body.skills,
                 interests: body.interests,
@@ -146,8 +150,6 @@ export async function POST(req: Request) {
                 linkedin: body.linkedin,
                 github: body.github,
                 portfolioUrl: body.portfolioUrl,
-                approvalStatus: needsApproval ? "PENDING" : "APPROVED",
-                needsApproval: needsApproval,
             },
             create: {
                 student: {
@@ -157,7 +159,6 @@ export async function POST(req: Request) {
                 },
                 fullName: body.fullName,
                 headline: body.headline,
-                age: body.age,
                 bio: body.bio,
                 skills: body.skills,
                 interests: body.interests,
@@ -168,12 +169,9 @@ export async function POST(req: Request) {
                 linkedin: body.linkedin,
                 github: body.github,
                 portfolioUrl: body.portfolioUrl,
-                approvalStatus: needsApproval ? "PENDING" : "APPROVED",
-                needsApproval: needsApproval,
             },
         })
 
-        console.log(" Portfolio saved successfully:", portfolio.id)
         return NextResponse.json(portfolio)
     } catch (err) {
         console.error(" Error in POST /api/portfolio:", err)

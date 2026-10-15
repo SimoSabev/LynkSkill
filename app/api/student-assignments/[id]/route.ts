@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { currentUser } from "@clerk/nextjs/server"
+import { getUserCompany } from "@/lib/permissions"
 
 export async function GET(
     request: Request,
@@ -44,19 +45,17 @@ export async function GET(
             )
         }
 
-        // Access control
-        if (dbUser.role === "STUDENT" && assignment.studentId !== dbUser.id) {
-            return NextResponse.json(
-                { error: "Forbidden: this is not your assignment" },
-                { status: 403 }
-            )
-        }
-
-        if (dbUser.role === "COMPANY") {
-            const owns = assignment.internship.companyId === dbUser.id
-            if (!owns) {
+        // Access control: the assigned student, or an active member of the hiring company.
+        // (Previously TEAM_MEMBER matched neither branch and skipped the check entirely,
+        // and the company branch compared a company id with a user id.)
+        if (assignment.studentId !== dbUser.id) {
+            const membership = await getUserCompany(dbUser.id)
+            const isCompanyMember =
+                membership?.status === "ACTIVE" &&
+                membership.companyId === assignment.internship.companyId
+            if (!isCompanyMember) {
                 return NextResponse.json(
-                    { error: "Forbidden: this internship does not belong to you" },
+                    { error: "Forbidden: this is not your assignment" },
                     { status: 403 }
                 )
             }

@@ -36,8 +36,13 @@ export function LeaderboardTabContent() {
         async function loadStudents() {
             try {
                 const res = await fetch("/api/leaderboard")
-                const data = await res.json()
-                setStudents(data)
+                if (!res.ok) {
+                    console.error("Failed to fetch leaderboard: HTTP", res.status)
+                    setStudents([])
+                    return
+                }
+                const data: unknown = await res.json()
+                setStudents(Array.isArray(data) ? (data as StudentRank[]) : [])
             } catch (err) {
                 console.error("Failed to fetch leaderboard", err)
             } finally {
@@ -197,7 +202,9 @@ export function LeaderboardTabContent() {
                                                     >
                                                         {student.name}
                                                     </h3>
-                                                    <p className="text-xs sm:text-sm text-muted-foreground truncate px-2">{student.email}</p>
+                                                    {student.email && (
+                                                        <p className="text-xs sm:text-sm text-muted-foreground truncate px-2">{student.email}</p>
+                                                    )}
                                                 </div>
 
                                                 <div className="w-full space-y-3 sm:space-y-4">
@@ -322,7 +329,9 @@ export function LeaderboardTabContent() {
                                                     </div>
                                                     <div className="flex-1 min-w-0">
                                                         <h4 className="font-semibold text-sm sm:text-base truncate">{student.name}</h4>
-                                                        <p className="text-xs text-muted-foreground truncate">{student.email}</p>
+                                                        {student.email && (
+                                                            <p className="text-xs text-muted-foreground truncate">{student.email}</p>
+                                                        )}
                                                     </div>
                                                 </div>
 

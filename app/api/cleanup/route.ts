@@ -1,25 +1,17 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { isAuthorizedCron } from "@/lib/api-guards";
+import { deleteExpiredApplications } from "@/lib/cleanup-utils";
 
-export async function GET() {
+// GET /api/cleanup - scheduled maintenance (run daily by a cron with CRON_SECRET).
+// Public in middleware (cron has no Clerk session), so it is protected by CRON_SECRET.
+export async function GET(req: Request) {
+    if (!isAuthorizedCron(req)) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     try {
-        const expiredApplications = await prisma.application.findMany({
-            where: { internship: { testAssignmentDueDate: { lt: new Date() } } },
-        });
-
-        for (const app of expiredApplications) {
-            await prisma.experience.deleteMany({
-                where: { project: { applicationId: app.id } },
-            });
-            await prisma.project.deleteMany({
-                where: { applicationId: app.id },
-            });
-            await prisma.application.delete({
-                where: { id: app.id },
-            });
-        }
-
-        return NextResponse.json({ message: "Cleanup completed" });
+        const result = await deleteExpiredApplications();
+        return NextResponse.json({ message: "Cleanup completed", ...result });
     } catch (error) {
         console.error(error);
         return NextResponse.json({ error: "Cleanup failed" }, { status: 500 });

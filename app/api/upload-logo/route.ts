@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { checkRateLimit, getClientIp, rateLimitHeaders, RATE_LIMITS } from "@/lib/rate-limit";
 import { Permission } from "@prisma/client";
 import { checkPermission, getUserCompanyByClerkId } from "@/lib/permissions";
+import { UPLOAD_RULES, safeStorageName, validateUpload } from "@/lib/upload-utils";
 
 // ✅ Ensure this is a route handler, not a Server Action
 export async function POST(req: Request) {
@@ -26,19 +27,28 @@ export async function POST(req: Request) {
         if (!clerkId)
             return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: rateLimitHeaders(rateLimit) });
 
-        // Check membership and EDIT_COMPANY permission
+        // Check membership and EDIT_COMPANY permission.
+        // During onboarding the company does not exist yet: the logo is uploaded first and
+        // its URL is passed to completeOnboarding, which only accepts URLs under this
+        // user's own "company/<clerkId>/" prefix.
         const membership = await getUserCompanyByClerkId(clerkId);
-        if (!membership) {
-            return NextResponse.json({ error: "Company membership not found" }, { status: 404 });
-        }
-
-        const hasPermission = await checkPermission(
-            membership.userId,
-            membership.companyId,
-            Permission.EDIT_COMPANY
-        );
-        if (!hasPermission) {
-            return NextResponse.json({ error: "You don't have permission to update company logo" }, { status: 403 });
+        if (membership) {
+            const hasPermission = await checkPermission(
+                membership.userId,
+                membership.companyId,
+                Permission.EDIT_COMPANY
+            );
+            if (!hasPermission) {
+                return NextResponse.json({ error: "You don't have permission to update company logo" }, { status: 403 });
+            }
+        } else {
+            const user = await prisma.user.findUnique({
+                where: { clerkId },
+                select: { onboardingComplete: true },
+            });
+            if (user?.onboardingComplete) {
+                return NextResponse.json({ error: "Company membership not found" }, { status: 404 });
+            }
         }
 
         const formData = await req.formData();
@@ -46,16 +56,16 @@ export async function POST(req: Request) {
         if (!file)
             return NextResponse.json({ error: "No file provided" }, { status: 400 });
 
-        // ✅ Validate file type
-        const validTypes = ["image/jpeg", "image/png", "image/webp"];
-        if (!validTypes.includes(file.type)) {
-            return NextResponse.json({ error: "Invalid file type" }, { status: 400 });
+        // ✅ Validate file type and size
+        const invalid = validateUpload(file, UPLOAD_RULES.logo);
+        if (invalid) {
+            return NextResponse.json({ error: invalid }, { status: 400 });
         }
 
         // ✅ Convert to buffer
         const buffer = Buffer.from(await file.arrayBuffer());
         const timestamp = Date.now();
-        const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
+        const safeName = safeStorageName(file.name);
         const filePath = `company/${clerkId}/${timestamp}-${safeName}`;
 
         // ✅ Initialize Supabase client (service key required)
@@ -92,14 +102,16 @@ export async function POST(req: Request) {
                 { status: 500 }
             );
 
-        // ✅ Update company logo
-        try {
-            await prisma.company.update({
-                where: { id: membership.companyId },
-                data: { logo: logoUrl },
-            });
-        } catch (dbErr) {
-            console.warn("Prisma update failed:", dbErr);
+        // ✅ Update company logo (only once the company exists)
+        if (membership) {
+            try {
+                await prisma.company.update({
+                    where: { id: membership.companyId },
+                    data: { logo: logoUrl },
+                });
+            } catch (dbErr) {
+                console.warn("Prisma update failed:", dbErr);
+            }
         }
 
         return NextResponse.json({ success: true, logoUrl });

@@ -7,10 +7,10 @@ import {
     CheckCircle2, XCircle, Building2, User, Users, Search,
     Calendar, MessageSquare, Star, BookOpen, FileText,
     TrendingUp, Bookmark, ChevronRight, Bell, History, Rocket,
-    ThumbsUp, ThumbsDown
+    ThumbsUp, ThumbsDown, ShieldCheck, Loader2
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
-import { cn } from "@/lib/utils"
+import { cn, safeExternalUrl } from "@/lib/utils"
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -72,6 +72,8 @@ export function AgentActionCard({ result, onAction }: AgentActionCardProps) {
             return <NotificationListCard title={title} items={data as NotificationItem[]} />
         case "application-detail":
             return <ApplicationDetailCard data={data as ApplicationDetailData} onAction={onAction} />
+        case "confirm-action":
+            return <ConfirmActionCard title={title} data={data as ConfirmActionData} onAction={onAction} />
         case "auto-apply-settings":
             return <AutoApplySettingsCard title={title} data={data as { enabled: boolean; threshold: number; autoApplyCount: number; message: string }} onAction={onAction} />
         case "error":
@@ -692,12 +694,12 @@ function PortfolioCard({ data, onAction }: { data: PortfolioData; onAction?: (p:
                 )}
                 <div className="flex flex-wrap gap-3 text-[10px] text-muted-foreground">
                     {data.linkedin && (
-                        <a href={data.linkedin} target="_blank" rel="noopener noreferrer" className="flex items-center gap-0.5 hover:text-primary transition-colors">
+                        <a href={safeExternalUrl(data.linkedin)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-0.5 hover:text-primary transition-colors">
                             <ExternalLink className="h-3 w-3" /> LinkedIn
                         </a>
                     )}
                     {data.github && (
-                        <a href={data.github} target="_blank" rel="noopener noreferrer" className="flex items-center gap-0.5 hover:text-primary transition-colors">
+                        <a href={safeExternalUrl(data.github)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-0.5 hover:text-primary transition-colors">
                             <ExternalLink className="h-3 w-3" /> GitHub
                         </a>
                     )}
@@ -769,6 +771,96 @@ function SuccessCard({ title, data }: { title: string; data: Record<string, unkn
                     ))}
                 </div>
             )}
+        </CardWrapper>
+    )
+}
+
+// ─── Confirm Action Card ────────────────────────────────────────────────────
+// State-changing agent actions only run after the user confirms here
+// (server: lib/ai/action-confirmation.ts, /api/assistant/agent/confirm).
+
+interface ConfirmActionData {
+    token: string
+    toolName: string
+    args: Record<string, unknown>
+}
+
+const HIDDEN_ACTION_ARGS = new Set(["userId", "companyId"])
+
+function ConfirmActionCard({ title, data, onAction }: { title: string; data: ConfirmActionData; onAction?: (p: string) => void }) {
+    const [state, setState] = useState<"pending" | "running" | "done" | "cancelled">("pending")
+    const [outcome, setOutcome] = useState<ToolResult | null>(null)
+    const [error, setError] = useState<string | null>(null)
+
+    const details = Object.entries(data.args || {}).filter(
+        ([key, value]) => !HIDDEN_ACTION_ARGS.has(key) && value !== null && value !== undefined && value !== ""
+    )
+
+    const confirm = async () => {
+        setState("running")
+        setError(null)
+        try {
+            const res = await fetch("/api/assistant/agent/confirm", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ token: data.token }),
+            })
+            const json = await res.json().catch(() => ({}))
+            if (!res.ok || !json.result) {
+                setError(json.error || "Action failed")
+                setState("pending")
+                return
+            }
+            setOutcome(json.result as ToolResult)
+            setState("done")
+        } catch {
+            setError("Network error")
+            setState("pending")
+        }
+    }
+
+    if (state === "done" && outcome) {
+        return <AgentActionCard result={outcome} onAction={onAction} />
+    }
+
+    return (
+        <CardWrapper className="border-amber-500/30">
+            <div className="flex items-center gap-2 px-3 py-2 bg-amber-500/10">
+                <ShieldCheck className="h-4 w-4 text-amber-500" />
+                <span className="text-xs font-semibold text-amber-600 dark:text-amber-400">{title}</span>
+            </div>
+            <div className="px-3 py-2 space-y-1">
+                {details.map(([key, value]) => (
+                    <p key={key} className="text-[11px] text-muted-foreground break-words">
+                        <span className="font-medium text-foreground">
+                            {key.replace(/([A-Z])/g, " $1").replace(/^./, c => c.toUpperCase())}:
+                        </span>{" "}
+                        {typeof value === "object" ? JSON.stringify(value) : String(value)}
+                    </p>
+                ))}
+                {error && <p className="text-[11px] text-red-500">{error}</p>}
+                {state === "cancelled" ? (
+                    <p className="text-[11px] text-muted-foreground italic">Cancelled</p>
+                ) : (
+                    <div className="flex gap-2 pt-1">
+                        <button
+                            onClick={confirm}
+                            disabled={state === "running"}
+                            className="flex items-center gap-1 rounded-md bg-primary px-2.5 py-1 text-[11px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+                        >
+                            {state === "running" && <Loader2 className="h-3 w-3 animate-spin" />}
+                            Confirm
+                        </button>
+                        <button
+                            onClick={() => setState("cancelled")}
+                            disabled={state === "running"}
+                            className="rounded-md border border-border px-2.5 py-1 text-[11px] font-medium hover:bg-muted disabled:opacity-60"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                )}
+            </div>
         </CardWrapper>
     )
 }

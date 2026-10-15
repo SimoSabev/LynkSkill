@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { 
     Star, 
@@ -39,6 +39,26 @@ export function ReviewModal({
     const [content, setContent] = useState("")
     const [isSubmitting, setIsSubmitting] = useState(false)
     const { t } = useTranslation()
+
+    // Start with a clean form every time the modal opens or targets another application
+    useEffect(() => {
+        if (open) {
+            setRating(0)
+            setHoverRating(0)
+            setTitle("")
+            setContent("")
+        }
+    }, [open, applicationId])
+
+    // Close on Escape
+    useEffect(() => {
+        if (!open) return
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (e.key === "Escape" && !isSubmitting) onClose()
+        }
+        window.addEventListener("keydown", onKeyDown)
+        return () => window.removeEventListener("keydown", onKeyDown)
+    }, [open, isSubmitting, onClose])
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -79,8 +99,11 @@ export function ReviewModal({
                 setTitle("")
                 setContent("")
             } else {
-                const data = await res.json()
-                toast.error(data.error || t('reviewModal.failedToSubmit'))
+                const data = await res.json().catch(() => null)
+                toast.error(
+                    (data && typeof data.error === "string" && data.error) ||
+                        `${t('reviewModal.failedToSubmit')} (${res.status})`,
+                )
             }
         } catch (error) {
             console.error("Error submitting review:", error)
@@ -107,6 +130,9 @@ export function ReviewModal({
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
                         onClick={(e) => e.stopPropagation()}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="review-modal-title"
                         className="bg-card border border-border rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
                     >
                         {/* Header */}
@@ -116,6 +142,7 @@ export function ReviewModal({
                                 size="icon"
                                 className="absolute top-4 right-4 rounded-full"
                                 onClick={onClose}
+                                aria-label={t('common.close')}
                             >
                                 <X className="h-5 w-5" />
                             </Button>
@@ -125,7 +152,7 @@ export function ReviewModal({
                                     <Star className="h-6 w-6 text-amber-500" />
                                 </div>
                                 <div>
-                                    <h2 className="text-xl font-bold text-foreground">{t('reviewModal.leaveReview')}</h2>
+                                    <h2 id="review-modal-title" className="text-xl font-bold text-foreground">{t('reviewModal.leaveReview')}</h2>
                                     <p className="text-sm text-muted-foreground">{t('reviewModal.shareExperience')}</p>
                                 </div>
                             </div>
@@ -156,6 +183,8 @@ export function ReviewModal({
                                                 onClick={() => setRating(star)}
                                                 onMouseEnter={() => setHoverRating(star)}
                                                 onMouseLeave={() => setHoverRating(0)}
+                                                aria-label={`${star}/5`}
+                                                aria-pressed={rating === star}
                                                 className="p-1 transition-transform hover:scale-110"
                                             >
                                                 <Star

@@ -45,8 +45,14 @@ export async function POST(req: NextRequest) {
             include: { aiProfile: true }
         })
         
-        if (!student) {
+        if (!student || student.role !== "STUDENT") {
             return NextResponse.json({ error: "Student not found" }, { status: 404 })
+        }
+
+        // This data feeds the confidence score and company-facing prompts: bound it
+        const contentLength = Number(req.headers.get("content-length") || 0)
+        if (contentLength > 64 * 1024) {
+            return NextResponse.json({ error: "Request payload too large" }, { status: 413 })
         }
 
         const body = await req.json()
@@ -77,8 +83,10 @@ export async function POST(req: NextRequest) {
         
         let newConversation = profilingConversation ? profilingConversation : [];
         if (currentProfile.profilingConversation && Array.isArray(currentProfile.profilingConversation)) {
-            newConversation = [...currentProfile.profilingConversation, ...(profilingConversation || [])]
+            newConversation = [...currentProfile.profilingConversation, ...(Array.isArray(profilingConversation) ? profilingConversation : [])]
         }
+        // Keep the stored profiling transcript bounded
+        if (Array.isArray(newConversation)) newConversation = newConversation.slice(-200)
 
         const currentAsked = typeof currentProfile.questionsAsked === 'number' ? currentProfile.questionsAsked : 0
         const currentAnswered = typeof currentProfile.questionsAnswered === 'number' ? currentProfile.questionsAnswered : 0

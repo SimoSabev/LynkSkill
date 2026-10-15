@@ -5,6 +5,7 @@ import { auth } from "@clerk/nextjs/server"
 import { notifyApplicationStatusChange } from "@/lib/notifications"
 import { Permission } from "@prisma/client"
 import { checkPermission, getUserCompanyByClerkId } from "@/lib/permissions"
+import { ensureProjectForApprovedApplication, getApprovalBlocker } from "@/lib/services/applications"
 
 export async function PATCH(
     req: Request,
@@ -76,31 +77,10 @@ export async function PATCH(
         // ======================================================
         // 2) Check assignment upload ONLY IF internship requires it
         // ======================================================
-        const assignmentRequired = Boolean(data.internship.testAssignmentTitle)
-
-        if (assignmentRequired && status === "APPROVED") {
-            const assignments = await prisma.assignment.findMany({
-                where: {
-                    internshipId: data.internshipId,
-                    studentId: data.studentId,
-                },
-                include: {
-                    submissions: { select: { id: true } },
-                },
-            })
-
-            const hasUploadedFiles = assignments.some(
-                (a: { submissions: { id: string }[] }) => a.submissions.length > 0
-            )
-
-            if (!hasUploadedFiles) {
-                return NextResponse.json(
-                    {
-                        error:
-                            "The student must upload the internship assignment before approval.",
-                    },
-                    { status: 400 }
-                )
+        if (status === "APPROVED") {
+            const blocker = await getApprovalBlocker(data.internshipId, data.studentId)
+            if (blocker) {
+                return NextResponse.json({ error: blocker }, { status: 400 })
             }
         }
 
@@ -119,17 +99,8 @@ export async function PATCH(
         // ======================================================
         // 4) Create project if APPROVED and no project exists
         // ======================================================
-        if (status === "APPROVED" && data.project === null) {
-            await prisma.project.create({
-                data: {
-                    title: updatedApplication.internship.title,
-                    description: updatedApplication.internship.description || "",
-                    internshipId: updatedApplication.internshipId,
-                    applicationId: updatedApplication.id,
-                    studentId: updatedApplication.studentId,
-                    companyId: updatedApplication.internship.companyId,
-                },
-            })
+        if (status === "APPROVED") {
+            await ensureProjectForApprovedApplication(updatedApplication.id)
         }
 
         // ======================================================

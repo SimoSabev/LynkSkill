@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { Upload, X, File, ImageIcon, FileText, Download, AlertCircle } from "lucide-react"
-import { validateFile, formatFileSize, uploadFile, deleteFile, type FileAttachment } from "@/lib/file-utils"
+import { validateFile, formatFileSize, uploadFile, deleteFile, MAX_FILE_SIZE_MB, type FileAttachment } from "@/lib/file-utils"
 import { useTranslation } from "@/lib/i18n"
 
 interface FileUploadProps {
@@ -114,7 +114,7 @@ export function FileUpload({
                 <h4 className="font-semibold text-lg mb-2">{t('fileUpload.uploadFiles')}</h4>
                 <p className="text-muted-foreground mb-4">{t('fileUpload.dragAndDrop')}</p>
                 <p className="text-sm text-muted-foreground">
-                    Supports images, PDFs, and documents (max 10MB each, {maxFiles} files total)
+                    Supports images, PDFs, and documents (max {MAX_FILE_SIZE_MB}MB each, {maxFiles} files total)
                 </p>
 
                 <input

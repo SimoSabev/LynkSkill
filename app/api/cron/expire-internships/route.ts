@@ -15,6 +15,7 @@ import {
     notifyInternshipExpired,
 } from "@/lib/notifications"
 import { getMemberPermissions } from "@/lib/permissions"
+import { isAuthorizedCron } from "@/lib/api-guards"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -26,11 +27,8 @@ const GRACE_PERIOD_DAYS = 7
 const WARNING_DAYS = [7, 3, 1]
 
 export async function GET(req: Request) {
-    // Verify cron secret (for production security)
-    const { searchParams } = new URL(req.url)
-    const secret = searchParams.get("secret")
-
-    if (process.env.CRON_SECRET && secret !== process.env.CRON_SECRET) {
+    // Fails closed when CRON_SECRET is not configured
+    if (!isAuthorizedCron(req)) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 

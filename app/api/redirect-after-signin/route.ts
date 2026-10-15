@@ -23,7 +23,10 @@ export async function GET(req: Request) {
     if (role === "COMPANY") {
         return NextResponse.redirect(new URL("/dashboard/company", req.url))
     }
+    if (role === "TEAM_MEMBER") {
+        return NextResponse.redirect(new URL("/dashboard/team-member", req.url))
+    }
 
-    // Fallback
-    return NextResponse.redirect(new URL("/dashboard", req.url))
+    // Fallback: unknown role -> let onboarding resolve it (there is no /dashboard page)
+    return NextResponse.redirect(new URL("/onboarding", req.url))
 }

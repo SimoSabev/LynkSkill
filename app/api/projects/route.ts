@@ -28,9 +28,12 @@ type SelectedProject = Prisma.ProjectGetPayload<{
                 title: true
                 applicationStart: true
                 applicationEnd: true
+                startDate: true
+                endDate: true
                 company: { select: { name: true } }
                 assignments: {
                     select: {
+                        id: true
                         studentId: true
                         title: true
                         description: true
@@ -85,9 +88,12 @@ export async function GET() {
                         title: true,
                         applicationStart: true,
                         applicationEnd: true,
+                        startDate: true,
+                        endDate: true,
                         company: { select: { name: true } },
                         assignments: {
                             select: {
+                                id: true,
                                 studentId: true,
                                 title: true,
                                 description: true,
@@ -126,8 +132,11 @@ export async function GET() {
                     id: p.internship?.id ?? "",
                     title: p.internship?.title ?? "",
                     company: { name: p.internship?.company?.name ?? "" },
-                    startDate: p.internship?.applicationStart?.toISOString() ?? null,
-                    endDate: p.internship?.applicationEnd?.toISOString() ?? null
+                    // Real internship period (not the application window)
+                    startDate: p.internship?.startDate?.toISOString() ?? null,
+                    endDate: p.internship?.endDate?.toISOString() ?? null,
+                    applicationStart: p.internship?.applicationStart?.toISOString() ?? null,
+                    applicationEnd: p.internship?.applicationEnd?.toISOString() ?? null
                 },
 
                 student: {
@@ -137,6 +146,7 @@ export async function GET() {
 
                 assignment: related
                     ? {
+                        id: related.id,
                         title: related.title,
                         description: related.description,
                         dueDate: related.dueDate.toISOString()

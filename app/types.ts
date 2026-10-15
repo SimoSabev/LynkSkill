@@ -55,10 +55,15 @@ export interface Application {
     internship?: {
         id: string
         title: string
+        description?: string
+        location?: string
         requiresCoverLetter?: boolean
         company?: {
             id: string
             name: string
+            description?: string
+            location?: string
+            website?: string
         }
     }
 }

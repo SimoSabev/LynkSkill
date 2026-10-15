@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { auth } from "@clerk/nextjs/server"
+import { Permission } from "@prisma/client"
+import { requireCompanyAccess } from "@/lib/api-guards"
 
 // Skill-based evaluation algorithm (same as AI mode)
 function calculateCandidateScore(student: {
@@ -103,22 +104,16 @@ export async function GET(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { userId } = await auth()
-        if (!userId) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-        }
+        // Student profiles and emails: company members only
+        const access = await requireCompanyAccess(Permission.VIEW_CANDIDATES)
+        if (!access.ok) return access.response
 
         const { id: candidateId } = await params
         const { searchParams } = new URL(req.url)
         const skills = searchParams.get("skills")?.split(",").filter(Boolean) || []
 
-        // Get the requesting user's company for evaluation history
-        const requestingUser = await prisma.user.findUnique({
-            where: { clerkId: userId },
-            include: { companies: true }
-        })
-
-        const companyId = requestingUser?.companies?.[0]?.id
+        // Evaluation history is scoped to the requester's company
+        const companyId = access.companyId
 
         // Fetch the candidate with all related data
         const student = await prisma.user.findUnique({

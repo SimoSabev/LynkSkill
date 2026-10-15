@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import type { UserContext } from "@/lib/agent-tools"
+import { MemberStatus } from "@prisma/client"
+import { getMemberPermissions } from "@/lib/permissions"
 
 interface ContextResult {
     success: true
@@ -20,7 +22,7 @@ export async function resolveEnhancedUserContext(
             include: {
                 companyMembership: {
                     include: {
-                        customRole: { select: { permissions: true } },
+                        customRole: { select: { id: true, name: true, permissions: true, color: true } },
                     },
                 },
                 companies: { select: { id: true }, take: 1 },
@@ -31,31 +33,27 @@ export async function resolveEnhancedUserContext(
             return { success: false, error: "User not found" }
         }
 
-        // Resolve permissions from membership
-        const permissions: string[] = []
-
-        if (user.companyMembership) {
-            // Add custom role permissions
-            if (user.companyMembership.customRole?.permissions) {
-                permissions.push(...user.companyMembership.customRole.permissions)
-            }
-            // Add extra permissions
-            if (user.companyMembership.extraPermissions) {
-                permissions.push(...user.companyMembership.extraPermissions)
-            }
-        }
+        // Only an ACTIVE membership counts: suspended/pending members keep their row
+        // but must not act for the company. Permissions = default role + custom role
+        // + extra grants (same resolution as the REST routes).
+        const membership =
+            user.companyMembership?.status === MemberStatus.ACTIVE ? user.companyMembership : null
+        const permissions: string[] = membership
+            ? getMemberPermissions(membership)
+            : []
 
         // Company owners get all permissions
-        const companyId = user.companies[0]?.id || user.companyMembership?.companyId
-        if (user.companies.length > 0) {
+        const ownedCompanyId = user.companies[0]?.id
+        const companyId = ownedCompanyId || membership?.companyId
+        if (ownedCompanyId) {
             // Owner — grant all permissions implicitly handled by authorize layer
             permissions.push("__OWNER__")
         }
 
-        const isOwner = user.companies.length > 0
+        const isOwner = !!ownedCompanyId
         const companyRole = isOwner
             ? "OWNER"
-            : user.companyMembership?.defaultRole ?? undefined
+            : membership?.defaultRole ?? undefined
 
         return {
             success: true,

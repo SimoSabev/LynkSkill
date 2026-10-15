@@ -199,8 +199,9 @@ export function InternshipManageModal({ open, onClose, internship, onUpdate }: I
                     requiresCoverLetter: formValues.requiresCoverLetter,
                     duration: formValues.duration || null,
                     skills: formValues.skills || null,
-                    applicationStart: formValues.applicationStart?.toISOString().split("T")[0] || null,
-                    applicationEnd: formValues.applicationEnd?.toISOString().split("T")[0] || null,
+                    // Send calendar dates (toISOString() would shift them a day back in UTC+2/+3)
+                    applicationStart: formValues.applicationStart ? format(formValues.applicationStart, "yyyy-MM-dd") : null,
+                    applicationEnd: formValues.applicationEnd ? format(formValues.applicationEnd, "yyyy-MM-dd") : null,
                 }),
             })
 

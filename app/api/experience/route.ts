@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import type { Experience } from "@prisma/client"
+import { MAX_FILES_PER_REQUEST, UPLOAD_RULES, safeStorageName, validateUpload } from "@/lib/upload-utils"
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
@@ -54,26 +55,28 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "You can only upload experiences for approved applications" }, { status: 403 })
         }
 
-        const uploadedUrls: string[] = []
+        if (files.length > MAX_FILES_PER_REQUEST) {
+            return NextResponse.json({ error: `Max ${MAX_FILES_PER_REQUEST} files per upload` }, { status: 400 })
+        }
         for (const file of files) {
-            if (file.type.startsWith("image/") && file.size > 10 * 1024 * 1024) {
-                return NextResponse.json({ error: `Image ${file.name} too large (max 10MB)` }, { status: 400 })
-            }
-            if (file.type.startsWith("video/") && file.size > 100 * 1024 * 1024) {
-                return NextResponse.json({ error: `Video ${file.name} too large (max 100MB)` }, { status: 400 })
-            }
+            const rule = file.type.startsWith("video/") ? UPLOAD_RULES.experienceVideo : UPLOAD_RULES.experienceFile
+            const invalid = validateUpload(file, rule)
+            if (invalid) return NextResponse.json({ error: invalid }, { status: 400 })
+        }
 
+        const uploadedUrls: string[] = []
+        for (const [index, file] of files.entries()) {
             const arrayBuffer = await file.arrayBuffer()
             const buffer = Buffer.from(arrayBuffer)
-            const path = `${student.id}/experience/${Date.now()}-${file.name}`
+            const path = `${student.id}/experience/${Date.now()}-${index}-${safeStorageName(file.name)}`
 
             const { error } = await supabase.storage
                 .from("experience-files")
-                .upload(path, buffer, { contentType: file.type, upsert: true })
+                .upload(path, buffer, { contentType: file.type, upsert: false })
 
             if (error) {
                 console.error("Supabase upload error:", error.message)
-                return NextResponse.json({ error: error.message }, { status: 500 })
+                return NextResponse.json({ error: "Upload failed" }, { status: 500 })
             }
 
             const fileUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/experience-files/${path}`

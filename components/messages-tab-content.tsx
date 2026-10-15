@@ -20,6 +20,7 @@ import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import { format, isToday, isYesterday } from "date-fns"
 import { useTranslation } from "@/lib/i18n"
+import { toast } from "sonner"
 
 interface Conversation {
     id: string
@@ -84,9 +85,20 @@ export function MessagesTabContent({ userType }: MessagesTabContentProps) {
     const messagesEndRef = useRef<HTMLDivElement>(null)
     const inputRef = useRef<HTMLInputElement>(null)
 
+    const viewportRef = useRef<HTMLDivElement>(null)
+    // Id of the open conversation; responses for any other id are stale and dropped
+    const activeIdRef = useRef<string | null>(null)
+    const initialSelectionDone = useRef(false)
+
     const scrollToBottom = useCallback(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
     }, [])
+
+    const isNearBottom = () => {
+        const el = viewportRef.current?.closest("[data-radix-scroll-area-viewport]") as HTMLElement | null
+        if (!el) return true
+        return el.scrollHeight - el.scrollTop - el.clientHeight < 120
+    }
 
     // Fetch conversations
     const fetchConversations = useCallback(async () => {
@@ -94,7 +106,7 @@ export function MessagesTabContent({ userType }: MessagesTabContentProps) {
             const res = await fetch("/api/messages")
             if (res.ok) {
                 const data = await res.json()
-                setConversations(data)
+                setConversations(Array.isArray(data) ? data : [])
             }
         } catch (error) {
             console.error("Error fetching conversations:", error)
@@ -103,26 +115,49 @@ export function MessagesTabContent({ userType }: MessagesTabContentProps) {
         }
     }, [])
 
-    // Fetch messages for a conversation
-    const fetchMessages = useCallback(async (conversationId: string) => {
-        setIsLoadingMessages(true)
+    // Fetch messages for a conversation. `silent` = background poll: no spinner,
+    // no forced scroll unless new messages arrived while the user was at the bottom.
+    const fetchMessages = useCallback(async (conversationId: string, silent = false) => {
+        if (!silent) setIsLoadingMessages(true)
         try {
             const res = await fetch(`/api/messages/${conversationId}`)
-            if (res.ok) {
-                const data = await res.json()
-                setMessages(data)
-                setTimeout(scrollToBottom, 100)
-            }
+            if (!res.ok || activeIdRef.current !== conversationId) return
+            const data: Message[] = await res.json()
+            const shouldScroll = !silent || isNearBottom()
+            setMessages(prev => {
+                const changed = prev.length !== data.length || prev[prev.length - 1]?.id !== data[data.length - 1]?.id
+                if (changed && shouldScroll) setTimeout(scrollToBottom, 100)
+                return changed || !silent ? data : prev
+            })
         } catch (error) {
             console.error("Error fetching messages:", error)
         } finally {
-            setIsLoadingMessages(false)
+            if (!silent && activeIdRef.current === conversationId) setIsLoadingMessages(false)
         }
     }, [scrollToBottom])
+
+    const selectConversation = useCallback((conv: Conversation | null) => {
+        activeIdRef.current = conv?.id ?? null
+        setMessages([])
+        setSelectedConversation(conv)
+        if (conv) {
+            // Opening a thread marks it read server-side; clear the badge locally
+            setConversations(prev => prev.map(c => c.id === conv.id ? { ...c, _count: { messages: 0 } } : c))
+        }
+    }, [])
 
     useEffect(() => {
         fetchConversations()
     }, [fetchConversations])
+
+    // Deep link: /dashboard/<role>/messages?conversation=<id>
+    useEffect(() => {
+        if (initialSelectionDone.current || conversations.length === 0) return
+        initialSelectionDone.current = true
+        const wanted = new URLSearchParams(window.location.search).get("conversation")
+        const conv = wanted ? conversations.find(c => c.id === wanted) : null
+        if (conv) selectConversation(conv)
+    }, [conversations, selectConversation])
 
     useEffect(() => {
         if (selectedConversation) {
@@ -136,7 +171,7 @@ export function MessagesTabContent({ userType }: MessagesTabContentProps) {
         if (!selectedConversation) return
         
         const interval = setInterval(() => {
-            fetchMessages(selectedConversation.id)
+            fetchMessages(selectedConversation.id, true)
         }, 10000)
         
         return () => clearInterval(interval)
@@ -146,7 +181,7 @@ export function MessagesTabContent({ userType }: MessagesTabContentProps) {
         setRefreshing(true)
         await fetchConversations()
         if (selectedConversation) {
-            await fetchMessages(selectedConversation.id)
+            await fetchMessages(selectedConversation.id, true)
         }
         setRefreshing(false)
     }
@@ -163,14 +198,17 @@ export function MessagesTabContent({ userType }: MessagesTabContentProps) {
                 body: JSON.stringify({ content: newMessage })
             })
 
+            const data = await res.json().catch(() => ({}))
             if (res.ok) {
-                const message = await res.json()
-                setMessages(prev => [...prev, message])
+                setMessages(prev => [...prev, data])
                 setNewMessage("")
                 setTimeout(scrollToBottom, 100)
+            } else {
+                toast.error(data.error || t('messages.messageError'))
             }
         } catch (error) {
             console.error("Error sending message:", error)
+            toast.error(t('messages.messageError'))
         } finally {
             setIsSending(false)
         }
@@ -235,7 +273,7 @@ export function MessagesTabContent({ userType }: MessagesTabContentProps) {
             </div>
 
             {/* Chat Interface */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-[600px]">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Conversations List */}
                 <div className={cn(
                     "lg:col-span-1 rounded-2xl border-2 border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden",
@@ -253,7 +291,7 @@ export function MessagesTabContent({ userType }: MessagesTabContentProps) {
                         </h3>
                     </div>
 
-                    <ScrollArea className="h-[500px]">
+                    <ScrollArea className="h-[60vh] lg:h-[560px]">
                         {isLoading ? (
                             <div className="flex items-center justify-center h-40">
                                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -271,7 +309,7 @@ export function MessagesTabContent({ userType }: MessagesTabContentProps) {
                                 {conversations.map((conv) => (
                                     <motion.button
                                         key={conv.id}
-                                        onClick={() => setSelectedConversation(conv)}
+                                        onClick={() => selectConversation(conv)}
                                         className={cn(
                                             "w-full p-4 text-left hover:bg-muted/50 transition-colors",
                                             selectedConversation?.id === conv.id && "bg-muted/70"
@@ -317,7 +355,7 @@ export function MessagesTabContent({ userType }: MessagesTabContentProps) {
 
                 {/* Messages Panel */}
                 <div className={cn(
-                    "lg:col-span-2 rounded-2xl border-2 border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden flex flex-col",
+                    "lg:col-span-2 rounded-2xl border-2 border-border/50 bg-card/50 backdrop-blur-sm overflow-hidden flex flex-col h-[70vh] min-h-[420px] lg:h-[620px]",
                     !selectedConversation && "hidden lg:flex"
                 )}>
                     {selectedConversation ? (
@@ -328,7 +366,8 @@ export function MessagesTabContent({ userType }: MessagesTabContentProps) {
                                     variant="ghost"
                                     size="icon"
                                     className="lg:hidden"
-                                    onClick={() => setSelectedConversation(null)}
+                                    aria-label={t('common.back')}
+                                    onClick={() => selectConversation(null)}
                                 >
                                     <ArrowLeft className="h-5 w-5" />
                                 </Button>
@@ -351,7 +390,7 @@ export function MessagesTabContent({ userType }: MessagesTabContentProps) {
                             </div>
 
                             {/* Messages */}
-                            <ScrollArea className="flex-1 p-4">
+                            <ScrollArea className="flex-1 min-h-0 p-4">
                                 {isLoadingMessages ? (
                                     <div className="flex items-center justify-center h-40">
                                         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -365,7 +404,7 @@ export function MessagesTabContent({ userType }: MessagesTabContentProps) {
                                         </p>
                                     </div>
                                 ) : (
-                                    <div className="space-y-4">
+                                    <div className="space-y-4" ref={viewportRef}>
                                         {messages.map((msg) => {
                                             const isMe = msg.senderType === mySenderType
                                             return (
@@ -417,9 +456,11 @@ export function MessagesTabContent({ userType }: MessagesTabContentProps) {
                                         placeholder={t('messages.typeMessage')}
                                         className="flex-1 rounded-xl border-2 border-border/50 focus:border-indigo-500"
                                         disabled={isSending}
+                                        maxLength={5000}
                                     />
                                     <Button
                                         type="submit"
+                                        aria-label={t('messages.send')}
                                         disabled={!newMessage.trim() || isSending}
                                         className="rounded-xl px-6 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white"
                                     >
